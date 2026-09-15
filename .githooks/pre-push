@@ -1,0 +1,19 @@
+#!/bin/sh
+# main 브랜치로 직접 push하는 실수를 막는다. (팀 규칙: main 변경은 PR로만)
+# 설치: 저장소 루트에서 `git config core.hooksPath .githooks` 를 한 번 실행한다.
+
+protected_branch="refs/heads/main"
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  if [ "$remote_ref" = "$protected_branch" ]; then
+    echo ""
+    echo "[push 차단] main 브랜치에는 직접 push할 수 없습니다."
+    echo "  1) git switch -c feature/작업이름"
+    echo "  2) git push -u origin feature/작업이름"
+    echo "  3) GitHub에서 Pull Request를 만들고 팀원 1명의 승인을 받아 Merge 하세요."
+    echo ""
+    exit 1
+  fi
+done
+
+exit 0
