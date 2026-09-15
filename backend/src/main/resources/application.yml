@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: ticketing
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:ticketing}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: ${DB_USERNAME:ticketing}
+    password: ${DB_PASSWORD:ticketing}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_batch_fetch_size: 100
+        jdbc:
+          time_zone: Asia/Seoul
+  flyway:
+    enabled: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      repositories:
+        enabled: false
+  cache:
+    type: redis
+    redis:
+      time-to-live: 10m
+      key-prefix: "ticketing:cache:"
+
+server:
+  forward-headers-strategy: framework
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+ticketing:
+  jwt:
+    # 운영 환경에서는 반드시 JWT_SECRET 환경 변수로 32바이트 이상의 비밀 값을 주입한다.
+    secret: ${JWT_SECRET:local-development-only-secret-key-change-me!!}
+    access-token-validity: 2h
+  seat-hold:
+    # redis | memory
+    store: redis
+    ttl: 5m
+    max-seats: 4
+  sample-data:
+    enabled: ${SAMPLE_DATA_ENABLED:true}
+    days: 14
