@@ -667,7 +667,12 @@ p {
   display: none;
 }
 
+/* 배치도 옆 칸을 그대로 채운다. 결제 카드는 이 칸 안에서만 따라 내려간다. */
 .booking__side {
+  align-self: stretch;
+}
+
+.booking__side > .panel {
   position: sticky;
   top: 84px;
 }
@@ -1344,8 +1349,11 @@ p {
   }
 
   .booking__side {
-    position: static;
     grid-row: auto;
+  }
+
+  .booking__side > .panel {
+    position: static;
   }
 
   /* 결제 카드가 좌석표 아래로 밀리므로, 고른 좌석이 있으면 화면 아래에 결제 버튼을 띄운다. */
