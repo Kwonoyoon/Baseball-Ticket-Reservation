@@ -108,6 +108,8 @@ def render(blocks):
 
 GRADE_ENUM = {"OUTFIELD": "OUTFIELD", "NAVY": "NAVY", "RED": "RED", "ORANGE": "ORANGE",
               "BLUE": "BLUE", "TABLE": "TABLE", "PREMIUM": "PREMIUM", "EXCITING": "EXCITING"}
+# V3 마이그레이션 시점의 구장 이름. V4에서 이름이 바뀌었지만 V3는 이미 적용되어 수정하면 안 된다.
+# 블록 구성을 다시 만들 때는 이 파일이 아니라 새 버전(V5 등)으로 내보내야 한다.
 STADIUM = "잠실야구장"
 NL = chr(10)
 
