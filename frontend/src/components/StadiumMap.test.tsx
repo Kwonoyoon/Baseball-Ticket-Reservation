@@ -132,6 +132,7 @@ describe('StadiumMap', () => {
 
     const tooltip = screen.getByRole('status')
     expect(tooltip).toHaveTextContent('레드석 1블록')
+    expect(tooltip).toHaveTextContent('16,000원')
     expect(tooltip).toHaveTextContent('잔여 4석')
 
     await userEvent.unhover(screen.getByRole('button', { name: /레드석 1블록/ }))

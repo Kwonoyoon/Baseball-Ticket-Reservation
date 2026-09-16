@@ -1708,14 +1708,15 @@ p {
   font-variant-numeric: tabular-nums;
 }
 
-/* 커서를 올린 블록의 이름과 잔여석 */
+/* 커서를 올린 블록의 이름·가격·잔여석 */
 .stadium-map__tooltip {
   position: absolute;
   z-index: 2;
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 11px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 8px 12px;
   border-radius: var(--radius-sm);
   background: var(--navy-900);
   box-shadow: 0 6px 18px rgb(15 35 64 / 25%);

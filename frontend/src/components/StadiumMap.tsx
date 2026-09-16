@@ -22,9 +22,10 @@ type StadiumMapProps = {
   onSelect: (sectionId: number | null) => void
 }
 
-/** 커서를 올린 블록의 이름과 잔여석을 띄우는 말풍선 */
+/** 커서를 올린 블록의 이름·가격·잔여석을 띄우는 말풍선 */
 type Tooltip = {
   name: string
+  price: number
   remaining: number | undefined
   x: number
   y: number
@@ -50,6 +51,7 @@ export function StadiumMap({
     if (!bounds) return
     setTooltip({
       name: section.name,
+      price: section.price,
       remaining: remainingBySection.get(section.id),
       x: point.clientX - bounds.left,
       y: point.clientY - bounds.top,
@@ -171,6 +173,7 @@ export function StadiumMap({
       {tooltip && (
         <div className="stadium-map__tooltip" style={{ left: tooltip.x, top: tooltip.y }} role="status">
           <strong>{tooltip.name}</strong>
+          <span>{formatPrice(tooltip.price)}</span>
           <span>{remainingLabel(tooltip.remaining)}</span>
         </div>
       )}
