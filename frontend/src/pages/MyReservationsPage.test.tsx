@@ -66,11 +66,11 @@ describe('MyReservationsPage', () => {
     vi.unstubAllGlobals()
   })
 
-  it('상세 보기를 누르면 페이지를 옮기지 않고 좌석 위치를 펼친다', async () => {
+  it('좌석 보기를 누르면 페이지를 옮기지 않고 좌석 위치를 펼친다', async () => {
     const user = userEvent.setup()
     renderPage()
 
-    const toggle = await screen.findByRole('button', { name: '상세 보기' })
+    const toggle = await screen.findByRole('button', { name: '좌석 보기' })
     expect(toggle).toHaveAttribute('aria-expanded', 'false')
     expect(screen.queryByRole('img', { name: /내 좌석 위치/ })).not.toBeInTheDocument()
 
@@ -78,15 +78,15 @@ describe('MyReservationsPage', () => {
 
     const detail = screen.getByRole('img', { name: '내 좌석 위치: 네이비석 3번 3열 7번, 3열 8번' })
     expect(detail).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '상세 닫기' })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('button', { name: '좌석 닫기' })).toHaveAttribute('aria-expanded', 'true')
   })
 
   it('다시 누르면 접힌다', async () => {
     const user = userEvent.setup()
     renderPage()
 
-    await user.click(await screen.findByRole('button', { name: '상세 보기' }))
-    await user.click(screen.getByRole('button', { name: '상세 닫기' }))
+    await user.click(await screen.findByRole('button', { name: '좌석 보기' }))
+    await user.click(screen.getByRole('button', { name: '좌석 닫기' }))
 
     await waitFor(() => {
       expect(screen.queryByRole('img', { name: /내 좌석 위치/ })).not.toBeInTheDocument()

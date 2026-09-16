@@ -322,7 +322,7 @@ p {
 
 .page-title {
   margin-bottom: 20px;
-  font-size: 26px;
+  font-size: 38px;
   letter-spacing: -0.03em;
 }
 
@@ -1732,14 +1732,10 @@ p {
   border-top-right-radius: 0;
 }
 
-.ticket-detail > .panel__title {
-  margin-bottom: 16px;
-  font-size: 15px;
-}
 
-/* 목록 안에서는 배치도를 작게 둬서 카드가 화면을 덜 차지하게 한다. */
+/* 목록 안에서는 배치도를 조금 줄이되, 블록 번호가 읽힐 만큼은 남긴다. */
 .ticket-detail .seat-location svg {
-  max-height: 340px;
+  max-height: 430px;
 }
 
 /* ---------- 예매 상세: 내 좌석 위치 ---------- */
@@ -1782,8 +1778,12 @@ p {
 
 .seat-location__number {
   fill: #ffffff;
-  font-size: 13px;
+  /* 블록 하나만 칠해져 있어 배치도를 줄여도 번호가 읽히도록 크게 쓴다. */
+  font-size: 26px;
   font-weight: 800;
+  paint-order: stroke;
+  stroke: rgb(15 35 64 / 45%);
+  stroke-width: 3;
   text-anchor: middle;
   dominant-baseline: middle;
 }

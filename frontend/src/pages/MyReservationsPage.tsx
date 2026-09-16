@@ -87,7 +87,7 @@ export function MyReservationsPage() {
                       aria-controls={`reservation-detail-${reservation.id}`}
                       onClick={() => setOpenId((current) => (current === reservation.id ? null : reservation.id))}
                     >
-                      {openId === reservation.id ? '상세 닫기' : '상세 보기'}
+                      {openId === reservation.id ? '좌석 닫기' : '좌석 보기'}
                     </button>
                     {reservation.cancelable && (
                       <button
@@ -107,9 +107,8 @@ export function MyReservationsPage() {
                 <section
                   id={`reservation-detail-${reservation.id}`}
                   className="panel ticket-detail"
-                  aria-label={`예매번호 ${reservation.reservationNumber} 상세`}
+                  aria-label={`예매번호 ${reservation.reservationNumber} 좌석 위치`}
                 >
-                  <h3 className="panel__title">내 좌석 위치</h3>
                   {reservation.seats.some((seat) => seat.sectionCode !== null) ? (
                     <ReservedSeatMap seats={reservation.seats} />
                   ) : (
