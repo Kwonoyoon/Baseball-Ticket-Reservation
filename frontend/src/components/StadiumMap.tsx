@@ -9,7 +9,7 @@ import {
   STADIUM_BLOCKS,
   STADIUM_OUTLINE,
   STADIUM_VIEW_BOX,
-} from '../lib/jamsilMap'
+} from '../lib/stadiumBlocks'
 import { remainingLabel } from '../lib/stadiumMap'
 
 type StadiumMapProps = {

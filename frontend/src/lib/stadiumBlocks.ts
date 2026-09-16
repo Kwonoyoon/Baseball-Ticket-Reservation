@@ -1,4 +1,4 @@
-/** 잠실야구장 좌석 배치도 좌표. 생성기로 만든 파일이므로 직접 수정하지 않는다. */
+/** 좌석 배치도 좌표. 생성기로 만든 파일이므로 직접 수정하지 않는다. */
 
 export type StadiumBlock = {
   /** DB seat_sections.zoneCode 와 같은 값 */

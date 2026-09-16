@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-"""잠실야구장 좌석 배치도 생성기 (직접 계산해 그린다)"""
+"""좌석 배치도 생성기 (외부 자료 없이 좌표를 직접 계산해 그린다)"""
 import math
+import os
 
 CX, CY = 500.0, 470.0
 W = H = 1000
@@ -65,8 +66,8 @@ def build():
     return blocks
 
 def render(blocks):
-    out = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="잠실야구장 좌석 배치도">',
-           '  <title>잠실야구장 좌석 배치도</title>',
+    out = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="좌석 배치도">',
+           '  <title>좌석 배치도</title>',
            '  <rect width="1000" height="1000" fill="#F3F5F9"/>',
            f'  <circle cx="{CX}" cy="{CY}" r="462" fill="#FFFFFF" stroke="#DDE2EA" stroke-width="6"/>',
            '  <g aria-hidden="true" opacity="0.45">']
@@ -108,24 +109,19 @@ def render(blocks):
 
 GRADE_ENUM = {"OUTFIELD": "OUTFIELD", "NAVY": "NAVY", "RED": "RED", "ORANGE": "ORANGE",
               "BLUE": "BLUE", "TABLE": "TABLE", "PREMIUM": "PREMIUM", "EXCITING": "EXCITING"}
-# V3 마이그레이션 시점의 구장 이름. V4에서 이름이 바뀌었지만 V3는 이미 적용되어 수정하면 안 된다.
-# 블록 구성을 다시 만들 때는 이 파일이 아니라 새 버전(V5 등)으로 내보내야 한다.
-STADIUM = "잠실야구장"
+# 블록 구조는 모든 구장에서 같다. 이미 블록이 있는 구장은 건너뛴다.
+ALREADY_HAS_BLOCKS = "서울종합운동장 야구장 (잠실)"
 NL = chr(10)
 
 
 def render_sql(blocks):
+    """모든 구장에 같은 블록을 넣는 SQL. 새 마이그레이션 파일에 그대로 붙여 넣는다."""
     lines = [
-        "-- 잠실야구장 좌석 블록. 배치도(frontend/src/lib/jamsilMap.ts)와 zone_code로 1:1 대응한다.",
-        "-- 기존 템플릿 구역은 예매 이력이 걸려 있으므로 지우지 않고 비활성 처리한다.",
+        "-- 생성기(scripts/generate-stadium-map.py)가 만든 SQL이다. 직접 고치지 말고 다시 생성할 것.",
+        "-- 블록 구조는 모든 구장이 같고, 배치도(frontend/src/lib/stadiumBlocks.ts)와 zone_code로 이어진다.",
         "",
-        "ALTER TABLE seat_sections ADD COLUMN zone_code VARCHAR(20);",
-        "ALTER TABLE seat_sections ADD COLUMN active BOOLEAN DEFAULT TRUE NOT NULL;",
-        "",
-        "CREATE INDEX idx_seat_sections_stadium_active ON seat_sections (stadium_id, active);",
-        "",
-        "UPDATE seat_sections SET active = FALSE",
-        f"WHERE stadium_id = (SELECT id FROM stadiums WHERE name = '{STADIUM}');",
+        "-- 블록으로 나누기 전 템플릿 구역은 예매 이력이 있어 지우지 않고 숨긴다.",
+        "UPDATE seat_sections SET active = FALSE WHERE zone_code IS NULL;",
         "",
     ]
     for order, b in enumerate(blocks, start=1):
@@ -133,9 +129,9 @@ def render_sql(blocks):
             "INSERT INTO seat_sections "
             "(stadium_id, zone_code, name, grade, price, seat_rows, seats_per_row, display_order, active)" + NL +
             f"SELECT id, '{b['code']}', '{b['label']}', '{GRADE_ENUM[b['grade']]}', {b['price']}, "
-            f"{b['rows']}, {b['seats_per_row']}, {order}, TRUE FROM stadiums WHERE name = '{STADIUM}';")
+            f"{b['rows']}, {b['seats_per_row']}, {order}, TRUE FROM stadiums" + NL +
+            f"WHERE name <> '{ALREADY_HAS_BLOCKS}';")
     return NL.join(lines) + NL
-
 
 def render_ts(blocks):
     shapes = [(sector(0, 342, 180 + i * 15, 195 + i * 15), "#3E9A63" if i % 2 == 0 else "#358B58")
@@ -149,7 +145,7 @@ def render_ts(blocks):
     mound = pt(92, 270)
     marks = [(mound[0], mound[1], 17, "#CE9A63"), (CX, CY, 8, "#FFFFFF")]
 
-    out = ["/** 잠실야구장 좌석 배치도 좌표. 생성기로 만든 파일이므로 직접 수정하지 않는다. */", "",
+    out = ["/** 좌석 배치도 좌표. 생성기로 만든 파일이므로 직접 수정하지 않는다. */", "",
            "export type StadiumBlock = {",
            "  /** DB seat_sections.zoneCode 와 같은 값 */",
            "  code: string", "  grade: string", "  number: number",
@@ -178,10 +174,11 @@ def render_ts(blocks):
     return NL.join(out) + NL
 
 if __name__ == "__main__":
+    os.makedirs("out", exist_ok=True)
     blocks = build()
-    open("jamsil-stadium.svg", "w", encoding="utf-8", newline="\n").write(render(blocks))
-    open("V3__jamsil_stadium_blocks.sql", "w", encoding="utf-8", newline=NL).write(render_sql(blocks))
-    open("jamsilMap.ts", "w", encoding="utf-8", newline=NL).write(render_ts(blocks))
+    open("out/stadium-map.svg", "w", encoding="utf-8", newline=NL).write(render(blocks))
+    open("out/stadium-blocks.sql", "w", encoding="utf-8", newline=NL).write(render_sql(blocks))
+    open("out/stadiumBlocks.ts", "w", encoding="utf-8", newline=NL).write(render_ts(blocks))
     total = sum(b["seats"] for b in blocks)
     print(f"블록 {len(blocks)}개 / 전체 좌석 {total:,}석")
     for code in dict.fromkeys(b["grade"] for b in blocks):

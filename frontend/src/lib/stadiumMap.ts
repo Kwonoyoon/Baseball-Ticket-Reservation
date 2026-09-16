@@ -1,5 +1,5 @@
 import type { SeatSection } from '../api/types'
-import { STADIUM_BLOCK_CODES } from './jamsilMap'
+import { STADIUM_BLOCK_CODES } from './stadiumBlocks'
 
 /** 이 구장의 구역들이 좌석 배치도와 연결되어 있는지 확인한다. */
 export function hasStadiumMap(sections: SeatSection[]): boolean {
