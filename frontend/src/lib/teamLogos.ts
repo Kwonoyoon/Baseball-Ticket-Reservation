@@ -1,4 +1,4 @@
-import doosan from '../../image/dusan_logo.svg'
+import doosan from '../../image/doosan_logo.svg'
 import hanwha from '../../image/hanwha_logo.svg'
 import kia from '../../image/kia_logo.svg'
 import kiwoom from '../../image/kiwoom_logo.svg'
