@@ -45,11 +45,6 @@ export function BlockSeatGrid({ seats, selected }: BlockSeatGridProps) {
           ))}
         </div>
       </div>
-      <p className="block-grid__caption">
-        <span className="block-grid__mark" aria-hidden="true" />
-        <strong>{selected.sectionName}</strong>
-        <span>내 좌석 {mineLabel}</span>
-      </p>
     </div>
   )
 }
