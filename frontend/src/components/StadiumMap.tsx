@@ -1,4 +1,4 @@
-import type { KeyboardEvent, MouseEvent } from 'react'
+import { useRef, useState, type KeyboardEvent, type MouseEvent } from 'react'
 import type { SeatSection } from '../api/types'
 import { formatPrice } from '../lib/format'
 import {
@@ -22,6 +22,14 @@ type StadiumMapProps = {
   onSelect: (sectionId: number | null) => void
 }
 
+/** 커서를 올린 블록의 이름과 잔여석을 띄우는 말풍선 */
+type Tooltip = {
+  name: string
+  remaining: number | undefined
+  x: number
+  y: number
+}
+
 export function StadiumMap({
   sections,
   activeSectionId,
@@ -29,22 +37,40 @@ export function StadiumMap({
   selectedBySection,
   onSelect,
 }: StadiumMapProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [tooltip, setTooltip] = useState<Tooltip | null>(null)
+
   const sectionByCode = new Map(
     sections.filter((section) => section.code !== null).map((section) => [section.code as string, section]),
   )
 
-  // 범례는 등급 단위로 묶어서 보여준다. (블록이 53개라 블록마다 적으면 읽기 어렵다)
-  const grades = new Map<string, { label: string; grade: string; price: number; remaining: number | undefined }>()
+  // 범례는 등급 단위로 묶어 가격을 보여준다. (블록이 53개라 블록마다 적으면 읽기 어렵다)
+  const grades = new Map<string, { grade: string; label: string; price: number }>()
   for (const section of sections) {
     const current = grades.get(section.grade)
-    const remaining = remainingBySection.get(section.id)
     grades.set(section.grade, {
-      label: section.gradeLabel,
       grade: section.grade,
+      label: section.gradeLabel,
       price: Math.min(current?.price ?? section.price, section.price),
-      remaining:
-        remaining === undefined ? current?.remaining : (current?.remaining ?? 0) + remaining,
     })
+  }
+  const legend = [...grades.values()].sort((a, b) => b.price - a.price)
+
+  const showTooltip = (section: SeatSection, point: { clientX: number; clientY: number }) => {
+    const bounds = containerRef.current?.getBoundingClientRect()
+    if (!bounds) return
+    setTooltip({
+      name: section.name,
+      remaining: remainingBySection.get(section.id),
+      x: point.clientX - bounds.left,
+      y: point.clientY - bounds.top,
+    })
+  }
+
+  /** 키보드로 이동했을 때는 블록 가운데에 말풍선을 띄운다. */
+  const showTooltipAtCenter = (section: SeatSection, element: Element) => {
+    const box = element.getBoundingClientRect()
+    showTooltip(section, { clientX: box.left + box.width / 2, clientY: box.top + box.height / 2 })
   }
 
   // 블록이 아닌 곳을 누르면 선택을 푼다.
@@ -57,13 +83,14 @@ export function StadiumMap({
   }
 
   return (
-    <div className="stadium-map">
+    <div className="stadium-map" ref={containerRef}>
       <svg
         viewBox={STADIUM_VIEW_BOX}
         role="group"
         aria-label="좌석 배치도"
         onClick={handleBackgroundClick}
         onKeyDown={handleEscape}
+        onMouseLeave={() => setTooltip(null)}
       >
         <circle
           cx={STADIUM_OUTLINE.cx}
@@ -132,6 +159,11 @@ export function StadiumMap({
                 aria-label={`${section.name} ${formatPrice(section.price)} ${remainingLabel(remaining)}`}
                 onClick={select}
                 onKeyDown={handleKeyDown}
+                onMouseEnter={(event) => showTooltip(section, event)}
+                onMouseMove={(event) => showTooltip(section, event)}
+                onMouseLeave={() => setTooltip(null)}
+                onFocus={(event) => showTooltipAtCenter(section, event.currentTarget)}
+                onBlur={() => setTooltip(null)}
               />
               <text
                 className="stadium-map__number"
@@ -147,12 +179,18 @@ export function StadiumMap({
         })}
       </svg>
 
-      <ul className="stadium-legend" aria-label="좌석 등급">
-        {[...grades.values()].map((grade) => (
+      {tooltip && (
+        <div className="stadium-map__tooltip" style={{ left: tooltip.x, top: tooltip.y }} role="status">
+          <strong>{tooltip.name}</strong>
+          <span>{remainingLabel(tooltip.remaining)}</span>
+        </div>
+      )}
+
+      <ul className="stadium-legend" aria-label="좌석 등급별 가격">
+        {legend.map((grade) => (
           <li key={grade.grade} className={`grade--${grade.grade.toLowerCase()}`}>
             <span className="stadium-legend__chip" aria-hidden="true" />
             {grade.label} <strong>{formatPrice(grade.price)}</strong>
-            <span className="stadium-legend__remaining">{remainingLabel(grade.remaining)}</span>
           </li>
         ))}
       </ul>

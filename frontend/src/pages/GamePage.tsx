@@ -268,10 +268,7 @@ export function GamePage() {
       ) : (
         <div className="booking">
           <div className="booking__main">
-            <section className="panel" aria-labelledby="section-step-title">
-              <h2 id="section-step-title" className="panel__title">
-                1. 구역 선택
-              </h2>
+            <section className="panel" aria-label="구역 선택">
               {hasStadiumMap(game.sections) ? (
                 <StadiumMap
                   sections={game.sections}

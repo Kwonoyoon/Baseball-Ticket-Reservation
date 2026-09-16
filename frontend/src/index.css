@@ -1506,6 +1506,10 @@ p {
 
 /* ---------- 좌석 배치도 (블록 선택) ---------- */
 
+.stadium-map {
+  position: relative;
+}
+
 .stadium-map svg {
   display: block;
   width: 100%;
@@ -1613,7 +1617,25 @@ p {
   background: var(--grade-color, var(--navy-700));
 }
 
-.stadium-legend__remaining::before {
-  content: '·';
-  margin-right: 6px;
+/* 커서를 올린 블록의 이름과 잔여석 */
+.stadium-map__tooltip {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 11px;
+  border-radius: var(--radius-sm);
+  background: var(--navy-900);
+  box-shadow: 0 6px 18px rgb(15 35 64 / 25%);
+  color: rgb(255 255 255 / 80%);
+  font-size: 13px;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 12px));
+}
+
+.stadium-map__tooltip strong {
+  color: #ffffff;
+  font-size: 14px;
 }
