@@ -106,6 +106,8 @@ export type ReservationStatus = 'PENDING' | 'CONFIRMED' | 'CANCELED'
 
 export type ReservedSeat = {
   sectionId: number
+  /** 좌석 배치도의 블록 코드. 배치도가 없는 구역은 null */
+  sectionCode: string | null
   sectionName: string
   grade: SeatGrade
   rowNo: number

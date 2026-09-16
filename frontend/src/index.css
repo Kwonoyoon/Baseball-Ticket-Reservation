@@ -1725,6 +1725,79 @@ p {
   font-variant-numeric: tabular-nums;
 }
 
+/* ---------- 예매 상세: 내 좌석 위치 ---------- */
+
+.seat-location-card {
+  margin-top: 20px;
+}
+
+.seat-location {
+  display: grid;
+  gap: 16px;
+}
+
+.seat-location svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: min(58vh, 520px);
+  margin-inline: auto;
+}
+
+.seat-location__field {
+  opacity: 0.35;
+}
+
+/* 내 좌석이 아닌 블록은 자리만 알아볼 수 있게 옅게 둔다. */
+.seat-location__block path {
+  fill: var(--border);
+  opacity: 0.55;
+}
+
+.seat-location__block.is-mine path {
+  fill: var(--grade-color, var(--navy-700));
+  opacity: 1;
+  /* 짙은 등급 색 위에서도 블록 경계가 보이도록 흰 테두리를 두른다. */
+  stroke: #ffffff;
+  stroke-width: 4;
+  paint-order: stroke;
+}
+
+.seat-location__number {
+  fill: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.seat-location__list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.seat-location__list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+  font-size: 14px;
+}
+
+.seat-location__chip {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 auto;
+  border-radius: 4px;
+  background: var(--grade-color, var(--navy-700));
+}
+
 /* 커서를 올린 블록의 이름·가격·잔여석 */
 .stadium-map__tooltip {
   position: absolute;

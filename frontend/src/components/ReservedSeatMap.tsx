@@ -1,0 +1,97 @@
+import type { ReservedSeat } from '../api/types'
+import {
+  FIELD_LINES,
+  FIELD_MARKS,
+  FIELD_SHAPES,
+  STADIUM_BLOCKS,
+  STADIUM_OUTLINE,
+  STADIUM_VIEW_BOX,
+} from '../lib/stadiumBlocks'
+
+type ReservedSeatMapProps = {
+  seats: ReservedSeat[]
+}
+
+/** 예매한 좌석이 구장 어디인지 보여준다. 고르는 화면이 아니라 읽기 전용이다. */
+export function ReservedSeatMap({ seats }: ReservedSeatMapProps) {
+  // 한 예매에 여러 블록이 섞일 수 있으므로 블록별로 묶는다.
+  const seatsByCode = new Map<string, ReservedSeat[]>()
+  for (const seat of seats) {
+    if (seat.sectionCode === null) continue
+    const group = seatsByCode.get(seat.sectionCode)
+    if (group) group.push(seat)
+    else seatsByCode.set(seat.sectionCode, [seat])
+  }
+
+  const mine = STADIUM_BLOCKS.filter((block) => seatsByCode.has(block.code))
+  // 배치도가 없는 구장이거나 블록 코드가 없는 예매라면 아무것도 그리지 않는다.
+  if (mine.length === 0) return null
+
+  const label = mine
+    .map((block) => {
+      const group = seatsByCode.get(block.code) ?? []
+      return `${group[0].sectionName} ${group.map((seat) => `${seat.rowNo}열 ${seat.seatNo}번`).join(', ')}`
+    })
+    .join(' / ')
+
+  return (
+    <div className="seat-location">
+      <svg viewBox={STADIUM_VIEW_BOX} role="img" aria-label={`내 좌석 위치: ${label}`}>
+        <circle
+          cx={STADIUM_OUTLINE.cx}
+          cy={STADIUM_OUTLINE.cy}
+          r={STADIUM_OUTLINE.r}
+          fill="#FFFFFF"
+          stroke="#DDE2EA"
+          strokeWidth={6}
+        />
+        <g className="seat-location__field">
+          {FIELD_SHAPES.map((shape) => (
+            <path key={shape.d} d={shape.d} fill={shape.fill} />
+          ))}
+          {FIELD_LINES.map((d) => (
+            <path key={d} d={d} fill="none" stroke="#FFFFFF" strokeWidth={4} />
+          ))}
+          {FIELD_MARKS.map((mark) => (
+            <circle key={`${mark.cx}-${mark.cy}`} cx={mark.cx} cy={mark.cy} r={mark.r} fill={mark.fill} />
+          ))}
+        </g>
+
+        {STADIUM_BLOCKS.map((block) => {
+          const isMine = seatsByCode.has(block.code)
+          return (
+            <g
+              key={block.code}
+              className={`seat-location__block grade--${block.grade.toLowerCase()}${isMine ? ' is-mine' : ''}`}
+            >
+              <path d={block.d} />
+              {isMine && (
+                <text
+                  className="seat-location__number"
+                  x={block.labelX}
+                  y={block.labelY}
+                  transform={`rotate(${block.labelRotate} ${block.labelX} ${block.labelY})`}
+                >
+                  {block.number}
+                </text>
+              )}
+            </g>
+          )
+        })}
+      </svg>
+
+      <ul className="seat-location__list">
+        {mine.map((block) => {
+          const group = seatsByCode.get(block.code) ?? []
+          return (
+            <li key={block.code} className={`grade--${block.grade.toLowerCase()}`}>
+              <span className="seat-location__chip" aria-hidden="true" />
+              <strong>{group[0].sectionName}</strong>
+              <span>{group.map((seat) => `${seat.rowNo}열 ${seat.seatNo}번`).join(', ')}</span>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
+  )
+}

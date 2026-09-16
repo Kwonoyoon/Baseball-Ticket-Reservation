@@ -36,12 +36,15 @@ public record ReservationResponse(
                 reservation.getSeats().stream().map(ReservedSeatResponse::from).toList());
     }
 
+    /** sectionCode는 좌석 배치도의 블록 코드다. 배치도가 없는 구역은 null이라 화면에서 배치도를 생략한다. */
     public record ReservedSeatResponse(
-            Long sectionId, String sectionName, SeatGrade grade, int rowNo, int seatNo, int price) {
+            Long sectionId, String sectionCode, String sectionName, SeatGrade grade, int rowNo, int seatNo,
+            int price) {
 
         static ReservedSeatResponse from(ReservationSeat seat) {
-            return new ReservedSeatResponse(seat.getSection().getId(), seat.getSection().getName(),
-                    seat.getSection().getGrade(), seat.getRowNo(), seat.getSeatNo(), seat.getPrice());
+            return new ReservedSeatResponse(seat.getSection().getId(), seat.getSection().getZoneCode(),
+                    seat.getSection().getName(), seat.getSection().getGrade(), seat.getRowNo(), seat.getSeatNo(),
+                    seat.getPrice());
         }
     }
 }
