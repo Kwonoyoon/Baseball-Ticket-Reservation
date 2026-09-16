@@ -1776,12 +1776,19 @@ p {
 
 .seat-location__block.is-mine path {
   cursor: pointer;
+  /* 눌렀을 때 생기는 사각 테두리를 없앤다. 키보드로 이동했을 때만 표시한다. */
+  outline: none;
   fill: var(--grade-color, var(--navy-700));
   opacity: 1;
   /* 짙은 등급 색 위에서도 블록 경계가 보이도록 흰 테두리를 두른다. */
   stroke: #ffffff;
   stroke-width: 4;
   paint-order: stroke;
+}
+
+.seat-location__block.is-mine path:focus-visible {
+  outline: 3px solid var(--navy-900);
+  outline-offset: 2px;
 }
 
 /* 좌석표를 펼친 블록은 한 번 더 강조한다. */
@@ -1791,6 +1798,8 @@ p {
 }
 
 .seat-location__number {
+  /* 번호 위를 눌러도 블록이 눌리게 한다. */
+  pointer-events: none;
   fill: #ffffff;
   /* 블록 하나만 칠해져 있어 배치도를 줄여도 번호가 읽히도록 크게 쓴다. */
   font-size: 26px;

@@ -98,8 +98,10 @@ class ReservationFlowIntegrationTest {
                 .andExpect(jsonPath("$.totalPrice").value(section.getPrice()))
                 .andExpect(jsonPath("$.cancelable").value(true))
                 .andExpect(jsonPath("$.seats[0].sectionName").value(section.getName()))
-                // 예매 상세 화면이 좌석 위치를 배치도에 표시하려면 블록 코드가 필요하다.
+                // 예매 상세 화면이 좌석 위치를 배치도에 표시하려면 블록 코드와 크기가 필요하다.
                 .andExpect(jsonPath("$.seats[0].sectionCode").value(section.getZoneCode()))
+                .andExpect(jsonPath("$.seats[0].seatRows").value(section.getSeatRows()))
+                .andExpect(jsonPath("$.seats[0].seatsPerRow").value(section.getSeatsPerRow()))
                 .andReturn().getResponse().getContentAsString();
         long reservationId = ((Number) JsonPath.read(body, "$.id")).longValue();
 
