@@ -52,10 +52,7 @@ export function GamePage() {
     const controller = new AbortController()
     api
       .getGame(gameId, controller.signal)
-      .then((detail) => {
-        setGame(detail)
-        setActiveSectionId((current) => current ?? detail.sections[0]?.id ?? null)
-      })
+      .then(setGame)
       .catch((e: unknown) => {
         if (!isAbortError(e)) setLoadError(errorMessage(e, '경기 정보를 불러오지 못했습니다.'))
       })
@@ -170,6 +167,12 @@ export function GamePage() {
   const activeSection = activeSectionId === null ? undefined : sectionsById.get(activeSectionId)
   const quotaExhausted = isAuthenticated && remainingQuota === 0
 
+  const handleSelectSection = (sectionId: number | null) => {
+    setActiveSectionId(sectionId)
+    // 구역 선택을 풀면 고르던 좌석도 함께 비운다. (결제 단계에서는 유지)
+    if (sectionId === null && hold === null) setSelection([])
+  }
+
   const handleSelectGroup = (seats: SeatPosition[]) => {
     setNotice(null)
     setSelection(seats)
@@ -275,7 +278,7 @@ export function GamePage() {
                   activeSectionId={activeSectionId}
                   remainingBySection={remainingBySection}
                   selectedBySection={selectedBySection}
-                  onSelect={setActiveSectionId}
+                  onSelect={handleSelectSection}
                 />
               ) : (
                 <StadiumOverview
@@ -283,10 +286,21 @@ export function GamePage() {
                   activeSectionId={activeSectionId}
                   remainingBySection={remainingBySection}
                   selectedBySection={selectedBySection}
-                  onSelect={setActiveSectionId}
+                  onSelect={handleSelectSection}
                 />
               )}
             </section>
+
+            {!activeSection && (
+              <section className="panel" aria-labelledby="seat-step-title">
+                <h2 id="seat-step-title" className="panel__title">
+                  2. 좌석 선택
+                </h2>
+                <p className="summary__empty">
+                  먼저 위 배치도에서 구역을 선택해 주세요. 블록을 누르면 그 구역의 좌석이 나타납니다.
+                </p>
+              </section>
+            )}
 
             {activeSection && (
               <section className="panel" aria-labelledby="seat-step-title">

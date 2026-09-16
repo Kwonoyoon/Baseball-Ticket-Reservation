@@ -1,4 +1,4 @@
-import type { KeyboardEvent } from 'react'
+import type { KeyboardEvent, MouseEvent } from 'react'
 import type { SeatSection } from '../api/types'
 import { formatPrice } from '../lib/format'
 import {
@@ -18,7 +18,8 @@ type StadiumMapProps = {
   /** 구역별 잔여석. 아직 불러오지 못한 구역은 값이 없다. */
   remainingBySection: ReadonlyMap<number, number>
   selectedBySection: ReadonlyMap<number, number>
-  onSelect: (sectionId: number) => void
+  /** 블록을 고르면 구역 ID, 빈 곳을 누르면 null */
+  onSelect: (sectionId: number | null) => void
 }
 
 export function StadiumMap({
@@ -46,9 +47,24 @@ export function StadiumMap({
     })
   }
 
+  // 블록이 아닌 곳을 누르면 선택을 푼다.
+  const handleBackgroundClick = (event: MouseEvent<SVGSVGElement>) => {
+    if (!(event.target as Element).closest('.stadium-map__block')) onSelect(null)
+  }
+
+  const handleEscape = (event: KeyboardEvent<SVGSVGElement>) => {
+    if (event.key === 'Escape') onSelect(null)
+  }
+
   return (
     <div className="stadium-map">
-      <svg viewBox={STADIUM_VIEW_BOX} role="group" aria-label="좌석 배치도">
+      <svg
+        viewBox={STADIUM_VIEW_BOX}
+        role="group"
+        aria-label="좌석 배치도"
+        onClick={handleBackgroundClick}
+        onKeyDown={handleEscape}
+      >
         <circle
           cx={STADIUM_OUTLINE.cx}
           cy={STADIUM_OUTLINE.cy}

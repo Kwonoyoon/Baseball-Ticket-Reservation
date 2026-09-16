@@ -73,6 +73,23 @@ describe('StadiumMap', () => {
     expect(other).toHaveClass('is-dimmed')
   })
 
+  it('블록이 아닌 곳을 누르면 선택을 푼다', async () => {
+    const onSelect = vi.fn()
+    render(
+      <StadiumMap
+        sections={sections}
+        activeSectionId={11}
+        remainingBySection={new Map([[11, 150]])}
+        selectedBySection={new Map()}
+        onSelect={onSelect}
+      />,
+    )
+
+    await userEvent.click(screen.getByRole('group', { name: '좌석 배치도' }))
+
+    expect(onSelect).toHaveBeenCalledWith(null)
+  })
+
   it('매진된 블록은 선택할 수 없다', async () => {
     const onSelect = vi.fn()
     render(
