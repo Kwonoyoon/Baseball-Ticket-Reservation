@@ -36,6 +36,27 @@ export function ReservedSeatMap({ seats }: ReservedSeatMapProps) {
 
   return (
     <div className="seat-location">
+      <ul className="seat-location__list">
+        {mine.map((block) => {
+          const group = seatsByCode.get(block.code) ?? []
+          return (
+            <li key={block.code} className={`grade--${block.grade.toLowerCase()}`}>
+              <p className="seat-location__name">
+                <span className="seat-location__chip" aria-hidden="true" />
+                <strong>{group[0].sectionName}</strong>
+              </p>
+              <ul className="seat-location__seats">
+                {group.map((seat) => (
+                  <li key={`${seat.rowNo}-${seat.seatNo}`}>
+                    {seat.rowNo}열 {seat.seatNo}번
+                  </li>
+                ))}
+              </ul>
+            </li>
+          )
+        })}
+      </ul>
+
       <svg viewBox={STADIUM_VIEW_BOX} role="img" aria-label={`내 좌석 위치: ${label}`}>
         <circle
           cx={STADIUM_OUTLINE.cx}
@@ -79,19 +100,6 @@ export function ReservedSeatMap({ seats }: ReservedSeatMapProps) {
           )
         })}
       </svg>
-
-      <ul className="seat-location__list">
-        {mine.map((block) => {
-          const group = seatsByCode.get(block.code) ?? []
-          return (
-            <li key={block.code} className={`grade--${block.grade.toLowerCase()}`}>
-              <span className="seat-location__chip" aria-hidden="true" />
-              <strong>{group[0].sectionName}</strong>
-              <span>{group.map((seat) => `${seat.rowNo}열 ${seat.seatNo}번`).join(', ')}</span>
-            </li>
-          )
-        })}
-      </ul>
     </div>
   )
 }

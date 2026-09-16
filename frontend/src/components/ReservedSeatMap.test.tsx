@@ -22,14 +22,14 @@ describe('ReservedSeatMap', () => {
 
     expect(screen.getByRole('img', { name: '내 좌석 위치: 네이비석 1번 3열 7번, 3열 8번' })).toBeInTheDocument()
 
-    const rows = screen.getAllByRole('listitem')
-    expect(rows).toHaveLength(1)
-    expect(rows[0]).toHaveTextContent('네이비석 1번')
-    expect(rows[0]).toHaveTextContent('3열 7번, 3열 8번')
+    // 블록 하나에 좌석이 한 줄씩 쌓인다.
+    expect(screen.getByText('네이비석 1번')).toBeInTheDocument()
+    expect(screen.getByText('3열 7번')).toBeInTheDocument()
+    expect(screen.getByText('3열 8번')).toBeInTheDocument()
   })
 
   it('블록이 여러 개면 모두 보여준다', () => {
-    render(
+    const { container } = render(
       <ReservedSeatMap
         seats={[
           seat(),
@@ -38,8 +38,8 @@ describe('ReservedSeatMap', () => {
       />,
     )
 
-    const rows = screen.getAllByRole('listitem')
-    expect(rows.map((row) => row.textContent)).toEqual(['네이비석 1번3열 7번', '레드석 2번1열 2번'])
+    const groups = [...container.querySelectorAll('.seat-location__list > li')]
+    expect(groups.map((group) => group.textContent)).toEqual(['네이비석 1번3열 7번', '레드석 2번1열 2번'])
   })
 
   it('배치도에 없는 구역이면 아무것도 그리지 않는다', () => {

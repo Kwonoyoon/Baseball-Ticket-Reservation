@@ -1365,6 +1365,10 @@ p {
     grid-column: auto;
   }
 
+  .seat-location {
+    grid-template-columns: 1fr;
+  }
+
   .booking__side {
     grid-row: auto;
   }
@@ -1744,8 +1748,11 @@ p {
   margin-top: 20px;
 }
 
+/* 좌석 목록을 왼쪽 위에 두고, 배치도를 그 옆에 놓는다. */
 .seat-location {
   display: grid;
+  grid-template-columns: minmax(150px, 200px) minmax(0, 1fr);
+  align-items: start;
   gap: 16px;
 }
 
@@ -1796,15 +1803,29 @@ p {
   list-style: none;
 }
 
-.seat-location__list li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.seat-location__list > li {
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface-muted);
   font-size: 14px;
+}
+
+.seat-location__name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+/* 좌석은 한 줄에 하나씩 적는다. */
+.seat-location__seats {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.7;
 }
 
 .seat-location__chip {
