@@ -1725,6 +1725,23 @@ p {
   font-variant-numeric: tabular-nums;
 }
 
+/* 예매 내역에서 카드 아래로 펼치는 상세 */
+.ticket-detail {
+  margin-top: 8px;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.ticket-detail > .panel__title {
+  margin-bottom: 16px;
+  font-size: 15px;
+}
+
+/* 목록 안에서는 배치도를 작게 둬서 카드가 화면을 덜 차지하게 한다. */
+.ticket-detail .seat-location svg {
+  max-height: 340px;
+}
+
 /* ---------- 예매 상세: 내 좌석 위치 ---------- */
 
 .seat-location-card {

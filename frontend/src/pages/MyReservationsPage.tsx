@@ -4,6 +4,7 @@ import { errorMessage, isAbortError } from '../api/client'
 import { api } from '../api/endpoints'
 import type { Reservation } from '../api/types'
 import { ReservationTicket } from '../components/ReservationTicket'
+import { ReservedSeatMap } from '../components/ReservedSeatMap'
 import { EmptyState, ErrorMessage, Loading } from '../components/StatusView'
 
 export function MyReservationsPage() {
@@ -11,6 +12,8 @@ export function MyReservationsPage() {
   const [error, setError] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
   const [cancelingId, setCancelingId] = useState<number | null>(null)
+  // 상세는 페이지를 옮기지 않고 카드 아래에 펼친다.
+  const [openId, setOpenId] = useState<number | null>(null)
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   useEffect(() => {
@@ -77,9 +80,15 @@ export function MyReservationsPage() {
                 reservation={reservation}
                 actions={
                   <>
-                    <Link className="button button--ghost button--sm" to={`/reservations/${reservation.id}`}>
-                      상세 보기
-                    </Link>
+                    <button
+                      type="button"
+                      className="button button--ghost button--sm"
+                      aria-expanded={openId === reservation.id}
+                      aria-controls={`reservation-detail-${reservation.id}`}
+                      onClick={() => setOpenId((current) => (current === reservation.id ? null : reservation.id))}
+                    >
+                      {openId === reservation.id ? '상세 닫기' : '상세 보기'}
+                    </button>
                     {reservation.cancelable && (
                       <button
                         type="button"
@@ -93,6 +102,21 @@ export function MyReservationsPage() {
                   </>
                 }
               />
+
+              {openId === reservation.id && (
+                <section
+                  id={`reservation-detail-${reservation.id}`}
+                  className="panel ticket-detail"
+                  aria-label={`예매번호 ${reservation.reservationNumber} 상세`}
+                >
+                  <h3 className="panel__title">내 좌석 위치</h3>
+                  {reservation.seats.some((seat) => seat.sectionCode !== null) ? (
+                    <ReservedSeatMap seats={reservation.seats} />
+                  ) : (
+                    <p className="summary__empty">이 구장은 좌석 배치도가 없습니다.</p>
+                  )}
+                </section>
+              )}
             </li>
           ))}
         </ul>
