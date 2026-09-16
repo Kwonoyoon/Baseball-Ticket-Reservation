@@ -112,6 +112,9 @@ export type ReservedSeat = {
   grade: SeatGrade
   rowNo: number
   seatNo: number
+  /** 블록 전체 크기. 블록 안 어디에 앉는지 그릴 때 쓴다. */
+  seatRows: number
+  seatsPerRow: number
   price: number
 }
 

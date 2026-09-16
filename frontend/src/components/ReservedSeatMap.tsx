@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import type { ReservedSeat } from '../api/types'
+import { seatKey } from '../lib/format'
 import {
   FIELD_LINES,
   FIELD_MARKS,
@@ -7,6 +9,7 @@ import {
   STADIUM_OUTLINE,
   STADIUM_VIEW_BOX,
 } from '../lib/stadiumBlocks'
+import { BlockSeatGrid } from './BlockSeatGrid'
 
 type ReservedSeatMapProps = {
   seats: ReservedSeat[]
@@ -14,6 +17,9 @@ type ReservedSeatMapProps = {
 
 /** 예매한 좌석이 구장 어디인지 보여준다. 고르는 화면이 아니라 읽기 전용이다. */
 export function ReservedSeatMap({ seats }: ReservedSeatMapProps) {
+  // 좌석을 누르면 블록 안 어디에 앉는지 아래에 펼친다.
+  const [openSeat, setOpenSeat] = useState<ReservedSeat | null>(null)
+
   // 한 예매에 여러 블록이 섞일 수 있으므로 블록별로 묶는다.
   const seatsByCode = new Map<string, ReservedSeat[]>()
   for (const seat of seats) {
@@ -46,11 +52,22 @@ export function ReservedSeatMap({ seats }: ReservedSeatMapProps) {
                 <strong>{group[0].sectionName}</strong>
               </p>
               <ul className="seat-location__seats">
-                {group.map((seat) => (
-                  <li key={`${seat.rowNo}-${seat.seatNo}`}>
-                    {seat.rowNo}열 {seat.seatNo}번
-                  </li>
-                ))}
+                {group.map((seat) => {
+                  const isOpen = openSeat !== null && seatKey(openSeat) === seatKey(seat)
+                  return (
+                    <li key={`${seat.rowNo}-${seat.seatNo}`}>
+                      <button
+                        type="button"
+                        className={`seat-location__seat${isOpen ? " is-open" : ""}`}
+                        aria-expanded={isOpen}
+                        aria-controls="reserved-seat-grid"
+                        onClick={() => setOpenSeat(isOpen ? null : seat)}
+                      >
+                        {seat.rowNo}열 {seat.seatNo}번
+                      </button>
+                    </li>
+                  )
+                })}
               </ul>
             </li>
           )
@@ -100,6 +117,12 @@ export function ReservedSeatMap({ seats }: ReservedSeatMapProps) {
           )
         })}
       </svg>
+
+      {openSeat && (
+        <section id="reserved-seat-grid" className="seat-location__grid" aria-label="블록 안 좌석 위치">
+          <BlockSeatGrid seats={seatsByCode.get(openSeat.sectionCode ?? '') ?? []} selected={openSeat} />
+        </section>
+      )}
     </div>
   )
 }

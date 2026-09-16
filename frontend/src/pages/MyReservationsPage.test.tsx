@@ -31,6 +31,8 @@ const reservation: Reservation = {
       grade: 'NAVY',
       rowNo: 3,
       seatNo: 7,
+      seatRows: 10,
+      seatsPerRow: 22,
       price: 12000,
     },
     {
@@ -40,6 +42,8 @@ const reservation: Reservation = {
       grade: 'NAVY',
       rowNo: 3,
       seatNo: 8,
+      seatRows: 10,
+      seatsPerRow: 22,
       price: 12000,
     },
   ],

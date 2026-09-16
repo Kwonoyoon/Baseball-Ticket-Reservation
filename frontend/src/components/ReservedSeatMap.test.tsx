@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import type { ReservedSeat } from '../api/types'
 import { ReservedSeatMap } from './ReservedSeatMap'
@@ -11,6 +12,8 @@ function seat(overrides: Partial<ReservedSeat> = {}): ReservedSeat {
     grade: 'NAVY',
     rowNo: 3,
     seatNo: 7,
+    seatRows: 10,
+    seatsPerRow: 22,
     price: 12000,
     ...overrides,
   }
@@ -40,6 +43,27 @@ describe('ReservedSeatMap', () => {
 
     const groups = [...container.querySelectorAll('.seat-location__list > li')]
     expect(groups.map((group) => group.textContent)).toEqual(['네이비석 1번3열 7번', '레드석 2번1열 2번'])
+  })
+
+  it('좌석을 누르면 블록 안 어디에 앉는지 펼친다', async () => {
+    const user = userEvent.setup()
+    render(<ReservedSeatMap seats={[seat(), seat({ seatNo: 8 })]} />)
+
+    await user.click(screen.getByRole('button', { name: '3열 8번' }))
+
+    // 10열 22석 블록에서 3열 8번을 짚어 준다.
+    expect(screen.getByRole('img', { name: '네이비석 1번 10열 22석 중 3열 8번' })).toBeInTheDocument()
+  })
+
+  it('같은 좌석을 다시 누르면 접힌다', async () => {
+    const user = userEvent.setup()
+    const { container } = render(<ReservedSeatMap seats={[seat()]} />)
+
+    await user.click(screen.getByRole('button', { name: '3열 7번' }))
+    expect(container.querySelector('.block-grid')).not.toBeNull()
+
+    await user.click(screen.getByRole('button', { name: '3열 7번' }))
+    expect(container.querySelector('.block-grid')).toBeNull()
   })
 
   it('배치도에 없는 구역이면 아무것도 그리지 않는다', () => {
