@@ -1896,6 +1896,11 @@ p {
   cursor: default;
 }
 
+/* 고른 좌석이 살짝 커지므로 잘리지 않게 여백을 둔다. */
+.block-grid .seat-map__scroll {
+  padding: 5px 3px;
+}
+
 /* 내 좌석이 아닌 자리는 자리만 보이게 둔다. */
 .block-grid .seat--other {
   border-color: var(--border);
@@ -1910,12 +1915,16 @@ p {
   color: #ffffff;
 }
 
-/* 목록에서 고른 좌석 하나는 테두리로 더 짚어 준다. */
-/* 바깥이 아니라 안쪽에 그려야 첫 줄에서 테두리가 잘리지 않는다. */
+/* 목록에서 고른 좌석 하나는 진한 색과 흰 테두리로 살짝 띄워 짚어 준다. */
 .block-grid .seat.is-focus {
+  position: relative;
+  z-index: 1;
+  border-color: color-mix(in srgb, var(--grade-color) 65%, black);
+  background: color-mix(in srgb, var(--grade-color) 72%, black);
   box-shadow:
-    inset 0 0 0 1px #ffffff,
-    inset 0 0 0 3px var(--navy-900);
+    inset 0 0 0 2px #ffffff,
+    0 3px 8px rgb(15 35 64 / 28%);
+  transform: scale(1.18);
 }
 
 .block-grid__caption {
