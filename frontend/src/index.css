@@ -1357,6 +1357,15 @@ p {
 .my-ticket {
   width: min(100%, 560px);
   margin-inline: auto;
+}
+
+.my-ticket > h1 {
+  margin: 0 0 12px;
+  font-size: 28px;
+  letter-spacing: -0.04em;
+}
+
+.my-ticket__card {
   overflow: hidden;
   border-radius: var(--radius-lg);
   background: var(--surface);
@@ -1376,7 +1385,6 @@ p {
 .my-ticket__status { padding: 4px 10px; border-radius: 999px; background: var(--grass-100); color: #1f6b41; font-size: 12px; font-weight: 800; }
 .my-ticket__content { padding: 22px 24px 26px; text-align: center; }
 .my-ticket__league { color: var(--text-muted); font-size: 14px; }
-.my-ticket h1 { margin: 5px 0 16px; font-size: 28px; letter-spacing: -0.04em; }
 .my-ticket__picker { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 14px; color: var(--text-muted); font-size: 13px; }
 .my-ticket__picker select { max-width: 240px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); }
 .my-ticket__matchup { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 14px; }
@@ -1396,6 +1404,13 @@ p {
 .my-ticket__details div { display: grid; gap: 3px; }
 .my-ticket__details dt { color: var(--text-muted); font-size: 12px; font-weight: 700; }
 .my-ticket__details dd { margin: 0; font-size: 14px; font-weight: 800; }
+.my-ticket__qr-error { color: var(--red-500); }
+.my-ticket__stage { position: relative; }
+.my-ticket__nav { position: absolute; z-index: 1; top: 50%; display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid var(--border); border-radius: 50%; background: var(--surface); box-shadow: 0 3px 12px rgb(15 35 64 / 18%); color: var(--navy-800); font-size: 32px; line-height: 1; cursor: pointer; transform: translateY(-50%); }
+.my-ticket__nav:hover { border-color: var(--navy-700); background: var(--navy-700); color: #fff; }
+.my-ticket__nav--previous { left: -58px; }
+.my-ticket__nav--next { right: -58px; }
+.my-ticket__ticket-count { margin: 12px 0 0; color: var(--text-muted); font-size: 13px; text-align: center; }
 .empty-ticket { max-width: 520px; margin: 40px auto; padding: 40px 24px; border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); text-align: center; }
 .empty-ticket p { margin: 8px 0 20px; color: var(--text-muted); }
 
