@@ -645,18 +645,9 @@ p {
   grid-column: 1;
 }
 
-/* 좌석 가격은 결제 카드 끝까지 한 줄로 펼친다. */
+/* 좌석 가격은 제목 없이 결제 카드 끝까지 펼친다. */
 .seat-price-card {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px 20px;
   grid-column: 1 / -1;
-}
-
-.seat-price-card > .panel__title {
-  margin-bottom: 0;
-  white-space: nowrap;
 }
 
 /* 결제 카드는 오른쪽 열에서 경기장·좌석 선택 옆을 따라간다. */
@@ -1672,7 +1663,6 @@ p {
 .seat-price-list {
   /* 등급이 몇 개든 같은 너비로 나뉘도록 칸을 자동으로 채운다. */
   display: grid;
-  flex: 1;
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
   gap: 8px;
   margin: 0;

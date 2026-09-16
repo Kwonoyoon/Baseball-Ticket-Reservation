@@ -305,7 +305,6 @@ export function GamePage() {
       ) : (
         <div className="booking">
           <section className="panel seat-price-card" aria-label="좌석 가격">
-            <h2 className="panel__title">좌석 가격</h2>
             <SeatPriceList sections={game.sections} />
           </section>
 
