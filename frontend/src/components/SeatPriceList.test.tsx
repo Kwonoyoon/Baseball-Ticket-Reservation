@@ -6,7 +6,7 @@ import { SeatPriceList } from './SeatPriceList'
 function section(overrides: Partial<SeatSection> & Pick<SeatSection, 'id'>): SeatSection {
   return {
     code: null,
-    name: '네이비석 1블록',
+    name: '네이비석 1번',
     grade: 'NAVY',
     gradeLabel: '네이비석',
     price: 12000,
@@ -22,7 +22,7 @@ describe('SeatPriceList', () => {
       <SeatPriceList
         sections={[
           section({ id: 1 }),
-          section({ id: 2, name: '네이비석 2블록' }),
+          section({ id: 2, name: '네이비석 2번' }),
           section({ id: 3, grade: 'PREMIUM', gradeLabel: '프리미엄석', price: 70000 }),
           section({ id: 4, grade: 'RED', gradeLabel: '레드석', price: 16000 }),
         ]}

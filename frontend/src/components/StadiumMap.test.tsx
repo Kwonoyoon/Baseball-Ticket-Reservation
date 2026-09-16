@@ -7,7 +7,7 @@ import { StadiumMap } from './StadiumMap'
 
 function section(overrides: Partial<SeatSection> & Pick<SeatSection, 'id' | 'code'>): SeatSection {
   return {
-    name: '네이비석 1블록',
+    name: '네이비석 1번',
     grade: 'NAVY',
     gradeLabel: '네이비석',
     price: 12000,
@@ -19,7 +19,7 @@ function section(overrides: Partial<SeatSection> & Pick<SeatSection, 'id' | 'cod
 
 const sections: SeatSection[] = [
   section({ id: 11, code: 'NAVY-01' }),
-  section({ id: 12, code: 'RED-01', name: '레드석 1블록', grade: 'RED', gradeLabel: '레드석', price: 16000 }),
+  section({ id: 12, code: 'RED-01', name: '레드석 1번', grade: 'RED', gradeLabel: '레드석', price: 16000 }),
 ]
 
 describe('StadiumMap', () => {
@@ -44,10 +44,10 @@ describe('StadiumMap', () => {
       />,
     )
 
-    const navy = screen.getByRole('button', { name: '네이비석 1블록 12,000원 잔여 150석' })
+    const navy = screen.getByRole('button', { name: '네이비석 1번 12,000원 잔여 150석' })
     expect(navy).toHaveAttribute('aria-pressed', 'true')
 
-    await userEvent.click(screen.getByRole('button', { name: '레드석 1블록 16,000원 잔여 4석' }))
+    await userEvent.click(screen.getByRole('button', { name: '레드석 1번 16,000원 잔여 4석' }))
     expect(onSelect).toHaveBeenCalledWith(12)
   })
 
@@ -65,8 +65,8 @@ describe('StadiumMap', () => {
       />,
     )
 
-    const active = screen.getByRole('button', { name: /네이비석 1블록/ }).closest('g')
-    const other = screen.getByRole('button', { name: /레드석 1블록/ }).closest('g')
+    const active = screen.getByRole('button', { name: /네이비석 1번/ }).closest('g')
+    const other = screen.getByRole('button', { name: /레드석 1번/ }).closest('g')
 
     expect(active).toHaveClass('is-active')
     expect(active).not.toHaveClass('is-dimmed')
@@ -105,7 +105,7 @@ describe('StadiumMap', () => {
       />,
     )
 
-    const soldOut = screen.getByRole('button', { name: '네이비석 1블록 12,000원 매진' })
+    const soldOut = screen.getByRole('button', { name: '네이비석 1번 12,000원 매진' })
     expect(soldOut).toHaveAttribute('aria-disabled', 'true')
 
     await userEvent.click(soldOut)
@@ -128,14 +128,14 @@ describe('StadiumMap', () => {
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
 
-    await userEvent.hover(screen.getByRole('button', { name: /레드석 1블록/ }))
+    await userEvent.hover(screen.getByRole('button', { name: /레드석 1번/ }))
 
     const tooltip = screen.getByRole('status')
-    expect(tooltip).toHaveTextContent('레드석 1블록')
+    expect(tooltip).toHaveTextContent('레드석 1번')
     expect(tooltip).toHaveTextContent('16,000원')
     expect(tooltip).toHaveTextContent('잔여 4석')
 
-    await userEvent.unhover(screen.getByRole('button', { name: /레드석 1블록/ }))
+    await userEvent.unhover(screen.getByRole('button', { name: /레드석 1번/ }))
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 })

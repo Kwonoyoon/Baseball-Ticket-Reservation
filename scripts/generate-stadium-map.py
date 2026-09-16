@@ -57,7 +57,7 @@ def build():
             mid = (b0 + b1) / 2
             blocks.append({
                 "code": f"{code}-{num:02d}", "grade": code, "name": name, "color": color,
-                "price": price, "num": num, "label": f"{name} {num}블록",
+                "price": price, "num": num, "label": f"{name} {num}번",
                 "d": sector(r_in, r_out, b0, b1),
                 "label_pos": pt((r_in + r_out) / 2, mid),
                 "rotate": mid - 90 if mid < 180 else mid + 90,
