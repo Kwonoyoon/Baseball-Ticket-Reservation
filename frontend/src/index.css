@@ -1892,8 +1892,13 @@ p {
   background: var(--surface-muted);
 }
 
-.block-grid .seat {
+/* 자리를 보여 주기만 하는 칸. 내 좌석만 누를 수 있다. */
+.block-grid .seat--other {
   cursor: default;
+}
+
+.block-grid .seat--mine:hover {
+  filter: brightness(0.92);
 }
 
 /* 고른 좌석이 살짝 커지므로 잘리지 않게 여백을 둔다. */

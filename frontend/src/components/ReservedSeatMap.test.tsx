@@ -53,7 +53,7 @@ describe('ReservedSeatMap', () => {
 
     // 10열 22석 블록의 좌석표에서 내 좌석을 짚어 준다.
     expect(
-      screen.getByRole('img', { name: '네이비석 1번 10열 22석 중 내 좌석 3열 7번, 3열 8번' }),
+      screen.getByRole('group', { name: '네이비석 1번 10열 22석 중 내 좌석 3열 7번, 3열 8번' }),
     ).toBeInTheDocument()
   })
 
@@ -63,7 +63,22 @@ describe('ReservedSeatMap', () => {
 
     await user.click(screen.getByRole('button', { name: '네이비석 1번 좌석표 보기' }))
 
-    expect(screen.getByRole('img', { name: /네이비석 1번 10열 22석 중 내 좌석/ })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: /네이비석 1번 10열 22석 중 내 좌석/ })).toBeInTheDocument()
+  })
+
+  it('좌석표에서 좌석을 누르면 왼쪽 목록의 선택도 따라온다', async () => {
+    const user = userEvent.setup()
+    render(<ReservedSeatMap seats={[seat(), seat({ seatNo: 8 })]} />)
+
+    // 목록에서 3열 7번을 고르면 좌석표가 열린다.
+    await user.click(screen.getByRole('button', { name: '3열 7번' }))
+    expect(screen.getByRole('button', { name: '3열 7번' })).toHaveAttribute('aria-expanded', 'true')
+
+    // 좌석표에서 3열 8번을 누르면 목록 쪽 선택이 그 좌석으로 넘어간다.
+    await user.click(screen.getByRole('button', { name: '네이비석 1번 3열 8번' }))
+
+    expect(screen.getByRole('button', { name: '3열 8번', expanded: true })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '3열 7번', expanded: false })).toBeInTheDocument()
   })
 
   it('같은 좌석을 다시 누르면 접힌다', async () => {

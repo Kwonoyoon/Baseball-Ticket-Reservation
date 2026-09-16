@@ -23,10 +23,12 @@ export function ReservedSeatMap({ seats }: ReservedSeatMapProps) {
   const gridRef = useRef<HTMLElement>(null)
 
   // 좌석표가 배치도 아래에 있어 그냥 열면 화면 밖이다. 열릴 때 그쪽으로 내려간다.
+  // 같은 블록 안에서 좌석만 바꿀 때는 이미 보고 있으므로 움직이지 않는다.
+  const openCode = openSeat?.sectionCode ?? null
   useEffect(() => {
-    if (openSeat === null) return
+    if (openCode === null) return
     return scrollPanelIntoView(gridRef.current)
-  }, [openSeat])
+  }, [openCode])
 
   // 한 예매에 여러 블록이 섞일 수 있으므로 블록별로 묶는다.
   const seatsByCode = new Map<string, ReservedSeat[]>()
@@ -155,7 +157,11 @@ export function ReservedSeatMap({ seats }: ReservedSeatMapProps) {
           ref={gridRef}
           aria-label="블록 안 좌석 위치"
         >
-          <BlockSeatGrid seats={seatsByCode.get(openSeat.sectionCode ?? '') ?? []} selected={openSeat} />
+          <BlockSeatGrid
+            seats={seatsByCode.get(openSeat.sectionCode ?? '') ?? []}
+            selected={openSeat}
+            onSelect={setOpenSeat}
+          />
         </section>
       )}
     </div>
