@@ -82,10 +82,13 @@ export function StadiumMap({
           const remaining = remainingBySection.get(section.id)
           const soldOut = remaining === 0
           const selected = (selectedBySection.get(section.id) ?? 0) > 0
+          const isActive = section.id === activeSectionId
           const classes = [
             'stadium-map__block',
             `grade--${section.grade.toLowerCase()}`,
-            section.id === activeSectionId ? 'is-active' : '',
+            isActive ? 'is-active' : '',
+            // 고른 구역만 또렷하게 남기고 나머지는 흐리게 한다.
+            activeSectionId !== null && !isActive ? 'is-dimmed' : '',
             selected ? 'is-selected' : '',
             soldOut ? 'is-sold-out' : '',
           ]
@@ -109,7 +112,7 @@ export function StadiumMap({
                 role="button"
                 tabIndex={soldOut ? -1 : 0}
                 aria-disabled={soldOut}
-                aria-pressed={section.id === activeSectionId}
+                aria-pressed={isActive}
                 aria-label={`${section.name} ${formatPrice(section.price)} ${remainingLabel(remaining)}`}
                 onClick={select}
                 onKeyDown={handleKeyDown}

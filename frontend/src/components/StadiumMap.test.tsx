@@ -51,6 +51,28 @@ describe('StadiumMap', () => {
     expect(onSelect).toHaveBeenCalledWith(12)
   })
 
+  it('고른 구역만 또렷하게 두고 나머지는 흐리게 표시한다', () => {
+    render(
+      <StadiumMap
+        sections={sections}
+        activeSectionId={11}
+        remainingBySection={new Map([
+          [11, 150],
+          [12, 4],
+        ])}
+        selectedBySection={new Map()}
+        onSelect={vi.fn()}
+      />,
+    )
+
+    const active = screen.getByRole('button', { name: /네이비석 1블록/ }).closest('g')
+    const other = screen.getByRole('button', { name: /레드석 1블록/ }).closest('g')
+
+    expect(active).toHaveClass('is-active')
+    expect(active).not.toHaveClass('is-dimmed')
+    expect(other).toHaveClass('is-dimmed')
+  })
+
   it('매진된 블록은 선택할 수 없다', async () => {
     const onSelect = vi.fn()
     render(

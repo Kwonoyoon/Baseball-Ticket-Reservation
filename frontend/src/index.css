@@ -1524,6 +1524,10 @@ p {
   dominant-baseline: middle;
 }
 
+.stadium-map__block {
+  transition: opacity 0.15s;
+}
+
 .stadium-map__block path {
   fill: var(--grade-color, var(--navy-700));
   stroke: #ffffff;
@@ -1538,20 +1542,29 @@ p {
   filter: brightness(1.15);
 }
 
+/* 브라우저 기본 포커스 사각형 대신 블록 모양을 따라가는 표시를 쓴다. */
+.stadium-map__block path:focus,
 .stadium-map__block path:focus-visible {
   outline: none;
+}
+
+.stadium-map__block path:focus-visible {
   stroke: var(--amber-400);
-  stroke-width: 5;
+  stroke-width: 4;
+}
+
+/* 구역을 고르면 고른 블록만 남기고 나머지를 흐리게 해서 어디를 보는지 알려준다. */
+.stadium-map__block.is-dimmed {
+  opacity: 0.3;
 }
 
 .stadium-map__block.is-active path {
-  stroke: var(--navy-900);
-  stroke-width: 5;
+  filter: drop-shadow(0 2px 6px rgb(15 35 64 / 35%));
 }
 
 .stadium-map__block.is-selected path {
   stroke: var(--amber-400);
-  stroke-width: 5;
+  stroke-width: 4;
 }
 
 .stadium-map__block.is-sold-out path {
