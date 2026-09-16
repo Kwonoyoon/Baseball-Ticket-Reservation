@@ -1369,6 +1369,10 @@ p {
     grid-template-columns: 1fr;
   }
 
+  .seat-location__list {
+    position: static;
+  }
+
   .booking__side {
     grid-row: auto;
   }
@@ -1817,6 +1821,9 @@ p {
   margin: 0;
   padding: 0;
   list-style: none;
+  /* 배치도나 좌석표를 내려 봐도 어느 좌석을 보고 있는지 남도록 따라온다. */
+  position: sticky;
+  top: 84px;
 }
 
 /* 배치도에서 칠해진 블록과 같은 색으로 묶어 준다. */
