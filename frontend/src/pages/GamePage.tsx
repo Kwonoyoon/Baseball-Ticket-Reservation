@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { ApiError, errorMessage, isAbortError } from '../api/client'
 import { api } from '../api/endpoints'
@@ -24,6 +24,8 @@ import {
 import { hasStadiumMap } from '../lib/stadiumMap'
 
 const SEAT_REFRESH_INTERVAL_MS = 10_000
+/** 부드러운 스크롤이 끝났을 만한 시간. 이때까지 안 움직였으면 바로 이동시킨다. */
+const SCROLL_FALLBACK_MS = 600
 /** 선점이 풀려 좌석을 처음부터 다시 골라야 하는 오류 */
 const HOLD_LOST_CODES = ['HOLD_EXPIRED', 'SEAT_ALREADY_SOLD', 'BOOKING_CLOSED']
 
@@ -47,6 +49,9 @@ export function GamePage() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CARD')
   const [notice, setNotice] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+
+  // 구역을 고르면 배치도 아래에 있는 좌석 선택 카드로 스스로 내려간다.
+  const seatPanelRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     if (!validGameId) return
@@ -154,6 +159,22 @@ export function GamePage() {
   const remainingQuota = Math.max(0, Math.min(seatLimit, MAX_SEATS) - reservedSeats)
   const quantityOptions = Array.from({ length: remainingQuota }, (_, index) => index + 1)
   const selectableQuantity = Math.min(quantity, Math.max(1, remainingQuota))
+
+  useEffect(() => {
+    if (activeSectionId === null) return
+    const panel = seatPanelRef.current
+    // jsdom 등 scrollIntoView가 없는 환경에서는 건너뛴다.
+    if (!panel?.scrollIntoView) return
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    panel.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' })
+    // 부드러운 이동이 동작하지 않는 환경도 있어, 잠시 뒤에도 카드가 화면 아래에 있으면 바로 옮긴다.
+    const timer = window.setTimeout(() => {
+      if (panel.getBoundingClientRect().top > window.innerHeight / 2) {
+        panel.scrollIntoView({ behavior: 'auto', block: 'start' })
+      }
+    }, SCROLL_FALLBACK_MS)
+    return () => window.clearTimeout(timer)
+  }, [activeSectionId])
 
   const handleExpire = useCallback(() => {
     setHold(null)
@@ -294,7 +315,7 @@ export function GamePage() {
           </section>
 
           {!activeSection && (
-            <section className="panel" aria-labelledby="seat-step-title">
+            <section className="panel" ref={seatPanelRef} aria-labelledby="seat-step-title">
               <h2 id="seat-step-title" className="panel__title">
                 좌석 선택
               </h2>
@@ -305,7 +326,7 @@ export function GamePage() {
           )}
 
           {activeSection && (
-            <section className="panel" aria-labelledby="seat-step-title">
+            <section className="panel" ref={seatPanelRef} aria-labelledby="seat-step-title">
               <div className="panel__header">
                 <h2 id="seat-step-title" className="panel__title">
                   좌석 선택

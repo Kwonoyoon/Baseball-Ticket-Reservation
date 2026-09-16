@@ -643,6 +643,11 @@ p {
   min-width: 0;
 }
 
+/* 구역을 고르면 좌석 선택 카드로 스스로 내려가므로 고정 헤더에 가리지 않게 여백을 둔다. */
+.booking > .panel {
+  scroll-margin-top: 84px;
+}
+
 .booking__side {
   position: sticky;
   top: 84px;
@@ -1513,6 +1518,9 @@ p {
   display: block;
   width: 100%;
   height: auto;
+  /* 배치도가 화면을 다 차지하면 아래 좌석 카드가 너무 멀어진다. */
+  max-height: min(62vh, 620px);
+  margin-inline: auto;
 }
 
 .stadium-map__field {
