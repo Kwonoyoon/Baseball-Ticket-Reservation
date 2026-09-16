@@ -197,6 +197,38 @@ class ReservationFlowIntegrationTest {
     }
 
     @Test
+    void 한_경기에서_4석까지만_예매할_수_있다() throws Exception {
+        String alice = signupAndLogin();
+        String fourSeats = IntStream.rangeClosed(1, 4)
+                .mapToObj(n -> seat(1, n))
+                .collect(Collectors.joining(","));
+
+        hold(alice, fourSeats).andExpect(status().isOk());
+        String body = reserve(alice, fourSeats)
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        long reservationId = ((Number) JsonPath.read(body, "$.id")).longValue();
+
+        mockMvc.perform(get(summaryUrl()).header(HttpHeaders.AUTHORIZATION, bearer(alice)))
+                .andExpect(jsonPath("$.myReservedSeats").value(4))
+                .andExpect(jsonPath("$.maxSeatsPerMember").value(4));
+
+        hold(alice, seat(2, 1))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("SEAT_LIMIT_EXCEEDED"));
+
+        // 취소하면 한도가 다시 생긴다.
+        mockMvc.perform(post("/api/reservations/" + reservationId + "/cancel")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(alice)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get(summaryUrl()).header(HttpHeaders.AUTHORIZATION, bearer(alice)))
+                .andExpect(jsonPath("$.myReservedSeats").value(0));
+
+        hold(alice, seat(2, 1)).andExpect(status().isOk());
+    }
+
+    @Test
     void 좌석_목록은_구역을_지정해야_조회할_수_있다() throws Exception {
         mockMvc.perform(get("/api/games/" + game.getId() + "/seats"))
                 .andExpect(status().isBadRequest())

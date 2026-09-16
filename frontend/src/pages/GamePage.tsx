@@ -38,6 +38,7 @@ export function GamePage() {
   const [sectionStatus, setSectionStatus] = useState<SeatStatus | null>(null)
   const [sectionError, setSectionError] = useState(false)
   const [activeSectionId, setActiveSectionId] = useState<number | null>(null)
+  const [quantity, setQuantity] = useState(1)
   const [selection, setSelection] = useState<SeatPosition[]>([])
   const [hold, setHold] = useState<HoldResult | null>(null)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CARD')
@@ -147,6 +148,13 @@ export function GamePage() {
 
   const totalPrice = activeSelection.reduce((sum, seat) => sum + (sectionsById.get(seat.sectionId)?.price ?? 0), 0)
 
+  // 1인 예매 한도: 이미 예매한 좌석을 빼고 남은 만큼만 고를 수 있다.
+  const seatLimit = summary?.maxSeatsPerMember ?? MAX_SEATS
+  const reservedSeats = summary?.myReservedSeats ?? 0
+  const remainingQuota = Math.max(0, Math.min(seatLimit, MAX_SEATS) - reservedSeats)
+  const quantityOptions = Array.from({ length: remainingQuota }, (_, index) => index + 1)
+  const selectableQuantity = Math.min(quantity, Math.max(1, remainingQuota))
+
   const handleExpire = useCallback(() => {
     setHold(null)
     setNotice('좌석 선점 시간이 만료되었습니다. 좌석을 다시 선택해 주세요.')
@@ -158,19 +166,20 @@ export function GamePage() {
 
   const bookable = isBookable(game.startAt)
   const activeSection = activeSectionId === null ? undefined : sectionsById.get(activeSectionId)
+  const quotaExhausted = isAuthenticated && remainingQuota === 0
 
-  const toggleSeat = (seat: SeatPosition) => {
+  const handleSelectGroup = (seats: SeatPosition[]) => {
     setNotice(null)
-    const key = seatKey(seat)
-    if (selectedKeys.has(key)) {
-      setSelection(activeSelection.filter((selected) => seatKey(selected) !== key))
-      return
-    }
-    if (activeSelection.length >= MAX_SEATS) {
-      setNotice(`한 번에 최대 ${MAX_SEATS}석까지 선택할 수 있습니다.`)
-      return
-    }
-    setSelection([...activeSelection, seat])
+    setSelection(seats)
+  }
+
+  const handleGroupUnavailable = () => {
+    setNotice(`연속된 ${selectableQuantity}석을 찾을 수 없습니다. 다른 자리나 다른 매수를 선택해 주세요.`)
+  }
+
+  const removeSeat = (seat: SeatPosition) => {
+    setNotice(null)
+    setSelection(activeSelection.filter((selected) => seatKey(selected) !== seatKey(seat)))
   }
 
   const handleHold = async () => {
@@ -278,14 +287,49 @@ export function GamePage() {
                   </h2>
                   <SeatLegend />
                 </div>
+
+                {quotaExhausted ? (
+                  <p className="quota-hint quota-hint--blocked" role="status">
+                    이 경기는 최대 {seatLimit}석까지 예매할 수 있습니다. 이미 {reservedSeats}석을 예매하셨습니다.
+                  </p>
+                ) : (
+                  <div className="seat-toolbar">
+                    <div className="quantity-picker" role="group" aria-label="매수 선택">
+                      <span className="quantity-picker__label">매수</span>
+                      {quantityOptions.map((option) => (
+                        <button
+                          key={option}
+                          type="button"
+                          aria-pressed={option === selectableQuantity}
+                          disabled={hold !== null || submitting}
+                          onClick={() => {
+                            setQuantity(option)
+                            setSelection([])
+                            setNotice(null)
+                          }}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="quota-hint">
+                      좌석에 커서를 올리면 연속된 {selectableQuantity}석이 표시됩니다.
+                      {reservedSeats > 0 && ` (이미 ${reservedSeats}석 예매, ${remainingQuota}석 더 선택 가능)`}
+                    </p>
+                  </div>
+                )}
+
                 {currentStatus ? (
                   <SeatMap
                     section={activeSection}
                     soldKeys={soldKeys}
                     heldKeys={heldKeys}
                     selectedKeys={selectedKeys}
-                    disabled={hold !== null || submitting}
-                    onToggle={toggleSeat}
+                    quantity={selectableQuantity}
+                    disabled={hold !== null || submitting || quotaExhausted}
+                    onSelectGroup={handleSelectGroup}
+                    onClearSelection={() => setSelection([])}
+                    onGroupUnavailable={handleGroupUnavailable}
                   />
                 ) : sectionError ? (
                   <ErrorMessage
@@ -306,7 +350,9 @@ export function GamePage() {
               </h2>
 
               {activeSelection.length === 0 ? (
-                <p className="summary__empty">좌석 배치도에서 원하는 좌석을 선택해 주세요. (최대 {MAX_SEATS}석)</p>
+                <p className="summary__empty">
+                  매수를 고르고 좌석 배치도에서 원하는 자리를 선택해 주세요. (한 경기 최대 {seatLimit}석)
+                </p>
               ) : (
                 <ul className="summary__seats">
                   {activeSelection.map((seat) => {
@@ -322,7 +368,7 @@ export function GamePage() {
                             type="button"
                             className="summary__remove"
                             aria-label={`${section?.name} ${seat.rowNo}열 ${seat.seatNo}번 선택 해제`}
-                            onClick={() => toggleSeat(seat)}
+                            onClick={() => removeSeat(seat)}
                           >
                             ×
                           </button>

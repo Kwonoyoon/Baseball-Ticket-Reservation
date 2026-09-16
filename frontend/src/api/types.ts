@@ -71,6 +71,10 @@ export type SectionAvailability = {
 export type SeatSummary = {
   sections: SectionAvailability[]
   myHeldSeats: string[]
+  /** 내가 이 경기에서 이미 예매한 좌석 수 */
+  myReservedSeats: number
+  /** 한 회원이 이 경기에서 예매할 수 있는 최대 좌석 수 */
+  maxSeatsPerMember: number
 }
 
 export type SeatPosition = {

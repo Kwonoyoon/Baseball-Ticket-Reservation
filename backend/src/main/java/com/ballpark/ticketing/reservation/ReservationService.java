@@ -45,18 +45,20 @@ public class ReservationService {
     private final MemberRepository memberRepository;
     private final SeatService seatService;
     private final SeatHoldStore seatHoldStore;
+    private final ReservationQuota reservationQuota;
     private final PaymentGateway paymentGateway;
     private final Clock clock;
     private final SecureRandom random = new SecureRandom();
 
     public ReservationService(ReservationRepository reservationRepository, SoldSeatRepository soldSeatRepository,
             MemberRepository memberRepository, SeatService seatService, SeatHoldStore seatHoldStore,
-            PaymentGateway paymentGateway, Clock clock) {
+            ReservationQuota reservationQuota, PaymentGateway paymentGateway, Clock clock) {
         this.reservationRepository = reservationRepository;
         this.soldSeatRepository = soldSeatRepository;
         this.memberRepository = memberRepository;
         this.seatService = seatService;
         this.seatHoldStore = seatHoldStore;
+        this.reservationQuota = reservationQuota;
         this.paymentGateway = paymentGateway;
         this.clock = clock;
     }
@@ -80,6 +82,9 @@ public class ReservationService {
         if (!allHeldByMember) {
             throw new BusinessException(ErrorCode.HOLD_EXPIRED);
         }
+
+        // 선점 이후 다른 창에서 예매했을 수 있으므로 결제 직전에 한 번 더 확인한다.
+        reservationQuota.ensureWithinLimit(game.getId(), memberId, seats.size());
 
         LocalDateTime now = LocalDateTime.now(clock);
         Member member = memberRepository.getReferenceById(memberId);

@@ -1405,3 +1405,75 @@ p {
     padding: 24px 20px;
   }
 }
+
+/* ---------- 매수 선택 · 연석 미리보기 ---------- */
+
+.seat-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+}
+
+.quantity-picker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.quantity-picker__label {
+  margin-right: 2px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.quantity-picker button {
+  min-width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.quantity-picker button:hover:not(:disabled) {
+  border-color: var(--navy-700);
+}
+
+.quantity-picker button[aria-pressed='true'] {
+  border-color: var(--navy-800);
+  background: var(--navy-800);
+  color: #fff;
+}
+
+.quantity-picker button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.quota-hint {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.quota-hint--blocked {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--red-50);
+  color: #9a2227;
+  font-weight: 600;
+}
+
+/* 커서를 올린 자리부터 선택될 연속 좌석 */
+.seat--preview:not(:disabled) {
+  border-color: var(--navy-800);
+  background: color-mix(in srgb, var(--navy-800) 22%, white);
+  color: var(--navy-900);
+}

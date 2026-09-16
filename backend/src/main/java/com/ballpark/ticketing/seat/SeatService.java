@@ -19,6 +19,7 @@ import com.ballpark.ticketing.game.Game;
 import com.ballpark.ticketing.game.GameRepository;
 import com.ballpark.ticketing.global.error.BusinessException;
 import com.ballpark.ticketing.global.error.ErrorCode;
+import com.ballpark.ticketing.reservation.ReservationQuota;
 import com.ballpark.ticketing.reservation.SoldSeatRepository;
 import com.ballpark.ticketing.reservation.SoldSeatRepository.SectionSoldCount;
 import com.ballpark.ticketing.seat.dto.HoldResponse;
@@ -43,16 +44,18 @@ public class SeatService {
     private final SoldSeatRepository soldSeatRepository;
     private final SeatHoldStore seatHoldStore;
     private final SeatHoldProperties properties;
+    private final ReservationQuota reservationQuota;
     private final Clock clock;
 
     public SeatService(GameRepository gameRepository, SeatSectionRepository seatSectionRepository,
             SoldSeatRepository soldSeatRepository, SeatHoldStore seatHoldStore, SeatHoldProperties properties,
-            Clock clock) {
+            ReservationQuota reservationQuota, Clock clock) {
         this.gameRepository = gameRepository;
         this.seatSectionRepository = seatSectionRepository;
         this.soldSeatRepository = soldSeatRepository;
         this.seatHoldStore = seatHoldStore;
         this.properties = properties;
+        this.reservationQuota = reservationQuota;
         this.clock = clock;
     }
 
@@ -81,7 +84,7 @@ public class SeatService {
         return new SeatStatusResponse(section.getId(), sold, held, mine);
     }
 
-    /** 구장 화면용 구역별 잔여석 요약. 좌석 목록은 읽지 않는다. */
+    /** 구장 화면용 구역별 잔여석 요약과 회원의 예매 한도. 좌석 목록은 읽지 않는다. */
     public SeatSummaryResponse getSeatSummary(Long gameId, Long memberId) {
         Game game = findGame(gameId);
         List<SeatSection> sections = findSections(game);
@@ -105,7 +108,8 @@ public class SeatService {
                         .sorted()
                         .toList();
 
-        return new SeatSummaryResponse(availabilities, myHeldSeats);
+        return new SeatSummaryResponse(availabilities, myHeldSeats,
+                reservationQuota.countReservedSeats(gameId, memberId), reservationQuota.maxSeatsPerGame());
     }
 
     /**
@@ -114,6 +118,9 @@ public class SeatService {
     public HoldResponse hold(Long gameId, Long memberId, List<SeatPosition> seats) {
         Game game = findBookableGame(gameId);
         Set<SeatPosition> requested = validateSeats(game, seats).keySet();
+
+        // 결제 단계에서 막히지 않도록 선점 단계에서 1인 예매 한도를 먼저 확인한다.
+        reservationQuota.ensureWithinLimit(gameId, memberId, requested.size());
 
         // 요청한 좌석만 확인한다. 경기 전체 판매 좌석을 읽지 않는다.
         for (SeatPosition seat : requested) {
