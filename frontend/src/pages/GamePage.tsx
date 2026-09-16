@@ -6,6 +6,7 @@ import type { GameDetail, HoldResult, PaymentMethod, SeatPosition, SeatStatus, S
 import { useAuth } from '../auth/useAuth'
 import { HoldCountdown } from '../components/HoldCountdown'
 import { SeatLegend, SeatMap } from '../components/SeatMap'
+import { SeatPriceList } from '../components/SeatPriceList'
 import { StadiumMap } from '../components/StadiumMap'
 import { StadiumOverview } from '../components/StadiumOverview'
 import { EmptyState, ErrorMessage, Loading } from '../components/StatusView'
@@ -268,30 +269,37 @@ export function GamePage() {
       ) : (
         <div className="booking">
           <div className="booking__main">
-            <section className="panel" aria-label="구역 선택">
-              {hasStadiumMap(game.sections) ? (
-                <StadiumMap
-                  sections={game.sections}
-                  activeSectionId={activeSectionId}
-                  remainingBySection={remainingBySection}
-                  selectedBySection={selectedBySection}
-                  onSelect={handleSelectSection}
-                />
-              ) : (
-                <StadiumOverview
-                  sections={game.sections}
-                  activeSectionId={activeSectionId}
-                  remainingBySection={remainingBySection}
-                  selectedBySection={selectedBySection}
-                  onSelect={handleSelectSection}
-                />
-              )}
-            </section>
+            <div className="booking__stadium">
+              <section className="panel seat-price-card" aria-label="좌석 가격">
+                <h2 className="panel__title">좌석 가격</h2>
+                <SeatPriceList sections={game.sections} />
+              </section>
+
+              <section className="panel" aria-label="구역 선택">
+                {hasStadiumMap(game.sections) ? (
+                  <StadiumMap
+                    sections={game.sections}
+                    activeSectionId={activeSectionId}
+                    remainingBySection={remainingBySection}
+                    selectedBySection={selectedBySection}
+                    onSelect={handleSelectSection}
+                  />
+                ) : (
+                  <StadiumOverview
+                    sections={game.sections}
+                    activeSectionId={activeSectionId}
+                    remainingBySection={remainingBySection}
+                    selectedBySection={selectedBySection}
+                    onSelect={handleSelectSection}
+                  />
+                )}
+              </section>
+            </div>
 
             {!activeSection && (
               <section className="panel" aria-labelledby="seat-step-title">
                 <h2 id="seat-step-title" className="panel__title">
-                  2. 좌석 선택
+                  좌석 선택
                 </h2>
                 <p className="summary__empty">
                   먼저 위 배치도에서 구역을 선택해 주세요. 블록을 누르면 그 구역의 좌석이 나타납니다.
@@ -303,7 +311,7 @@ export function GamePage() {
               <section className="panel" aria-labelledby="seat-step-title">
                 <div className="panel__header">
                   <h2 id="seat-step-title" className="panel__title">
-                    2. 좌석 선택
+                    좌석 선택
                     <span className="panel__subtitle">
                       {activeSection.name} · {formatPrice(activeSection.price)}
                     </span>
@@ -369,7 +377,7 @@ export function GamePage() {
           <aside className="booking__side">
             <section className="panel summary" aria-labelledby="summary-title">
               <h2 id="summary-title" className="panel__title">
-                {hold ? '3. 결제' : '선택한 좌석'}
+                {hold ? '결제' : '선택한 좌석'}
               </h2>
 
               {activeSelection.length === 0 ? (

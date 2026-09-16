@@ -112,27 +112,6 @@ describe('StadiumMap', () => {
     expect(onSelect).not.toHaveBeenCalled()
   })
 
-  it('등급별 가격 범례를 비싼 순으로 보여준다', () => {
-    render(
-      <StadiumMap
-        sections={sections}
-        activeSectionId={null}
-        remainingBySection={new Map([
-          [11, 150],
-          [12, 4],
-        ])}
-        selectedBySection={new Map()}
-        onSelect={vi.fn()}
-      />,
-    )
-
-    const legend = screen.getByRole('list', { name: '좌석 등급별 가격' })
-    expect(legend).toHaveTextContent('레드석 16,000원')
-    expect(legend).toHaveTextContent('네이비석 12,000원')
-    // 잔여석은 범례가 아니라 커서를 올렸을 때 보여준다.
-    expect(legend).not.toHaveTextContent('잔여')
-  })
-
   it('커서를 올리면 블록 이름과 잔여석을 보여준다', async () => {
     render(
       <StadiumMap

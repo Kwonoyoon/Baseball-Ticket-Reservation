@@ -1315,6 +1315,14 @@ p {
     grid-template-columns: 1fr;
   }
 
+  .booking__stadium {
+    grid-template-columns: 1fr;
+  }
+
+  .seat-price-card {
+    position: static;
+  }
+
   .booking__side {
     position: static;
   }
@@ -1589,32 +1597,55 @@ p {
   pointer-events: none;
 }
 
-.stadium-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-  margin: 14px 0 0;
+/* 배치도 왼쪽 가격 카드 */
+.booking__stadium {
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.seat-price-card {
+  position: sticky;
+  top: 84px;
+}
+
+.seat-price-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
   padding: 0;
-  color: var(--text-muted);
-  font-size: 13px;
   list-style: none;
 }
 
-.stadium-legend li {
+.seat-price-list li {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
 }
 
-.stadium-legend strong {
-  color: var(--text);
+.seat-price-list li:last-child {
+  border-bottom: 0;
 }
 
-.stadium-legend__chip {
-  width: 13px;
-  height: 13px;
+.seat-price-list__chip {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 auto;
   border-radius: 4px;
   background: var(--grade-color, var(--navy-700));
+}
+
+.seat-price-list__label {
+  color: var(--text-muted);
+}
+
+.seat-price-list__price {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
 }
 
 /* 커서를 올린 블록의 이름과 잔여석 */

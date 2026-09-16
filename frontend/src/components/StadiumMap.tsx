@@ -44,17 +44,6 @@ export function StadiumMap({
     sections.filter((section) => section.code !== null).map((section) => [section.code as string, section]),
   )
 
-  // 범례는 등급 단위로 묶어 가격을 보여준다. (블록이 53개라 블록마다 적으면 읽기 어렵다)
-  const grades = new Map<string, { grade: string; label: string; price: number }>()
-  for (const section of sections) {
-    const current = grades.get(section.grade)
-    grades.set(section.grade, {
-      grade: section.grade,
-      label: section.gradeLabel,
-      price: Math.min(current?.price ?? section.price, section.price),
-    })
-  }
-  const legend = [...grades.values()].sort((a, b) => b.price - a.price)
 
   const showTooltip = (section: SeatSection, point: { clientX: number; clientY: number }) => {
     const bounds = containerRef.current?.getBoundingClientRect()
@@ -186,14 +175,6 @@ export function StadiumMap({
         </div>
       )}
 
-      <ul className="stadium-legend" aria-label="좌석 등급별 가격">
-        {legend.map((grade) => (
-          <li key={grade.grade} className={`grade--${grade.grade.toLowerCase()}`}>
-            <span className="stadium-legend__chip" aria-hidden="true" />
-            {grade.label} <strong>{formatPrice(grade.price)}</strong>
-          </li>
-        ))}
-      </ul>
     </div>
   )
 }
