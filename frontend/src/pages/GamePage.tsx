@@ -6,6 +6,7 @@ import type { GameDetail, HoldResult, PaymentMethod, SeatPosition, SeatStatus, S
 import { useAuth } from '../auth/useAuth'
 import { HoldCountdown } from '../components/HoldCountdown'
 import { SeatLegend, SeatMap } from '../components/SeatMap'
+import { StadiumMap } from '../components/StadiumMap'
 import { StadiumOverview } from '../components/StadiumOverview'
 import { EmptyState, ErrorMessage, Loading } from '../components/StatusView'
 import { TeamMark } from '../components/TeamMark'
@@ -19,6 +20,7 @@ import {
   PAYMENT_METHODS,
   seatKey,
 } from '../lib/format'
+import { hasStadiumMap } from '../lib/stadiumMap'
 
 const SEAT_REFRESH_INTERVAL_MS = 10_000
 /** 선점이 풀려 좌석을 처음부터 다시 골라야 하는 오류 */
@@ -267,13 +269,23 @@ export function GamePage() {
               <h2 id="section-step-title" className="panel__title">
                 1. 구역 선택
               </h2>
-              <StadiumOverview
-                sections={game.sections}
-                activeSectionId={activeSectionId}
-                remainingBySection={remainingBySection}
-                selectedBySection={selectedBySection}
-                onSelect={setActiveSectionId}
-              />
+              {hasStadiumMap(game.sections) ? (
+                <StadiumMap
+                  sections={game.sections}
+                  activeSectionId={activeSectionId}
+                  remainingBySection={remainingBySection}
+                  selectedBySection={selectedBySection}
+                  onSelect={setActiveSectionId}
+                />
+              ) : (
+                <StadiumOverview
+                  sections={game.sections}
+                  activeSectionId={activeSectionId}
+                  remainingBySection={remainingBySection}
+                  selectedBySection={selectedBySection}
+                  onSelect={setActiveSectionId}
+                />
+              )}
             </section>
 
             {activeSection && (

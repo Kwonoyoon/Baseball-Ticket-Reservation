@@ -45,7 +45,7 @@ public class GameService {
         Game game = gameRepository.findWithTeamsById(gameId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.GAME_NOT_FOUND));
         List<SeatSectionResponse> sections = seatSectionRepository
-                .findByStadiumIdOrderByDisplayOrder(game.getStadium().getId()).stream()
+                .findByStadiumIdAndActiveTrueOrderByDisplayOrder(game.getStadium().getId()).stream()
                 .map(SeatSectionResponse::from)
                 .toList();
         return GameDetailResponse.of(game, sections);

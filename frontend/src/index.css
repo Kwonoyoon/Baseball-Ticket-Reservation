@@ -16,8 +16,14 @@
   --text: #16202e;
   --text-muted: #5b6a7f;
 
-  --grade-premium: #7a4bd1;
-  --grade-table: #d9480f;
+  /* 좌석 등급 색 (좌석 배치도와 좌석 격자가 함께 쓴다) */
+  --grade-premium: #2f86d6;
+  --grade-exciting: #d9a32b;
+  --grade-table: #7b4bd1;
+  --grade-blue: #1f6fd0;
+  --grade-orange: #e07b33;
+  --grade-red: #c23b4a;
+  --grade-navy: #28356b;
   --grade-infield: #1c6fd1;
   --grade-outfield: #2f8a57;
 
@@ -681,8 +687,28 @@ p {
   --grade-color: var(--grade-premium);
 }
 
+.grade--exciting {
+  --grade-color: var(--grade-exciting);
+}
+
 .grade--table {
   --grade-color: var(--grade-table);
+}
+
+.grade--blue {
+  --grade-color: var(--grade-blue);
+}
+
+.grade--orange {
+  --grade-color: var(--grade-orange);
+}
+
+.grade--red {
+  --grade-color: var(--grade-red);
+}
+
+.grade--navy {
+  --grade-color: var(--grade-navy);
 }
 
 .grade--infield {
@@ -1476,4 +1502,105 @@ p {
   border-color: var(--navy-800);
   background: color-mix(in srgb, var(--navy-800) 22%, white);
   color: var(--navy-900);
+}
+
+/* ---------- 좌석 배치도 (블록 선택) ---------- */
+
+.stadium-map svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.stadium-map__field {
+  opacity: 0.45;
+}
+
+.stadium-map__base {
+  fill: var(--text-muted);
+  font-size: 17px;
+  font-weight: 600;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.stadium-map__block path {
+  fill: var(--grade-color, var(--navy-700));
+  stroke: #ffffff;
+  stroke-width: 2.5;
+  cursor: pointer;
+  transition:
+    filter 0.15s,
+    stroke 0.15s;
+}
+
+.stadium-map__block path:hover {
+  filter: brightness(1.15);
+}
+
+.stadium-map__block path:focus-visible {
+  outline: none;
+  stroke: var(--amber-400);
+  stroke-width: 5;
+}
+
+.stadium-map__block.is-active path {
+  stroke: var(--navy-900);
+  stroke-width: 5;
+}
+
+.stadium-map__block.is-selected path {
+  stroke: var(--amber-400);
+  stroke-width: 5;
+}
+
+.stadium-map__block.is-sold-out path {
+  fill: #c9cfda;
+  cursor: not-allowed;
+}
+
+.stadium-map__block.is-sold-out path:hover {
+  filter: none;
+}
+
+.stadium-map__number {
+  fill: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+
+.stadium-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 14px 0 0;
+  padding: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  list-style: none;
+}
+
+.stadium-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stadium-legend strong {
+  color: var(--text);
+}
+
+.stadium-legend__chip {
+  width: 13px;
+  height: 13px;
+  border-radius: 4px;
+  background: var(--grade-color, var(--navy-700));
+}
+
+.stadium-legend__remaining::before {
+  content: '·';
+  margin-right: 6px;
 }

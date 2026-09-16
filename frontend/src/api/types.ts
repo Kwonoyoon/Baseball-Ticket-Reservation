@@ -35,10 +35,21 @@ export type GameSummary = {
   stadium: Stadium
 }
 
-export type SeatGrade = 'PREMIUM' | 'TABLE' | 'INFIELD' | 'OUTFIELD'
+export type SeatGrade =
+  | 'PREMIUM'
+  | 'EXCITING'
+  | 'TABLE'
+  | 'BLUE'
+  | 'ORANGE'
+  | 'RED'
+  | 'NAVY'
+  | 'INFIELD'
+  | 'OUTFIELD'
 
 export type SeatSection = {
   id: number
+  /** 좌석 배치도의 블록 코드 (예: NAVY-05). 배치도가 없는 구장은 null */
+  code: string | null
   name: string
   grade: SeatGrade
   gradeLabel: string

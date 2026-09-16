@@ -194,7 +194,7 @@ public class SeatService {
     }
 
     private List<SeatSection> findSections(Game game) {
-        return seatSectionRepository.findByStadiumIdOrderByDisplayOrder(game.getStadium().getId());
+        return seatSectionRepository.findByStadiumIdAndActiveTrueOrderByDisplayOrder(game.getStadium().getId());
     }
 
     private SeatSection findSection(Game game, Long sectionId) {

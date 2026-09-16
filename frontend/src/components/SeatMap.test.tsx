@@ -6,6 +6,7 @@ import { SeatMap } from './SeatMap'
 
 const section: SeatSection = {
   id: 5,
+  code: null,
   name: '1루 테이블석',
   grade: 'TABLE',
   gradeLabel: '테이블석',

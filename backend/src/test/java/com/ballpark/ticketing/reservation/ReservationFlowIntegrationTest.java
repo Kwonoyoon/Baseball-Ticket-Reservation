@@ -55,6 +55,7 @@ class ReservationFlowIntegrationTest {
 
     private Game game;
     private SeatSection section;
+    private int sectionCount;
 
     @BeforeEach
     void setUp() {
@@ -62,7 +63,10 @@ class ReservationFlowIntegrationTest {
         Team home = teams.get(0);
         Team away = teams.get(1);
         game = gameRepository.save(new Game(home, away, home.getStadium(), LocalDateTime.now(clock).plusDays(1)));
-        section = seatSectionRepository.findByStadiumIdOrderByDisplayOrder(home.getStadium().getId()).getFirst();
+        List<SeatSection> sections = seatSectionRepository
+                .findByStadiumIdAndActiveTrueOrderByDisplayOrder(home.getStadium().getId());
+        section = sections.getFirst();
+        sectionCount = sections.size();
     }
 
     @Test
@@ -175,7 +179,7 @@ class ReservationFlowIntegrationTest {
 
         mockMvc.perform(get(summaryUrl()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.sections.length()").value(6))
+                .andExpect(jsonPath("$.sections.length()").value(sectionCount))
                 .andExpect(jsonPath(sectionPath + ".totalSeats").value(hasItem(totalSeats)))
                 .andExpect(jsonPath(sectionPath + ".availableSeats").value(hasItem(totalSeats)))
                 .andExpect(jsonPath("$.myHeldSeats").isEmpty());
@@ -248,7 +252,7 @@ class ReservationFlowIntegrationTest {
         mockMvc.perform(get("/api/games/" + game.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.stadium.name").exists())
-                .andExpect(jsonPath("$.sections.length()").value(6));
+                .andExpect(jsonPath("$.sections.length()").value(sectionCount));
 
         mockMvc.perform(get("/api/games/999999"))
                 .andExpect(status().isNotFound())

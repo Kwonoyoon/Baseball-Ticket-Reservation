@@ -7,6 +7,7 @@ import { StadiumOverview } from './StadiumOverview'
 const sections: SeatSection[] = [
   {
     id: 1,
+    code: null,
     name: '1루 내야석',
     grade: 'INFIELD',
     gradeLabel: '내야석',
@@ -16,6 +17,7 @@ const sections: SeatSection[] = [
   },
   {
     id: 2,
+    code: null,
     name: '외야 자유석',
     grade: 'OUTFIELD',
     gradeLabel: '외야석',
