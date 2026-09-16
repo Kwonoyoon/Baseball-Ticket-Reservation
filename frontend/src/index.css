@@ -1405,11 +1405,17 @@ p {
 .my-ticket__details dt { color: var(--text-muted); font-size: 12px; font-weight: 700; }
 .my-ticket__details dd { margin: 0; font-size: 14px; font-weight: 800; }
 .my-ticket__qr-error { color: var(--red-500); }
-.my-ticket__stage { position: relative; }
-.my-ticket__nav { position: absolute; z-index: 1; top: 50%; display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid var(--border); border-radius: 50%; background: var(--surface); box-shadow: 0 3px 12px rgb(15 35 64 / 18%); color: var(--navy-800); font-size: 32px; line-height: 1; cursor: pointer; transform: translateY(-50%); }
-.my-ticket__nav:hover { border-color: var(--navy-700); background: var(--navy-700); color: #fff; }
-.my-ticket__nav--previous { left: -58px; }
-.my-ticket__nav--next { right: -58px; }
+.my-ticket__stage { position: relative; overflow: hidden; border-radius: var(--radius-lg); }
+.my-ticket__nav { position: absolute; z-index: 2; top: 50%; display: grid; place-items: center; width: 46px; height: 46px; border: 0; border-radius: 14px; background: var(--navy-800); box-shadow: 0 8px 20px rgb(15 35 64 / 28%); color: #fff; cursor: pointer; opacity: 0.94; transform: translateY(-50%); transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease; }
+.my-ticket__nav:hover { background: var(--navy-700); box-shadow: 0 10px 24px rgb(15 35 64 / 35%); opacity: 1; transform: translateY(-50%) scale(1.06); }
+.my-ticket__nav:focus-visible { outline: 3px solid var(--amber-400); outline-offset: 3px; }
+.my-ticket__nav svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.4; }
+.my-ticket__nav--previous { left: 14px; }
+.my-ticket__nav--next { right: 14px; }
+.my-ticket__card.is-sliding-next { animation: ticket-slide-from-right 280ms cubic-bezier(.22, .8, .28, 1); }
+.my-ticket__card.is-sliding-previous { animation: ticket-slide-from-left 280ms cubic-bezier(.22, .8, .28, 1); }
+@keyframes ticket-slide-from-right { from { opacity: 0; transform: translateX(48px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes ticket-slide-from-left { from { opacity: 0; transform: translateX(-48px); } to { opacity: 1; transform: translateX(0); } }
 .my-ticket__ticket-count { margin: 12px 0 0; color: var(--text-muted); font-size: 13px; text-align: center; }
 .empty-ticket { max-width: 520px; margin: 40px auto; padding: 40px 24px; border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); text-align: center; }
 .empty-ticket p { margin: 8px 0 20px; color: var(--text-muted); }

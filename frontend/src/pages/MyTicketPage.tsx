@@ -22,7 +22,7 @@ function sortTicketsByGameTime(reservations: Reservation[]) {
   })
 }
 
-function TicketCard({ ticket }: { ticket: Reservation }) {
+function TicketCard({ ticket, direction }: { ticket: Reservation; direction?: 'next' | 'previous' }) {
   const [qrImage, setQrImage] = useState<string | null>(null)
   const [expiresAt, setExpiresAt] = useState(0)
   const [secondsLeft, setSecondsLeft] = useState(30)
@@ -63,7 +63,7 @@ function TicketCard({ ticket }: { ticket: Reservation }) {
   const seatLabel = ticket.seats.map((seat) => `${seat.sectionName} ${seat.rowNo}열 ${seat.seatNo}번`).join(', ')
 
   return (
-    <article className="my-ticket__card">
+    <article className={`my-ticket__card${direction ? ` is-sliding-${direction}` : ''}`}>
       <header className="my-ticket__header"><div className="my-ticket__brand">볼파크 티켓</div><span className="my-ticket__status">입장 가능</span></header>
       <div className="my-ticket__content">
         <p className="my-ticket__league">KBO 리그 · {formatGameDate(game.startAt)} {formatTime(game.startAt)}</p>
@@ -93,6 +93,7 @@ function TicketCard({ ticket }: { ticket: Reservation }) {
 export function MyTicketPage() {
   const [tickets, setTickets] = useState<Reservation[] | null>(null)
   const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [slideDirection, setSlideDirection] = useState<'next' | 'previous'>('next')
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -109,6 +110,12 @@ export function MyTicketPage() {
 
   const selectedTicket = useMemo(() => tickets?.find((item) => item.id === selectedId) ?? null, [tickets, selectedId])
   const selectedIndex = tickets?.findIndex((item) => item.id === selectedId) ?? -1
+  const moveTicket = (direction: 'next' | 'previous') => {
+    if (!tickets || selectedIndex < 0) return
+    const offset = direction === 'next' ? 1 : -1
+    setSlideDirection(direction)
+    setSelectedId(tickets[(selectedIndex + offset + tickets.length) % tickets.length].id)
+  }
 
   if (error) return <ErrorMessage message={error} />
   if (tickets === null) return <Loading label="내 티켓을 불러오는 중…" />
@@ -123,9 +130,9 @@ export function MyTicketPage() {
         </select>
       </label>}
       <div className="my-ticket__stage">
-        {tickets.length > 1 && <button type="button" className="my-ticket__nav my-ticket__nav--previous" onClick={() => setSelectedId(tickets[(selectedIndex - 1 + tickets.length) % tickets.length].id)} aria-label="이전 티켓">‹</button>}
-        <TicketCard ticket={selectedTicket} />
-        {tickets.length > 1 && <button type="button" className="my-ticket__nav my-ticket__nav--next" onClick={() => setSelectedId(tickets[(selectedIndex + 1) % tickets.length].id)} aria-label="다음 티켓">›</button>}
+        {tickets.length > 1 && <button type="button" className="my-ticket__nav my-ticket__nav--previous" onClick={() => moveTicket('previous')} aria-label="이전 티켓"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 5-7 7 7 7" /></svg></button>}
+        <TicketCard key={selectedTicket.id} ticket={selectedTicket} direction={slideDirection} />
+        {tickets.length > 1 && <button type="button" className="my-ticket__nav my-ticket__nav--next" onClick={() => moveTicket('next')} aria-label="다음 티켓"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 5 7 7-7 7" /></svg></button>}
       </div>
       {tickets.length > 1 && <p className="my-ticket__ticket-count">{selectedIndex + 1} / {tickets.length} 티켓</p>}
     </section>
