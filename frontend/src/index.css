@@ -1874,6 +1874,8 @@ p {
 /* 블록 안 좌석표 (예매 화면과 같은 모양, 읽기 전용) */
 .seat-location__grid {
   grid-column: 1 / -1;
+  /* 열릴 때 이쪽으로 내려오므로 고정 헤더에 가리지 않게 여백을 둔다. */
+  scroll-margin-top: 84px;
 }
 
 .block-grid {
@@ -1902,10 +1904,11 @@ p {
 }
 
 /* 목록에서 고른 좌석 하나는 테두리로 더 짚어 준다. */
+/* 바깥이 아니라 안쪽에 그려야 첫 줄에서 테두리가 잘리지 않는다. */
 .block-grid .seat.is-focus {
   box-shadow:
-    0 0 0 2px #ffffff,
-    0 0 0 4px var(--navy-900);
+    inset 0 0 0 1px #ffffff,
+    inset 0 0 0 3px var(--navy-900);
 }
 
 .block-grid__caption {

@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ReservedSeat } from '../api/types'
 import { seatKey } from '../lib/format'
+import { scrollPanelIntoView } from '../lib/panelScroll'
 import {
   FIELD_LINES,
   FIELD_MARKS,
@@ -19,6 +20,13 @@ type ReservedSeatMapProps = {
 export function ReservedSeatMap({ seats }: ReservedSeatMapProps) {
   // 좌석을 누르면 블록 안 어디에 앉는지 아래에 펼친다.
   const [openSeat, setOpenSeat] = useState<ReservedSeat | null>(null)
+  const gridRef = useRef<HTMLElement>(null)
+
+  // 좌석표가 배치도 아래에 있어 그냥 열면 화면 밖이다. 열릴 때 그쪽으로 내려간다.
+  useEffect(() => {
+    if (openSeat === null) return
+    return scrollPanelIntoView(gridRef.current)
+  }, [openSeat])
 
   // 한 예매에 여러 블록이 섞일 수 있으므로 블록별로 묶는다.
   const seatsByCode = new Map<string, ReservedSeat[]>()
@@ -141,7 +149,12 @@ export function ReservedSeatMap({ seats }: ReservedSeatMapProps) {
       </svg>
 
       {openSeat && (
-        <section id="reserved-seat-grid" className="seat-location__grid" aria-label="블록 안 좌석 위치">
+        <section
+          id="reserved-seat-grid"
+          className="seat-location__grid"
+          ref={gridRef}
+          aria-label="블록 안 좌석 위치"
+        >
           <BlockSeatGrid seats={seatsByCode.get(openSeat.sectionCode ?? '') ?? []} selected={openSeat} />
         </section>
       )}
