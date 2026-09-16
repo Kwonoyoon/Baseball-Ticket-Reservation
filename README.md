@@ -17,7 +17,9 @@
 ## 주요 기능
 
 - 날짜/구단별 경기 일정 조회 (Spring Cache로 캐시)
-- 구장 구역 선택 → 좌석 배치도에서 최대 4석 선택
+- **좌석 배치도**: 9개 구장 모두 등급별 8색 · 53개 블록을 클릭해 원하는 구역만 예매
+- 구역 선택 → 좌석 배치도에서 좌석 선택 (**매수를 고르면 커서 위치 기준 연석 자동 선택**)
+- **1인 예매 제한**: 한 경기에서 한 회원은 최대 4석까지 (취소하면 한도 복구)
 - **Redis 좌석 선점**: 결제 전 5분간 좌석을 선점하고, 다른 고객에게는 "선택 중"으로 표시
 - 가상 결제로 예매 확정, 예매 내역 조회 및 경기 시작 전 취소
 - JWT 기반 회원가입/로그인
@@ -44,8 +46,24 @@
 backend/    Spring Boot API (도메인별 패키지: member, game, seat, reservation ...)
 frontend/   React SPA
 nginx/      프론트엔드 빌드 + 리버스 프록시 이미지
+scripts/    좌석 배치도 생성기
 docker-compose.yml
 ```
+
+### 좌석 배치도
+
+배치도는 좌표를 직접 계산해 그린 것으로, 아래 생성기로 만듭니다. (외부 배치도를 복사하지 않았습니다)
+블록 구조는 **9개 구장이 모두 같습니다.**
+
+```bash
+cd scripts && python generate-stadium-map.py
+```
+
+생성물은 `scripts/out/`에 만들어지고, `zone_code`로 서로 연결됩니다.
+
+- `stadiumBlocks.ts` → `frontend/src/lib/stadiumBlocks.ts` (직접 수정하지 말고 생성기를 고칠 것)
+- `stadium-blocks.sql` → 새 Flyway 마이그레이션 (이미 적용된 마이그레이션은 고치지 않습니다)
+- `stadium-map.svg` — 눈으로 확인할 때 쓰는 미리보기
 
 ## 실행 방법
 
@@ -110,7 +128,8 @@ cd frontend && npm run test:run   # 포맷 유틸, 좌석 배치도, 로그인 �
 | GET | `/api/teams` | | 구단 목록 |
 | GET | `/api/games?date=YYYY-MM-DD&teamId=` | | 경기 일정 |
 | GET | `/api/games/{gameId}` | | 경기 상세 + 좌석 구역 |
-| GET | `/api/games/{gameId}/seats` | 선택 | 실시간 좌석 현황 (판매/선점/내 선점) |
+| GET | `/api/games/{gameId}/seats?sectionId=` | 선택 | 한 구역의 실시간 좌석 현황 (판매/선점/내 선점) |
+| GET | `/api/games/{gameId}/seats/summary` | 선택 | 구역별 잔여석 요약 (구장 화면용, 좌석 목록 없음) |
 | POST | `/api/games/{gameId}/holds` | ✅ | 좌석 선점 |
 | DELETE | `/api/games/{gameId}/holds` | ✅ | 내 선점 해제 |
 | POST | `/api/reservations` | ✅ | 예매(결제) |

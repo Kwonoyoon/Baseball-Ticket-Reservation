@@ -27,6 +27,10 @@ public class SeatSection {
     @JoinColumn(name = "stadium_id")
     private Stadium stadium;
 
+    /** 좌석 배치도의 블록 코드 (예: NAVY-05). 배치도가 없는 구장은 비어 있다. */
+    @Column(length = 20)
+    private String zoneCode;
+
     @Column(nullable = false, length = 50)
     private String name;
 
@@ -46,6 +50,10 @@ public class SeatSection {
     @Column(nullable = false)
     private int displayOrder;
 
+    /** 판매하지 않는 과거 구역은 false. 예매 이력 때문에 삭제하지 않고 숨긴다. */
+    @Column(nullable = false)
+    private boolean active = true;
+
     protected SeatSection() {
     }
 
@@ -59,6 +67,14 @@ public class SeatSection {
 
     public Stadium getStadium() {
         return stadium;
+    }
+
+    public String getZoneCode() {
+        return zoneCode;
+    }
+
+    public boolean isActive() {
+        return active;
     }
 
     public String getName() {

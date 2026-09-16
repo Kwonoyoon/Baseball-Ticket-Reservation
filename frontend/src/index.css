@@ -16,8 +16,14 @@
   --text: #16202e;
   --text-muted: #5b6a7f;
 
-  --grade-premium: #7a4bd1;
-  --grade-table: #d9480f;
+  /* 좌석 등급 색 (좌석 배치도와 좌석 격자가 함께 쓴다) */
+  --grade-premium: #2f86d6;
+  --grade-exciting: #d9a32b;
+  --grade-table: #7b4bd1;
+  --grade-blue: #1f6fd0;
+  --grade-orange: #e07b33;
+  --grade-red: #c23b4a;
+  --grade-navy: #28356b;
   --grade-infield: #1c6fd1;
   --grade-outfield: #2f8a57;
 
@@ -556,6 +562,23 @@ p {
   font-size: 16px;
 }
 
+/* 구단 로고는 색이 저마다 달라 흰 바탕에 올리고, 구단 색은 테두리로 남긴다. */
+.team-mark--logo {
+  padding: 5px;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 2px var(--team-color);
+}
+
+.team-mark--logo.team-mark--lg {
+  padding: 8px;
+}
+
+.team-mark__logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 /* ---------- 경기 상세 / 좌석 선택 ---------- */
 
 .back-link {
@@ -624,22 +647,49 @@ p {
   font-weight: 600;
 }
 
+/* 위: 좌석 가격(전체 폭) / 아래: 왼쪽에 경기장·좌석 선택, 오른쪽에 결제 */
 .booking {
   display: grid;
+  /* 좌석 배치도(max-content)가 열 너비를 밀어내지 않도록 최소 너비를 0으로 둔다. */
   grid-template-columns: minmax(0, 1fr) 340px;
   align-items: start;
   gap: 20px;
 }
 
-.booking__main {
-  display: grid;
-  /* 좌석 배치도(max-content)가 열 너비를 밀어내지 않도록 최소 너비를 0으로 둔다. */
-  grid-template-columns: minmax(0, 1fr);
-  gap: 20px;
+.booking > * {
   min-width: 0;
+  /* 경기장과 좌석 선택 카드는 왼쪽 열에 세로로 쌓는다. */
+  grid-column: 1;
 }
 
+/* 좌석 가격과 좌석 선택은 결제 카드 끝까지 폭을 쓴다. */
+.seat-price-card,
+.seat-select-card {
+  grid-column: 1 / -1;
+}
+
+/* 결제 카드는 오른쪽 열에서 경기장 배치도 옆에 선다. */
 .booking__side {
+  grid-row: 2;
+  grid-column: 2;
+}
+
+/* 구역을 고르면 좌석 선택 카드로 스스로 내려가므로 고정 헤더에 가리지 않게 여백을 둔다. */
+.booking > .panel {
+  scroll-margin-top: 84px;
+}
+
+/* 결제 카드가 우측에 고정되는 넓은 화면에서는 하단 결제 바가 필요 없다. */
+.booking-action-bar {
+  display: none;
+}
+
+/* 배치도 옆 칸을 그대로 채운다. 결제 카드는 이 칸 안에서만 따라 내려간다. */
+.booking__side {
+  align-self: stretch;
+}
+
+.booking__side > .panel {
   position: sticky;
   top: 84px;
 }
@@ -681,8 +731,28 @@ p {
   --grade-color: var(--grade-premium);
 }
 
+.grade--exciting {
+  --grade-color: var(--grade-exciting);
+}
+
 .grade--table {
   --grade-color: var(--grade-table);
+}
+
+.grade--blue {
+  --grade-color: var(--grade-blue);
+}
+
+.grade--orange {
+  --grade-color: var(--grade-orange);
+}
+
+.grade--red {
+  --grade-color: var(--grade-red);
+}
+
+.grade--navy {
+  --grade-color: var(--grade-navy);
 }
 
 .grade--infield {
@@ -1289,8 +1359,56 @@ p {
     grid-template-columns: 1fr;
   }
 
+  .booking > *,
+  .seat-price-card,
+  .seat-select-card {
+    grid-column: auto;
+  }
+
   .booking__side {
+    grid-row: auto;
+  }
+
+  .booking__side > .panel {
     position: static;
+  }
+
+  /* 결제 카드가 좌석표 아래로 밀리므로, 고른 좌석이 있으면 화면 아래에 결제 버튼을 띄운다. */
+  .booking-action-bar {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    box-shadow: 0 -10px 24px rgb(15 35 64 / 12%);
+  }
+
+  .booking-action-bar__info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .booking-action-bar__info strong {
+    font-size: 17px;
+    color: var(--text);
+  }
+
+  .booking-action-bar .button {
+    flex: 1;
+  }
+
+  /* 하단 바가 마지막 카드를 가리지 않도록 여백을 둔다. */
+  .game-page {
+    padding-bottom: 88px;
   }
 }
 
@@ -1404,4 +1522,229 @@ p {
   .auth-card {
     padding: 24px 20px;
   }
+}
+
+/* ---------- 매수 선택 · 연석 미리보기 ---------- */
+
+.seat-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+}
+
+.quantity-picker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.quantity-picker__label {
+  margin-right: 2px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.quantity-picker button {
+  min-width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.quantity-picker button:hover:not(:disabled) {
+  border-color: var(--navy-700);
+}
+
+.quantity-picker button[aria-pressed='true'] {
+  border-color: var(--navy-800);
+  background: var(--navy-800);
+  color: #fff;
+}
+
+.quantity-picker button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.quota-hint {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.quota-hint--blocked {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--red-50);
+  color: #9a2227;
+  font-weight: 600;
+}
+
+/* 커서를 올린 자리부터 선택될 연속 좌석 */
+.seat--preview:not(:disabled) {
+  border-color: var(--navy-800);
+  background: color-mix(in srgb, var(--navy-800) 22%, white);
+  color: var(--navy-900);
+}
+
+/* ---------- 좌석 배치도 (블록 선택) ---------- */
+
+.stadium-map {
+  position: relative;
+}
+
+.stadium-map svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* 배치도가 화면을 다 차지하면 아래 좌석 카드가 너무 멀어진다. */
+  max-height: min(62vh, 620px);
+  margin-inline: auto;
+}
+
+.stadium-map__field {
+  opacity: 0.45;
+}
+
+.stadium-map__base {
+  fill: var(--text-muted);
+  font-size: 17px;
+  font-weight: 600;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.stadium-map__block {
+  transition: opacity 0.15s;
+}
+
+.stadium-map__block path {
+  fill: var(--grade-color, var(--navy-700));
+  stroke: #ffffff;
+  stroke-width: 2.5;
+  cursor: pointer;
+  transition:
+    filter 0.15s,
+    stroke 0.15s;
+}
+
+.stadium-map__block path:hover {
+  filter: brightness(1.15);
+}
+
+/* 브라우저 기본 포커스 사각형 대신 블록 모양을 따라가는 표시를 쓴다. */
+.stadium-map__block path:focus,
+.stadium-map__block path:focus-visible {
+  outline: none;
+}
+
+.stadium-map__block path:focus-visible {
+  stroke: var(--amber-400);
+  stroke-width: 4;
+}
+
+/* 구역을 고르면 고른 블록만 남기고 나머지를 흐리게 해서 어디를 보는지 알려준다. */
+.stadium-map__block.is-dimmed {
+  opacity: 0.3;
+}
+
+.stadium-map__block.is-active path {
+  filter: drop-shadow(0 2px 6px rgb(15 35 64 / 35%));
+}
+
+.stadium-map__block.is-selected path {
+  stroke: var(--amber-400);
+  stroke-width: 4;
+}
+
+.stadium-map__block.is-sold-out path {
+  fill: #c9cfda;
+  cursor: not-allowed;
+}
+
+.stadium-map__block.is-sold-out path:hover {
+  filter: none;
+}
+
+.stadium-map__number {
+  fill: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+
+/* 좌석 가격 카드 */
+
+
+.seat-price-list {
+  /* 등급이 몇 개든 같은 너비로 나뉘도록 칸을 자동으로 채운다. */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.seat-price-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+  font-size: 14px;
+}
+
+.seat-price-list__chip {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 auto;
+  border-radius: 4px;
+  background: var(--grade-color, var(--navy-700));
+}
+
+.seat-price-list__label {
+  color: var(--text-muted);
+}
+
+.seat-price-list__price {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 커서를 올린 블록의 이름·가격·잔여석 */
+.stadium-map__tooltip {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--navy-900);
+  box-shadow: 0 6px 18px rgb(15 35 64 / 25%);
+  color: rgb(255 255 255 / 80%);
+  font-size: 13px;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 12px));
+}
+
+.stadium-map__tooltip strong {
+  color: #ffffff;
+  font-size: 14px;
 }

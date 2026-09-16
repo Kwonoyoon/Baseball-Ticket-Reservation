@@ -5,7 +5,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -48,16 +50,41 @@ public class InMemorySeatHoldStore implements SeatHoldStore {
     }
 
     @Override
-    public synchronized Map<SeatPosition, Long> findHolds(long gameId) {
-        Instant now = clock.instant();
-        holds.values().removeIf(hold -> isExpired(hold, now));
+    public synchronized Map<SeatPosition, Long> findHoldsBySection(long gameId, long sectionId) {
+        purgeExpired();
         Map<SeatPosition, Long> result = new HashMap<>();
         holds.forEach((key, hold) -> {
-            if (key.gameId() == gameId) {
+            if (key.gameId() == gameId && key.seat().sectionId() == sectionId) {
                 result.put(key.seat(), hold.memberId());
             }
         });
         return result;
+    }
+
+    @Override
+    public synchronized Map<Long, Integer> countHoldsBySection(long gameId, Collection<Long> sectionIds) {
+        purgeExpired();
+        Map<Long, Integer> counts = new HashMap<>();
+        sectionIds.forEach(sectionId -> counts.put(sectionId, 0));
+        holds.forEach((key, hold) -> {
+            Long sectionId = key.seat().sectionId();
+            if (key.gameId() == gameId && counts.containsKey(sectionId)) {
+                counts.merge(sectionId, 1, Integer::sum);
+            }
+        });
+        return counts;
+    }
+
+    @Override
+    public synchronized Set<SeatPosition> findHoldsByMember(long gameId, long memberId) {
+        purgeExpired();
+        Set<SeatPosition> seats = new HashSet<>();
+        holds.forEach((key, hold) -> {
+            if (key.gameId() == gameId && hold.memberId() == memberId) {
+                seats.add(key.seat());
+            }
+        });
+        return seats;
     }
 
     @Override
@@ -91,6 +118,11 @@ public class InMemorySeatHoldStore implements SeatHoldStore {
             return null;
         }
         return hold;
+    }
+
+    private void purgeExpired() {
+        Instant now = clock.instant();
+        holds.values().removeIf(hold -> isExpired(hold, now));
     }
 
     private static boolean isExpired(Hold hold, Instant now) {

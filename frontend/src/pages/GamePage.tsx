@@ -1,11 +1,14 @@
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { ApiError, errorMessage, isAbortError } from '../api/client'
 import { api } from '../api/endpoints'
-import type { GameDetail, HoldResult, PaymentMethod, SeatPosition, SeatStatus } from '../api/types'
+import type { GameDetail, HoldResult, PaymentMethod, SeatPosition, SeatStatus, SeatSummary } from '../api/types'
 import { useAuth } from '../auth/useAuth'
+import { BookingActionBar } from '../components/BookingActionBar'
 import { HoldCountdown } from '../components/HoldCountdown'
 import { SeatLegend, SeatMap } from '../components/SeatMap'
+import { SeatPriceList } from '../components/SeatPriceList'
+import { StadiumMap } from '../components/StadiumMap'
 import { StadiumOverview } from '../components/StadiumOverview'
 import { EmptyState, ErrorMessage, Loading } from '../components/StatusView'
 import { TeamMark } from '../components/TeamMark'
@@ -18,10 +21,13 @@ import {
   PAYMENT_METHOD_LABELS,
   PAYMENT_METHODS,
   seatKey,
-  sectionIdOfSeatKey,
 } from '../lib/format'
+import { scrollPanelIntoView } from '../lib/panelScroll'
+import { hasStadiumMap } from '../lib/stadiumMap'
 
 const SEAT_REFRESH_INTERVAL_MS = 10_000
+/** 결제 카드가 좌석표 아래로 내려가는 폭. index.css의 .booking 한 단 배치 기준과 같다. */
+const NARROW_LAYOUT = '(max-width: 960px)'
 /** 선점이 풀려 좌석을 처음부터 다시 골라야 하는 오류 */
 const HOLD_LOST_CODES = ['HOLD_EXPIRED', 'SEAT_ALREADY_SOLD', 'BOOKING_CLOSED']
 
@@ -34,81 +40,113 @@ export function GamePage() {
 
   const [game, setGame] = useState<GameDetail | null>(null)
   const [loadError, setLoadError] = useState<string | null>(validGameId ? null : '잘못된 경기 주소입니다.')
-  const [seatStatus, setSeatStatus] = useState<SeatStatus | null>(null)
-  const [seatError, setSeatError] = useState(false)
+  // 구장 화면에는 구역별 잔여 수만, 좌석 목록은 선택한 구역만 불러온다.
+  const [summary, setSummary] = useState<SeatSummary | null>(null)
+  const [sectionStatus, setSectionStatus] = useState<SeatStatus | null>(null)
+  const [sectionError, setSectionError] = useState(false)
   const [activeSectionId, setActiveSectionId] = useState<number | null>(null)
+  const [quantity, setQuantity] = useState(1)
   const [selection, setSelection] = useState<SeatPosition[]>([])
   const [hold, setHold] = useState<HoldResult | null>(null)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CARD')
   const [notice, setNotice] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
+  // 구역을 고르면 배치도 아래에 있는 좌석 선택 카드로 스스로 내려간다.
+  const seatPanelRef = useRef<HTMLElement>(null)
+  const summaryPanelRef = useRef<HTMLElement>(null)
+
   useEffect(() => {
     if (!validGameId) return
     const controller = new AbortController()
     api
       .getGame(gameId, controller.signal)
-      .then((detail) => {
-        setGame(detail)
-        setActiveSectionId((current) => current ?? detail.sections[0]?.id ?? null)
-      })
+      .then(setGame)
       .catch((e: unknown) => {
         if (!isAbortError(e)) setLoadError(errorMessage(e, '경기 정보를 불러오지 못했습니다.'))
       })
     return () => controller.abort()
   }, [gameId, validGameId])
 
-  const refreshSeats = useCallback(
+  const refreshSummary = useCallback(
     (signal?: AbortSignal) =>
-      api.getSeatStatus(gameId, signal).then(
-        (status) => {
-          setSeatStatus(status)
-          setSeatError(false)
-        },
-        (e: unknown) => {
-          if (!isAbortError(e)) setSeatError(true)
-        },
-      ),
+      api.getSeatSummary(gameId, signal).then(setSummary, (e: unknown) => {
+        // 잔여석 표시는 다음 주기에 다시 시도한다.
+        if (!isAbortError(e)) setSummary(null)
+      }),
     [gameId],
   )
 
-  // 다른 고객의 선점/판매가 반영되도록 주기적으로 좌석 현황을 갱신한다.
+  const refreshSection = useCallback(
+    (sectionId: number | null, signal?: AbortSignal) => {
+      if (sectionId === null) return Promise.resolve()
+      return api.getSeatStatus(gameId, sectionId, signal).then(
+        (status) => {
+          setSectionStatus(status)
+          setSectionError(false)
+        },
+        (e: unknown) => {
+          if (!isAbortError(e)) setSectionError(true)
+        },
+      )
+    },
+    [gameId],
+  )
+
+  const refreshSeats = useCallback(
+    () => Promise.all([refreshSummary(), refreshSection(activeSectionId)]).then(() => undefined),
+    [refreshSummary, refreshSection, activeSectionId],
+  )
+
+  // 다른 고객의 선점/판매가 반영되도록 주기적으로 갱신한다.
   useEffect(() => {
     if (!validGameId) return
     const controller = new AbortController()
-    void refreshSeats(controller.signal)
-    const timer = window.setInterval(() => void refreshSeats(controller.signal), SEAT_REFRESH_INTERVAL_MS)
+    void refreshSummary(controller.signal)
+    const timer = window.setInterval(() => void refreshSummary(controller.signal), SEAT_REFRESH_INTERVAL_MS)
     return () => {
       controller.abort()
       window.clearInterval(timer)
     }
-  }, [validGameId, refreshSeats, isAuthenticated])
+  }, [validGameId, refreshSummary, isAuthenticated])
 
-  const soldKeys = useMemo(() => new Set(seatStatus?.soldSeats), [seatStatus])
-  const heldKeys = useMemo(() => new Set(seatStatus?.heldSeats), [seatStatus])
+  useEffect(() => {
+    if (!validGameId || activeSectionId === null) return
+    const controller = new AbortController()
+    void refreshSection(activeSectionId, controller.signal)
+    const timer = window.setInterval(
+      () => void refreshSection(activeSectionId, controller.signal),
+      SEAT_REFRESH_INTERVAL_MS,
+    )
+    return () => {
+      controller.abort()
+      window.clearInterval(timer)
+    }
+  }, [validGameId, activeSectionId, refreshSection, isAuthenticated])
+
+  // 구역을 바꾼 직후에는 이전 구역의 좌석 현황이 남아 있으므로 구역이 일치할 때만 사용한다.
+  const currentStatus = sectionStatus?.sectionId === activeSectionId ? sectionStatus : null
+  const soldKeys = useMemo(() => new Set(currentStatus?.soldSeats), [currentStatus])
+  const heldKeys = useMemo(() => new Set(currentStatus?.heldSeats), [currentStatus])
 
   // 선택해 둔 좌석이 그사이 판매되거나 다른 고객에게 선점되면 선택에서 제외한다.
   const activeSelection = useMemo(
-    () => selection.filter((seat) => !soldKeys.has(seatKey(seat)) && !heldKeys.has(seatKey(seat))),
-    [selection, soldKeys, heldKeys],
+    () =>
+      selection.filter((seat) => {
+        if (currentStatus === null || seat.sectionId !== currentStatus.sectionId) return true
+        const key = seatKey(seat)
+        return !soldKeys.has(key) && !heldKeys.has(key)
+      }),
+    [selection, currentStatus, soldKeys, heldKeys],
   )
   const selectedKeys = useMemo(() => new Set(activeSelection.map(seatKey)), [activeSelection])
 
   const sectionsById = useMemo(() => new Map(game?.sections.map((section) => [section.id, section])), [game])
 
-  const remainingBySection = useMemo(() => {
-    const taken = new Map<number, number>()
-    for (const key of [...soldKeys, ...heldKeys]) {
-      const sectionId = sectionIdOfSeatKey(key)
-      taken.set(sectionId, (taken.get(sectionId) ?? 0) + 1)
-    }
-    return new Map(
-      game?.sections.map((section) => [
-        section.id,
-        section.seatRows * section.seatsPerRow - (taken.get(section.id) ?? 0),
-      ]),
-    )
-  }, [game, soldKeys, heldKeys])
+  const remainingBySection = useMemo(
+    () => new Map(summary?.sections.map((section) => [section.sectionId, section.availableSeats])),
+    [summary],
+  )
 
   const selectedBySection = useMemo(() => {
     const counts = new Map<number, number>()
@@ -117,6 +155,28 @@ export function GamePage() {
   }, [activeSelection])
 
   const totalPrice = activeSelection.reduce((sum, seat) => sum + (sectionsById.get(seat.sectionId)?.price ?? 0), 0)
+
+  // 1인 예매 한도: 이미 예매한 좌석을 빼고 남은 만큼만 고를 수 있다.
+  const seatLimit = summary?.maxSeatsPerMember ?? MAX_SEATS
+  const reservedSeats = summary?.myReservedSeats ?? 0
+  const remainingQuota = Math.max(0, Math.min(seatLimit, MAX_SEATS) - reservedSeats)
+  const quantityOptions = Array.from({ length: remainingQuota }, (_, index) => index + 1)
+  const selectableQuantity = Math.min(quantity, Math.max(1, remainingQuota))
+
+  // 좌석표가 그려지기 전에 움직이면 도중에 카드 높이가 바뀌어 화면이 끊긴다.
+  // 좌석 현황을 받은 뒤에 한 번만 옮긴다.
+  const seatsReady = currentStatus !== null
+  useEffect(() => {
+    if (activeSectionId === null || !seatsReady) return
+    return scrollPanelIntoView(seatPanelRef.current)
+  }, [activeSectionId, seatsReady])
+
+  // 좁은 화면에서는 결제 카드가 좌석표 아래에 있어, 결제 단계로 넘어가면 그쪽으로 옮겨 준다.
+  useEffect(() => {
+    if (hold === null) return
+    if (!window.matchMedia?.(NARROW_LAYOUT).matches) return
+    return scrollPanelIntoView(summaryPanelRef.current)
+  }, [hold])
 
   const handleExpire = useCallback(() => {
     setHold(null)
@@ -129,19 +189,26 @@ export function GamePage() {
 
   const bookable = isBookable(game.startAt)
   const activeSection = activeSectionId === null ? undefined : sectionsById.get(activeSectionId)
+  const quotaExhausted = isAuthenticated && remainingQuota === 0
 
-  const toggleSeat = (seat: SeatPosition) => {
+  const handleSelectSection = (sectionId: number | null) => {
+    setActiveSectionId(sectionId)
+    // 구역 선택을 풀면 고르던 좌석도 함께 비운다. (결제 단계에서는 유지)
+    if (sectionId === null && hold === null) setSelection([])
+  }
+
+  const handleSelectGroup = (seats: SeatPosition[]) => {
     setNotice(null)
-    const key = seatKey(seat)
-    if (selectedKeys.has(key)) {
-      setSelection(activeSelection.filter((selected) => seatKey(selected) !== key))
-      return
-    }
-    if (activeSelection.length >= MAX_SEATS) {
-      setNotice(`한 번에 최대 ${MAX_SEATS}석까지 선택할 수 있습니다.`)
-      return
-    }
-    setSelection([...activeSelection, seat])
+    setSelection(seats)
+  }
+
+  const handleGroupUnavailable = () => {
+    setNotice(`연속된 ${selectableQuantity}석을 찾을 수 없습니다. 다른 자리나 다른 매수를 선택해 주세요.`)
+  }
+
+  const removeSeat = (seat: SeatPosition) => {
+    setNotice(null)
+    setSelection(activeSelection.filter((selected) => seatKey(selected) !== seatKey(seat)))
   }
 
   const handleHold = async () => {
@@ -224,57 +291,118 @@ export function GamePage() {
         </EmptyState>
       ) : (
         <div className="booking">
-          <div className="booking__main">
-            <section className="panel" aria-labelledby="section-step-title">
-              <h2 id="section-step-title" className="panel__title">
-                1. 구역 선택
-              </h2>
+          <section className="panel seat-price-card" aria-label="좌석 가격">
+            <SeatPriceList sections={game.sections} />
+          </section>
+
+          <section className="panel" aria-label="구역 선택">
+            {hasStadiumMap(game.sections) ? (
+              <StadiumMap
+                sections={game.sections}
+                activeSectionId={activeSectionId}
+                remainingBySection={remainingBySection}
+                selectedBySection={selectedBySection}
+                onSelect={handleSelectSection}
+              />
+            ) : (
               <StadiumOverview
                 sections={game.sections}
                 activeSectionId={activeSectionId}
                 remainingBySection={remainingBySection}
                 selectedBySection={selectedBySection}
-                onSelect={setActiveSectionId}
+                onSelect={handleSelectSection}
               />
-            </section>
-
-            {activeSection && (
-              <section className="panel" aria-labelledby="seat-step-title">
-                <div className="panel__header">
-                  <h2 id="seat-step-title" className="panel__title">
-                    2. 좌석 선택
-                    <span className="panel__subtitle">
-                      {activeSection.name} · {formatPrice(activeSection.price)}
-                    </span>
-                  </h2>
-                  <SeatLegend />
-                </div>
-                {seatStatus ? (
-                  <SeatMap
-                    section={activeSection}
-                    soldKeys={soldKeys}
-                    heldKeys={heldKeys}
-                    selectedKeys={selectedKeys}
-                    disabled={hold !== null || submitting}
-                    onToggle={toggleSeat}
-                  />
-                ) : seatError ? (
-                  <ErrorMessage message="좌석 현황을 불러오지 못했습니다." onRetry={() => void refreshSeats()} />
-                ) : (
-                  <Loading label="좌석 현황을 불러오는 중…" />
-                )}
-              </section>
             )}
-          </div>
+          </section>
+
+          {!activeSection && (
+            <section className="panel seat-select-card" ref={seatPanelRef} aria-labelledby="seat-step-title">
+              <h2 id="seat-step-title" className="panel__title">
+                좌석 선택
+              </h2>
+              <p className="summary__empty">
+                먼저 위 배치도에서 구역을 선택해 주세요. 블록을 누르면 그 구역의 좌석이 나타납니다.
+              </p>
+            </section>
+          )}
+
+          {activeSection && (
+            <section className="panel seat-select-card" ref={seatPanelRef} aria-labelledby="seat-step-title">
+              <div className="panel__header">
+                <h2 id="seat-step-title" className="panel__title">
+                  좌석 선택
+                  <span className="panel__subtitle">
+                    {activeSection.name} · {formatPrice(activeSection.price)}
+                  </span>
+                </h2>
+                <SeatLegend />
+              </div>
+
+              {quotaExhausted ? (
+                <p className="quota-hint quota-hint--blocked" role="status">
+                  이 경기는 최대 {seatLimit}석까지 예매할 수 있습니다. 이미 {reservedSeats}석을 예매하셨습니다.
+                </p>
+              ) : (
+                <div className="seat-toolbar">
+                  <div className="quantity-picker" role="group" aria-label="매수 선택">
+                    <span className="quantity-picker__label">매수</span>
+                    {quantityOptions.map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        aria-pressed={option === selectableQuantity}
+                        disabled={hold !== null || submitting}
+                        onClick={() => {
+                          setQuantity(option)
+                          setSelection([])
+                          setNotice(null)
+                        }}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="quota-hint">
+                    좌석에 커서를 올리면 연속된 {selectableQuantity}석이 표시됩니다.
+                    {reservedSeats > 0 && ` (이미 ${reservedSeats}석 예매, ${remainingQuota}석 더 선택 가능)`}
+                  </p>
+                </div>
+              )}
+
+              {currentStatus ? (
+                <SeatMap
+                  section={activeSection}
+                  soldKeys={soldKeys}
+                  heldKeys={heldKeys}
+                  selectedKeys={selectedKeys}
+                  quantity={selectableQuantity}
+                  disabled={hold !== null || submitting || quotaExhausted}
+                  onSelectGroup={handleSelectGroup}
+                  onClearSelection={() => setSelection([])}
+                  onGroupUnavailable={handleGroupUnavailable}
+                />
+              ) : sectionError ? (
+                <ErrorMessage
+                  message="좌석 현황을 불러오지 못했습니다."
+                  onRetry={() => void refreshSection(activeSectionId)}
+                />
+              ) : (
+                <Loading label="좌석 현황을 불러오는 중…" />
+              )}
+            </section>
+          )}
+
 
           <aside className="booking__side">
-            <section className="panel summary" aria-labelledby="summary-title">
+            <section className="panel summary" ref={summaryPanelRef} aria-labelledby="summary-title">
               <h2 id="summary-title" className="panel__title">
-                {hold ? '3. 결제' : '선택한 좌석'}
+                {hold ? '결제' : '선택한 좌석'}
               </h2>
 
               {activeSelection.length === 0 ? (
-                <p className="summary__empty">좌석 배치도에서 원하는 좌석을 선택해 주세요. (최대 {MAX_SEATS}석)</p>
+                <p className="summary__empty">
+                  매수를 고르고 좌석 배치도에서 원하는 자리를 선택해 주세요. (한 경기 최대 {seatLimit}석)
+                </p>
               ) : (
                 <ul className="summary__seats">
                   {activeSelection.map((seat) => {
@@ -290,7 +418,7 @@ export function GamePage() {
                             type="button"
                             className="summary__remove"
                             aria-label={`${section?.name} ${seat.rowNo}열 ${seat.seatNo}번 선택 해제`}
-                            onClick={() => toggleSeat(seat)}
+                            onClick={() => removeSeat(seat)}
                           >
                             ×
                           </button>
@@ -365,6 +493,16 @@ export function GamePage() {
               )}
             </section>
           </aside>
+
+          {!hold && (
+            <BookingActionBar
+              seatCount={activeSelection.length}
+              totalPrice={totalPrice}
+              isAuthenticated={isAuthenticated}
+              submitting={submitting}
+              onSubmit={() => void handleHold()}
+            />
+          )}
         </div>
       )}
     </div>

@@ -4,3 +4,6 @@
 .vscode/
 *.log
 .DS_Store
+
+# 배치도 생성기 출력물 (필요한 파일만 직접 복사해 쓴다)
+scripts/out/

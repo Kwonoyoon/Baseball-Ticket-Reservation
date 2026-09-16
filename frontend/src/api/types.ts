@@ -35,10 +35,21 @@ export type GameSummary = {
   stadium: Stadium
 }
 
-export type SeatGrade = 'PREMIUM' | 'TABLE' | 'INFIELD' | 'OUTFIELD'
+export type SeatGrade =
+  | 'PREMIUM'
+  | 'EXCITING'
+  | 'TABLE'
+  | 'BLUE'
+  | 'ORANGE'
+  | 'RED'
+  | 'NAVY'
+  | 'INFIELD'
+  | 'OUTFIELD'
 
 export type SeatSection = {
   id: number
+  /** 좌석 배치도의 블록 코드 (예: NAVY-05). 배치도가 없는 구장은 null */
+  code: string | null
   name: string
   grade: SeatGrade
   gradeLabel: string
@@ -51,11 +62,30 @@ export type GameDetail = GameSummary & {
   sections: SeatSection[]
 }
 
-/** 좌석은 "구역ID-열-번호" 키로 표현한다. */
+/** 한 구역의 좌석 현황. 좌석은 "구역ID-열-번호" 키로 표현한다. */
 export type SeatStatus = {
+  sectionId: number
   soldSeats: string[]
   heldSeats: string[]
   myHeldSeats: string[]
+}
+
+/** 구장 화면용 구역별 잔여 현황 (좌석 목록 없이 개수만) */
+export type SectionAvailability = {
+  sectionId: number
+  totalSeats: number
+  soldSeats: number
+  heldSeats: number
+  availableSeats: number
+}
+
+export type SeatSummary = {
+  sections: SectionAvailability[]
+  myHeldSeats: string[]
+  /** 내가 이 경기에서 이미 예매한 좌석 수 */
+  myReservedSeats: number
+  /** 한 회원이 이 경기에서 예매할 수 있는 최대 좌석 수 */
+  maxSeatsPerMember: number
 }
 
 export type SeatPosition = {

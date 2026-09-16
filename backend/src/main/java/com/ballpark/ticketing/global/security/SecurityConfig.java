@@ -33,7 +33,8 @@ public class SecurityConfig {
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/auth/signup", "/api/auth/login").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/teams", "/api/games", "/api/games/*", "/api/games/*/seats")
+                        .requestMatchers(HttpMethod.GET, "/api/teams", "/api/games", "/api/games/*",
+                                "/api/games/*/seats", "/api/games/*/seats/summary")
                         .permitAll()
                         .requestMatchers("/actuator/health", "/h2-console/**", "/error").permitAll()
                         .anyRequest().authenticated())
