@@ -22,12 +22,10 @@ import {
   PAYMENT_METHODS,
   seatKey,
 } from '../lib/format'
+import { scrollPanelIntoView } from '../lib/panelScroll'
 import { hasStadiumMap } from '../lib/stadiumMap'
 
 const SEAT_REFRESH_INTERVAL_MS = 10_000
-/** 부드러운 스크롤이 끝났을 만한 시간. 이때까지 안 움직였으면 바로 이동시킨다. */
-const SCROLL_FALLBACK_MS = 600
-const REDUCED_MOTION = '(prefers-reduced-motion: reduce)'
 /** 결제 카드가 좌석표 아래로 내려가는 폭. index.css의 .booking 한 단 배치 기준과 같다. */
 const NARROW_LAYOUT = '(max-width: 960px)'
 /** 선점이 풀려 좌석을 처음부터 다시 골라야 하는 오류 */
@@ -165,31 +163,20 @@ export function GamePage() {
   const quantityOptions = Array.from({ length: remainingQuota }, (_, index) => index + 1)
   const selectableQuantity = Math.min(quantity, Math.max(1, remainingQuota))
 
-  /** 카드가 헤더 아래에 오도록 옮긴다. 부드러운 이동이 막히는 환경을 위해 보정도 예약한다. */
-  const scrollToPanel = useCallback((panel: HTMLElement | null) => {
-    // jsdom 등 scrollIntoView가 없는 환경에서는 건너뛴다.
-    if (!panel?.scrollIntoView) return undefined
-    const reduceMotion = window.matchMedia?.(REDUCED_MOTION).matches
-    panel.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' })
-    const timer = window.setTimeout(() => {
-      if (panel.getBoundingClientRect().top > window.innerHeight / 2) {
-        panel.scrollIntoView({ behavior: 'auto', block: 'start' })
-      }
-    }, SCROLL_FALLBACK_MS)
-    return () => window.clearTimeout(timer)
-  }, [])
-
+  // 좌석표가 그려지기 전에 움직이면 도중에 카드 높이가 바뀌어 화면이 끊긴다.
+  // 좌석 현황을 받은 뒤에 한 번만 옮긴다.
+  const seatsReady = currentStatus !== null
   useEffect(() => {
-    if (activeSectionId === null) return
-    return scrollToPanel(seatPanelRef.current)
-  }, [activeSectionId, scrollToPanel])
+    if (activeSectionId === null || !seatsReady) return
+    return scrollPanelIntoView(seatPanelRef.current)
+  }, [activeSectionId, seatsReady])
 
   // 좁은 화면에서는 결제 카드가 좌석표 아래에 있어, 결제 단계로 넘어가면 그쪽으로 옮겨 준다.
   useEffect(() => {
     if (hold === null) return
     if (!window.matchMedia?.(NARROW_LAYOUT).matches) return
-    return scrollToPanel(summaryPanelRef.current)
-  }, [hold, scrollToPanel])
+    return scrollPanelIntoView(summaryPanelRef.current)
+  }, [hold])
 
   const handleExpire = useCallback(() => {
     setHold(null)
