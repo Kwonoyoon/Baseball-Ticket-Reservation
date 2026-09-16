@@ -4,6 +4,7 @@ import { formatPrice } from '../lib/format'
 type StadiumOverviewProps = {
   sections: SeatSection[]
   activeSectionId: number | null
+  /** 구역별 잔여석. 아직 불러오지 못한 구역은 값이 없다. */
   remainingBySection: ReadonlyMap<number, number>
   selectedBySection: ReadonlyMap<number, number>
   onSelect: (sectionId: number) => void
@@ -15,6 +16,11 @@ function gridAreaOf(section: SeatSection): string {
   if (section.grade === 'PREMIUM') return 'premium'
   const side = section.name.includes('3루') ? '3b' : '1b'
   return section.grade === 'TABLE' ? `table-${side}` : `infield-${side}`
+}
+
+function remainingLabel(remaining: number | undefined): string {
+  if (remaining === undefined) return '잔여석 확인 중'
+  return remaining > 0 ? `잔여 ${remaining.toLocaleString('ko-KR')}석` : '매진'
 }
 
 export function StadiumOverview({
@@ -30,7 +36,7 @@ export function StadiumOverview({
         <div className="stadium__diamond" />
       </div>
       {sections.map((section) => {
-        const remaining = remainingBySection.get(section.id) ?? 0
+        const remaining = remainingBySection.get(section.id)
         const selected = selectedBySection.get(section.id) ?? 0
         return (
           <button
@@ -39,11 +45,12 @@ export function StadiumOverview({
             className={`stadium__section grade--${section.grade.toLowerCase()}`}
             style={{ gridArea: gridAreaOf(section) }}
             aria-pressed={section.id === activeSectionId}
+            disabled={remaining === 0}
             onClick={() => onSelect(section.id)}
           >
             <span className="stadium__section-name">{section.name}</span>
             <span className="stadium__section-meta">
-              {formatPrice(section.price)} · {remaining > 0 ? `잔여 ${remaining}석` : '매진'}
+              {formatPrice(section.price)} · {remainingLabel(remaining)}
             </span>
             {selected > 0 && (
               <span className="stadium__badge" aria-label={`${selected}석 선택됨`}>

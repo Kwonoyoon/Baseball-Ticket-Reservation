@@ -110,7 +110,8 @@ cd frontend && npm run test:run   # 포맷 유틸, 좌석 배치도, 로그인 �
 | GET | `/api/teams` | | 구단 목록 |
 | GET | `/api/games?date=YYYY-MM-DD&teamId=` | | 경기 일정 |
 | GET | `/api/games/{gameId}` | | 경기 상세 + 좌석 구역 |
-| GET | `/api/games/{gameId}/seats` | 선택 | 실시간 좌석 현황 (판매/선점/내 선점) |
+| GET | `/api/games/{gameId}/seats?sectionId=` | 선택 | 한 구역의 실시간 좌석 현황 (판매/선점/내 선점) |
+| GET | `/api/games/{gameId}/seats/summary` | 선택 | 구역별 잔여석 요약 (구장 화면용, 좌석 목록 없음) |
 | POST | `/api/games/{gameId}/holds` | ✅ | 좌석 선점 |
 | DELETE | `/api/games/{gameId}/holds` | ✅ | 내 선점 해제 |
 | POST | `/api/reservations` | ✅ | 예매(결제) |

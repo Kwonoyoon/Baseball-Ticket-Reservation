@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'r
 import { Link, useNavigate, useParams } from 'react-router'
 import { ApiError, errorMessage, isAbortError } from '../api/client'
 import { api } from '../api/endpoints'
-import type { GameDetail, HoldResult, PaymentMethod, SeatPosition, SeatStatus } from '../api/types'
+import type { GameDetail, HoldResult, PaymentMethod, SeatPosition, SeatStatus, SeatSummary } from '../api/types'
 import { useAuth } from '../auth/useAuth'
 import { HoldCountdown } from '../components/HoldCountdown'
 import { SeatLegend, SeatMap } from '../components/SeatMap'
@@ -18,7 +18,6 @@ import {
   PAYMENT_METHOD_LABELS,
   PAYMENT_METHODS,
   seatKey,
-  sectionIdOfSeatKey,
 } from '../lib/format'
 
 const SEAT_REFRESH_INTERVAL_MS = 10_000
@@ -34,8 +33,10 @@ export function GamePage() {
 
   const [game, setGame] = useState<GameDetail | null>(null)
   const [loadError, setLoadError] = useState<string | null>(validGameId ? null : '잘못된 경기 주소입니다.')
-  const [seatStatus, setSeatStatus] = useState<SeatStatus | null>(null)
-  const [seatError, setSeatError] = useState(false)
+  // 구장 화면에는 구역별 잔여 수만, 좌석 목록은 선택한 구역만 불러온다.
+  const [summary, setSummary] = useState<SeatSummary | null>(null)
+  const [sectionStatus, setSectionStatus] = useState<SeatStatus | null>(null)
+  const [sectionError, setSectionError] = useState(false)
   const [activeSectionId, setActiveSectionId] = useState<number | null>(null)
   const [selection, setSelection] = useState<SeatPosition[]>([])
   const [hold, setHold] = useState<HoldResult | null>(null)
@@ -58,57 +59,85 @@ export function GamePage() {
     return () => controller.abort()
   }, [gameId, validGameId])
 
-  const refreshSeats = useCallback(
+  const refreshSummary = useCallback(
     (signal?: AbortSignal) =>
-      api.getSeatStatus(gameId, signal).then(
-        (status) => {
-          setSeatStatus(status)
-          setSeatError(false)
-        },
-        (e: unknown) => {
-          if (!isAbortError(e)) setSeatError(true)
-        },
-      ),
+      api.getSeatSummary(gameId, signal).then(setSummary, (e: unknown) => {
+        // 잔여석 표시는 다음 주기에 다시 시도한다.
+        if (!isAbortError(e)) setSummary(null)
+      }),
     [gameId],
   )
 
-  // 다른 고객의 선점/판매가 반영되도록 주기적으로 좌석 현황을 갱신한다.
+  const refreshSection = useCallback(
+    (sectionId: number | null, signal?: AbortSignal) => {
+      if (sectionId === null) return Promise.resolve()
+      return api.getSeatStatus(gameId, sectionId, signal).then(
+        (status) => {
+          setSectionStatus(status)
+          setSectionError(false)
+        },
+        (e: unknown) => {
+          if (!isAbortError(e)) setSectionError(true)
+        },
+      )
+    },
+    [gameId],
+  )
+
+  const refreshSeats = useCallback(
+    () => Promise.all([refreshSummary(), refreshSection(activeSectionId)]).then(() => undefined),
+    [refreshSummary, refreshSection, activeSectionId],
+  )
+
+  // 다른 고객의 선점/판매가 반영되도록 주기적으로 갱신한다.
   useEffect(() => {
     if (!validGameId) return
     const controller = new AbortController()
-    void refreshSeats(controller.signal)
-    const timer = window.setInterval(() => void refreshSeats(controller.signal), SEAT_REFRESH_INTERVAL_MS)
+    void refreshSummary(controller.signal)
+    const timer = window.setInterval(() => void refreshSummary(controller.signal), SEAT_REFRESH_INTERVAL_MS)
     return () => {
       controller.abort()
       window.clearInterval(timer)
     }
-  }, [validGameId, refreshSeats, isAuthenticated])
+  }, [validGameId, refreshSummary, isAuthenticated])
 
-  const soldKeys = useMemo(() => new Set(seatStatus?.soldSeats), [seatStatus])
-  const heldKeys = useMemo(() => new Set(seatStatus?.heldSeats), [seatStatus])
+  useEffect(() => {
+    if (!validGameId || activeSectionId === null) return
+    const controller = new AbortController()
+    void refreshSection(activeSectionId, controller.signal)
+    const timer = window.setInterval(
+      () => void refreshSection(activeSectionId, controller.signal),
+      SEAT_REFRESH_INTERVAL_MS,
+    )
+    return () => {
+      controller.abort()
+      window.clearInterval(timer)
+    }
+  }, [validGameId, activeSectionId, refreshSection, isAuthenticated])
+
+  // 구역을 바꾼 직후에는 이전 구역의 좌석 현황이 남아 있으므로 구역이 일치할 때만 사용한다.
+  const currentStatus = sectionStatus?.sectionId === activeSectionId ? sectionStatus : null
+  const soldKeys = useMemo(() => new Set(currentStatus?.soldSeats), [currentStatus])
+  const heldKeys = useMemo(() => new Set(currentStatus?.heldSeats), [currentStatus])
 
   // 선택해 둔 좌석이 그사이 판매되거나 다른 고객에게 선점되면 선택에서 제외한다.
   const activeSelection = useMemo(
-    () => selection.filter((seat) => !soldKeys.has(seatKey(seat)) && !heldKeys.has(seatKey(seat))),
-    [selection, soldKeys, heldKeys],
+    () =>
+      selection.filter((seat) => {
+        if (currentStatus === null || seat.sectionId !== currentStatus.sectionId) return true
+        const key = seatKey(seat)
+        return !soldKeys.has(key) && !heldKeys.has(key)
+      }),
+    [selection, currentStatus, soldKeys, heldKeys],
   )
   const selectedKeys = useMemo(() => new Set(activeSelection.map(seatKey)), [activeSelection])
 
   const sectionsById = useMemo(() => new Map(game?.sections.map((section) => [section.id, section])), [game])
 
-  const remainingBySection = useMemo(() => {
-    const taken = new Map<number, number>()
-    for (const key of [...soldKeys, ...heldKeys]) {
-      const sectionId = sectionIdOfSeatKey(key)
-      taken.set(sectionId, (taken.get(sectionId) ?? 0) + 1)
-    }
-    return new Map(
-      game?.sections.map((section) => [
-        section.id,
-        section.seatRows * section.seatsPerRow - (taken.get(section.id) ?? 0),
-      ]),
-    )
-  }, [game, soldKeys, heldKeys])
+  const remainingBySection = useMemo(
+    () => new Map(summary?.sections.map((section) => [section.sectionId, section.availableSeats])),
+    [summary],
+  )
 
   const selectedBySection = useMemo(() => {
     const counts = new Map<number, number>()
@@ -249,7 +278,7 @@ export function GamePage() {
                   </h2>
                   <SeatLegend />
                 </div>
-                {seatStatus ? (
+                {currentStatus ? (
                   <SeatMap
                     section={activeSection}
                     soldKeys={soldKeys}
@@ -258,8 +287,11 @@ export function GamePage() {
                     disabled={hold !== null || submitting}
                     onToggle={toggleSeat}
                   />
-                ) : seatError ? (
-                  <ErrorMessage message="좌석 현황을 불러오지 못했습니다." onRetry={() => void refreshSeats()} />
+                ) : sectionError ? (
+                  <ErrorMessage
+                    message="좌석 현황을 불러오지 못했습니다."
+                    onRetry={() => void refreshSection(activeSectionId)}
+                  />
                 ) : (
                   <Loading label="좌석 현황을 불러오는 중…" />
                 )}

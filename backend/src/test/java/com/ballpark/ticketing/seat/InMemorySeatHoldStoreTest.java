@@ -13,6 +13,8 @@ import org.junit.jupiter.api.Test;
 class InMemorySeatHoldStoreTest {
 
     private static final long GAME_ID = 1L;
+    private static final long SECTION_ID = 1L;
+    private static final long OTHER_SECTION_ID = 2L;
     private static final long ALICE = 10L;
     private static final long BOB = 20L;
     private static final Duration TTL = Duration.ofMinutes(5);
@@ -20,8 +22,9 @@ class InMemorySeatHoldStoreTest {
     private final MutableClock clock = new MutableClock(Instant.parse("2026-09-15T09:00:00Z"));
     private final InMemorySeatHoldStore store = new InMemorySeatHoldStore(clock);
 
-    private final SeatPosition seatA = new SeatPosition(1L, 1, 1);
-    private final SeatPosition seatB = new SeatPosition(1L, 1, 2);
+    private final SeatPosition seatA = new SeatPosition(SECTION_ID, 1, 1);
+    private final SeatPosition seatB = new SeatPosition(SECTION_ID, 1, 2);
+    private final SeatPosition otherSectionSeat = new SeatPosition(OTHER_SECTION_ID, 1, 1);
 
     @Test
     void 다른_회원이_선점한_좌석이_하나라도_있으면_아무것도_선점하지_않는다() {
@@ -29,7 +32,9 @@ class InMemorySeatHoldStoreTest {
 
         assertThat(store.holdAll(GAME_ID, BOB, List.of(seatB, seatA), TTL)).isFalse();
 
-        assertThat(store.findHolds(GAME_ID)).containsOnlyKeys(seatA).containsEntry(seatA, ALICE);
+        assertThat(store.findHoldsBySection(GAME_ID, SECTION_ID))
+                .containsOnlyKeys(seatA)
+                .containsEntry(seatA, ALICE);
     }
 
     @Test
@@ -50,7 +55,7 @@ class InMemorySeatHoldStoreTest {
         store.holdAll(GAME_ID, ALICE, List.of(seatA), TTL);
         clock.advance(TTL);
 
-        assertThat(store.findHolds(GAME_ID)).isEmpty();
+        assertThat(store.findHoldsBySection(GAME_ID, SECTION_ID)).isEmpty();
         assertThat(store.holdAll(GAME_ID, BOB, List.of(seatA), TTL)).isTrue();
     }
 
@@ -70,8 +75,44 @@ class InMemorySeatHoldStoreTest {
         store.holdAll(GAME_ID, ALICE, List.of(seatA), TTL);
 
         assertThat(store.holdAll(2L, BOB, List.of(seatA), TTL)).isTrue();
-        assertThat(store.findHolds(GAME_ID)).containsEntry(seatA, ALICE);
-        assertThat(store.findHolds(2L)).containsEntry(seatA, BOB);
+        assertThat(store.findHoldsBySection(GAME_ID, SECTION_ID)).containsEntry(seatA, ALICE);
+        assertThat(store.findHoldsBySection(2L, SECTION_ID)).containsEntry(seatA, BOB);
+    }
+
+    @Test
+    void 구역별로_선점_좌석만_돌려준다() {
+        store.holdAll(GAME_ID, ALICE, List.of(seatA, otherSectionSeat), TTL);
+
+        assertThat(store.findHoldsBySection(GAME_ID, SECTION_ID)).containsOnlyKeys(seatA);
+        assertThat(store.findHoldsBySection(GAME_ID, OTHER_SECTION_ID)).containsOnlyKeys(otherSectionSeat);
+    }
+
+    @Test
+    void 구역별_선점_수를_센다() {
+        store.holdAll(GAME_ID, ALICE, List.of(seatA, seatB), TTL);
+        store.holdAll(GAME_ID, BOB, List.of(otherSectionSeat), TTL);
+
+        assertThat(store.countHoldsBySection(GAME_ID, List.of(SECTION_ID, OTHER_SECTION_ID, 99L)))
+                .containsEntry(SECTION_ID, 2)
+                .containsEntry(OTHER_SECTION_ID, 1)
+                .containsEntry(99L, 0);
+
+        clock.advance(TTL);
+        assertThat(store.countHoldsBySection(GAME_ID, List.of(SECTION_ID, OTHER_SECTION_ID)))
+                .containsEntry(SECTION_ID, 0)
+                .containsEntry(OTHER_SECTION_ID, 0);
+    }
+
+    @Test
+    void 회원이_선점한_좌석을_돌려준다() {
+        store.holdAll(GAME_ID, ALICE, List.of(seatA, otherSectionSeat), TTL);
+        store.holdAll(GAME_ID, BOB, List.of(seatB), TTL);
+
+        assertThat(store.findHoldsByMember(GAME_ID, ALICE)).containsExactlyInAnyOrder(seatA, otherSectionSeat);
+        assertThat(store.findHoldsByMember(GAME_ID, BOB)).containsExactly(seatB);
+
+        clock.advance(TTL);
+        assertThat(store.findHoldsByMember(GAME_ID, ALICE)).isEmpty();
     }
 
     private static final class MutableClock extends Clock {

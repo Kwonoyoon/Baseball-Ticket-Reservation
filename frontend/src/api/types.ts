@@ -51,10 +51,25 @@ export type GameDetail = GameSummary & {
   sections: SeatSection[]
 }
 
-/** 좌석은 "구역ID-열-번호" 키로 표현한다. */
+/** 한 구역의 좌석 현황. 좌석은 "구역ID-열-번호" 키로 표현한다. */
 export type SeatStatus = {
+  sectionId: number
   soldSeats: string[]
   heldSeats: string[]
+  myHeldSeats: string[]
+}
+
+/** 구장 화면용 구역별 잔여 현황 (좌석 목록 없이 개수만) */
+export type SectionAvailability = {
+  sectionId: number
+  totalSeats: number
+  soldSeats: number
+  heldSeats: number
+  availableSeats: number
+}
+
+export type SeatSummary = {
+  sections: SectionAvailability[]
   myHeldSeats: string[]
 }
 

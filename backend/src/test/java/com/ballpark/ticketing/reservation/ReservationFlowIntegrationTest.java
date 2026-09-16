@@ -168,6 +168,46 @@ class ReservationFlowIntegrationTest {
     }
 
     @Test
+    void 구역별_잔여석_요약을_조회한다() throws Exception {
+        String alice = signupAndLogin();
+        int totalSeats = section.getSeatRows() * section.getSeatsPerRow();
+        String sectionPath = "$.sections[?(@.sectionId == " + section.getId() + ")]";
+
+        mockMvc.perform(get(summaryUrl()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sections.length()").value(6))
+                .andExpect(jsonPath(sectionPath + ".totalSeats").value(hasItem(totalSeats)))
+                .andExpect(jsonPath(sectionPath + ".availableSeats").value(hasItem(totalSeats)))
+                .andExpect(jsonPath("$.myHeldSeats").isEmpty());
+
+        String twoSeats = seat(section.getSeatRows(), 9) + "," + seat(section.getSeatRows(), 10);
+        hold(alice, twoSeats).andExpect(status().isOk());
+
+        mockMvc.perform(get(summaryUrl()).header(HttpHeaders.AUTHORIZATION, bearer(alice)))
+                .andExpect(jsonPath(sectionPath + ".heldSeats").value(hasItem(2)))
+                .andExpect(jsonPath(sectionPath + ".availableSeats").value(hasItem(totalSeats - 2)))
+                .andExpect(jsonPath("$.myHeldSeats.length()").value(2));
+
+        reserve(alice, twoSeats).andExpect(status().isCreated());
+
+        mockMvc.perform(get(summaryUrl()))
+                .andExpect(jsonPath(sectionPath + ".soldSeats").value(hasItem(2)))
+                .andExpect(jsonPath(sectionPath + ".heldSeats").value(hasItem(0)))
+                .andExpect(jsonPath(sectionPath + ".availableSeats").value(hasItem(totalSeats - 2)));
+    }
+
+    @Test
+    void 좌석_목록은_구역을_지정해야_조회할_수_있다() throws Exception {
+        mockMvc.perform(get("/api/games/" + game.getId() + "/seats"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+
+        mockMvc.perform(get("/api/games/" + game.getId() + "/seats?sectionId=999999"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("SECTION_NOT_FOUND"));
+    }
+
+    @Test
     void 날짜별_경기_일정과_좌석_구성을_조회한다() throws Exception {
         mockMvc.perform(get("/api/games").param("date", game.getStartAt().toLocalDate().toString()))
                 .andExpect(status().isOk())
@@ -233,8 +273,13 @@ class ReservationFlowIntegrationTest {
         return "{\"sectionId\":" + section.getId() + ",\"rowNo\":" + rowNo + ",\"seatNo\":" + seatNo + "}";
     }
 
+    /** 좌석 목록은 구역 단위로만 조회한다. */
     private String seatsUrl() {
-        return "/api/games/" + game.getId() + "/seats";
+        return "/api/games/" + game.getId() + "/seats?sectionId=" + section.getId();
+    }
+
+    private String summaryUrl() {
+        return "/api/games/" + game.getId() + "/seats/summary";
     }
 
     private String holdsUrl() {

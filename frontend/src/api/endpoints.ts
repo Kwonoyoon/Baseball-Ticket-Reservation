@@ -9,6 +9,7 @@ import type {
   Reservation,
   SeatPosition,
   SeatStatus,
+  SeatSummary,
   Team,
 } from './types'
 
@@ -29,8 +30,12 @@ export const api = {
 
   getGame: (gameId: number, signal?: AbortSignal) => request<GameDetail>(`/games/${gameId}`, { signal }),
 
-  getSeatStatus: (gameId: number, signal?: AbortSignal) =>
-    request<SeatStatus>(`/games/${gameId}/seats`, { signal }),
+  /** 좌석 목록은 구역 단위로만 조회한다. (구장 전체 좌석은 너무 많다) */
+  getSeatStatus: (gameId: number, sectionId: number, signal?: AbortSignal) =>
+    request<SeatStatus>(`/games/${gameId}/seats?sectionId=${sectionId}`, { signal }),
+
+  getSeatSummary: (gameId: number, signal?: AbortSignal) =>
+    request<SeatSummary>(`/games/${gameId}/seats/summary`, { signal }),
 
   holdSeats: (gameId: number, seats: SeatPosition[]) =>
     request<HoldResult>(`/games/${gameId}/holds`, { method: 'POST', body: { seats } }),

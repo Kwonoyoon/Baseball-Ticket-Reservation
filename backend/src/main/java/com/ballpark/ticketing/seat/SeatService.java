@@ -3,6 +3,7 @@ package com.ballpark.ticketing.seat;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -19,11 +20,20 @@ import com.ballpark.ticketing.game.GameRepository;
 import com.ballpark.ticketing.global.error.BusinessException;
 import com.ballpark.ticketing.global.error.ErrorCode;
 import com.ballpark.ticketing.reservation.SoldSeatRepository;
+import com.ballpark.ticketing.reservation.SoldSeatRepository.SectionSoldCount;
 import com.ballpark.ticketing.seat.dto.HoldResponse;
 import com.ballpark.ticketing.seat.dto.SeatStatusResponse;
+import com.ballpark.ticketing.seat.dto.SeatSummaryResponse;
+import com.ballpark.ticketing.seat.dto.SeatSummaryResponse.SectionAvailability;
 import com.ballpark.ticketing.stadium.SeatSection;
 import com.ballpark.ticketing.stadium.SeatSectionRepository;
 
+/**
+ * 좌석 현황 조회와 선점을 담당한다.
+ *
+ * <p>한 구장은 2만 석이 넘기 때문에 조회는 모두 구역 단위로 처리한다.
+ * 구장 화면에는 좌석 목록 대신 구역별 개수만 내려보내고, 좌석 목록은 사용자가 고른 구역만 조회한다.
+ */
 @Service
 @Transactional(readOnly = true)
 public class SeatService {
@@ -46,23 +56,56 @@ public class SeatService {
         this.clock = clock;
     }
 
-    public SeatStatusResponse getSeatStatus(Long gameId, Long memberId) {
-        if (!gameRepository.existsById(gameId)) {
-            throw new BusinessException(ErrorCode.GAME_NOT_FOUND);
-        }
-        List<String> sold = soldSeatRepository.findByGameId(gameId).stream()
+    /** 구역 하나의 판매/선점 좌석 목록. */
+    public SeatStatusResponse getSectionSeatStatus(Long gameId, Long sectionId, Long memberId) {
+        Game game = findGame(gameId);
+        SeatSection section = findSection(game, sectionId);
+
+        List<String> sold = soldSeatRepository.findByGameIdAndSectionId(gameId, section.getId()).stream()
                 .map(soldSeat -> soldSeat.toPosition().key())
+                .sorted()
                 .toList();
+
         List<String> held = new ArrayList<>();
         List<String> mine = new ArrayList<>();
-        seatHoldStore.findHolds(gameId).forEach((seat, owner) -> {
+        seatHoldStore.findHoldsBySection(gameId, section.getId()).forEach((seat, owner) -> {
             if (owner.equals(memberId)) {
                 mine.add(seat.key());
             } else {
                 held.add(seat.key());
             }
         });
-        return new SeatStatusResponse(sold, held, mine);
+        Collections.sort(held);
+        Collections.sort(mine);
+
+        return new SeatStatusResponse(section.getId(), sold, held, mine);
+    }
+
+    /** 구장 화면용 구역별 잔여석 요약. 좌석 목록은 읽지 않는다. */
+    public SeatSummaryResponse getSeatSummary(Long gameId, Long memberId) {
+        Game game = findGame(gameId);
+        List<SeatSection> sections = findSections(game);
+
+        Map<Long, Long> soldCounts = soldSeatRepository.countSoldBySection(gameId).stream()
+                .collect(Collectors.toMap(SectionSoldCount::getSectionId, SectionSoldCount::getSoldCount));
+        Map<Long, Integer> heldCounts = seatHoldStore.countHoldsBySection(gameId,
+                sections.stream().map(SeatSection::getId).toList());
+
+        List<SectionAvailability> availabilities = sections.stream()
+                .map(section -> SectionAvailability.of(
+                        section.getId(),
+                        section.getSeatRows() * section.getSeatsPerRow(),
+                        soldCounts.getOrDefault(section.getId(), 0L).intValue(),
+                        heldCounts.getOrDefault(section.getId(), 0)))
+                .toList();
+
+        List<String> myHeldSeats = memberId == null ? List.of()
+                : seatHoldStore.findHoldsByMember(gameId, memberId).stream()
+                        .map(SeatPosition::key)
+                        .sorted()
+                        .toList();
+
+        return new SeatSummaryResponse(availabilities, myHeldSeats);
     }
 
     /**
@@ -72,14 +115,16 @@ public class SeatService {
         Game game = findBookableGame(gameId);
         Set<SeatPosition> requested = validateSeats(game, seats).keySet();
 
-        Set<String> soldKeys = soldSeatRepository.findByGameId(gameId).stream()
-                .map(soldSeat -> soldSeat.toPosition().key())
-                .collect(Collectors.toSet());
-        if (requested.stream().anyMatch(seat -> soldKeys.contains(seat.key()))) {
-            throw new BusinessException(ErrorCode.SEAT_ALREADY_SOLD);
+        // 요청한 좌석만 확인한다. 경기 전체 판매 좌석을 읽지 않는다.
+        for (SeatPosition seat : requested) {
+            boolean sold = soldSeatRepository.existsByGameIdAndSectionIdAndRowNoAndSeatNo(
+                    gameId, seat.sectionId(), seat.rowNo(), seat.seatNo());
+            if (sold) {
+                throw new BusinessException(ErrorCode.SEAT_ALREADY_SOLD);
+            }
         }
 
-        Set<SeatPosition> previous = heldBy(gameId, memberId);
+        Set<SeatPosition> previous = seatHoldStore.findHoldsByMember(gameId, memberId);
         if (!seatHoldStore.holdAll(gameId, memberId, requested, properties.ttl())) {
             throw new BusinessException(ErrorCode.SEAT_ALREADY_HELD);
         }
@@ -93,15 +138,14 @@ public class SeatService {
     }
 
     public void releaseAll(Long gameId, Long memberId) {
-        Set<SeatPosition> mine = heldBy(gameId, memberId);
+        Set<SeatPosition> mine = seatHoldStore.findHoldsByMember(gameId, memberId);
         if (!mine.isEmpty()) {
             seatHoldStore.release(gameId, memberId, mine);
         }
     }
 
     public Game findBookableGame(Long gameId) {
-        Game game = gameRepository.findById(gameId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.GAME_NOT_FOUND));
+        Game game = findGame(gameId);
         if (!game.isBookable(LocalDateTime.now(clock))) {
             throw new BusinessException(ErrorCode.BOOKING_CLOSED);
         }
@@ -123,8 +167,7 @@ public class SeatService {
                     "한 번에 최대 " + properties.maxSeats() + "석까지 선택할 수 있습니다.");
         }
 
-        Map<Long, SeatSection> sections = seatSectionRepository
-                .findByStadiumIdOrderByDisplayOrder(game.getStadium().getId()).stream()
+        Map<Long, SeatSection> sections = findSections(game).stream()
                 .collect(Collectors.toMap(SeatSection::getId, Function.identity()));
 
         Map<SeatPosition, SeatSection> result = new LinkedHashMap<>();
@@ -138,13 +181,19 @@ public class SeatService {
         return result;
     }
 
-    private Set<SeatPosition> heldBy(Long gameId, Long memberId) {
-        Set<SeatPosition> mine = new HashSet<>();
-        seatHoldStore.findHolds(gameId).forEach((seat, owner) -> {
-            if (owner.equals(memberId)) {
-                mine.add(seat);
-            }
-        });
-        return mine;
+    private Game findGame(Long gameId) {
+        return gameRepository.findById(gameId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.GAME_NOT_FOUND));
+    }
+
+    private List<SeatSection> findSections(Game game) {
+        return seatSectionRepository.findByStadiumIdOrderByDisplayOrder(game.getStadium().getId());
+    }
+
+    private SeatSection findSection(Game game, Long sectionId) {
+        return findSections(game).stream()
+                .filter(section -> section.getId().equals(sectionId))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException(ErrorCode.SECTION_NOT_FOUND));
     }
 }
