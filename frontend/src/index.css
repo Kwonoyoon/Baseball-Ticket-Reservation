@@ -648,6 +648,11 @@ p {
   scroll-margin-top: 84px;
 }
 
+/* 결제 카드가 우측에 고정되는 넓은 화면에서는 하단 결제 바가 필요 없다. */
+.booking-action-bar {
+  display: none;
+}
+
 .booking__side {
   position: sticky;
   top: 84px;
@@ -1318,9 +1323,46 @@ p {
     grid-template-columns: 1fr;
   }
 
-
   .booking__side {
     position: static;
+  }
+
+  /* 결제 카드가 좌석표 아래로 밀리므로, 고른 좌석이 있으면 화면 아래에 결제 버튼을 띄운다. */
+  .booking-action-bar {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    box-shadow: 0 -10px 24px rgb(15 35 64 / 12%);
+  }
+
+  .booking-action-bar__info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .booking-action-bar__info strong {
+    font-size: 17px;
+    color: var(--text);
+  }
+
+  .booking-action-bar .button {
+    flex: 1;
+  }
+
+  /* 하단 바가 마지막 카드를 가리지 않도록 여백을 둔다. */
+  .game-page {
+    padding-bottom: 88px;
   }
 }
 

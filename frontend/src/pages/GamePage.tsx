@@ -4,6 +4,7 @@ import { ApiError, errorMessage, isAbortError } from '../api/client'
 import { api } from '../api/endpoints'
 import type { GameDetail, HoldResult, PaymentMethod, SeatPosition, SeatStatus, SeatSummary } from '../api/types'
 import { useAuth } from '../auth/useAuth'
+import { BookingActionBar } from '../components/BookingActionBar'
 import { HoldCountdown } from '../components/HoldCountdown'
 import { SeatLegend, SeatMap } from '../components/SeatMap'
 import { SeatPriceList } from '../components/SeatPriceList'
@@ -26,6 +27,9 @@ import { hasStadiumMap } from '../lib/stadiumMap'
 const SEAT_REFRESH_INTERVAL_MS = 10_000
 /** 부드러운 스크롤이 끝났을 만한 시간. 이때까지 안 움직였으면 바로 이동시킨다. */
 const SCROLL_FALLBACK_MS = 600
+const REDUCED_MOTION = '(prefers-reduced-motion: reduce)'
+/** 결제 카드가 좌석표 아래로 내려가는 폭. index.css의 .booking 한 단 배치 기준과 같다. */
+const NARROW_LAYOUT = '(max-width: 960px)'
 /** 선점이 풀려 좌석을 처음부터 다시 골라야 하는 오류 */
 const HOLD_LOST_CODES = ['HOLD_EXPIRED', 'SEAT_ALREADY_SOLD', 'BOOKING_CLOSED']
 
@@ -52,6 +56,7 @@ export function GamePage() {
 
   // 구역을 고르면 배치도 아래에 있는 좌석 선택 카드로 스스로 내려간다.
   const seatPanelRef = useRef<HTMLElement>(null)
+  const summaryPanelRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     if (!validGameId) return
@@ -160,21 +165,31 @@ export function GamePage() {
   const quantityOptions = Array.from({ length: remainingQuota }, (_, index) => index + 1)
   const selectableQuantity = Math.min(quantity, Math.max(1, remainingQuota))
 
-  useEffect(() => {
-    if (activeSectionId === null) return
-    const panel = seatPanelRef.current
+  /** 카드가 헤더 아래에 오도록 옮긴다. 부드러운 이동이 막히는 환경을 위해 보정도 예약한다. */
+  const scrollToPanel = useCallback((panel: HTMLElement | null) => {
     // jsdom 등 scrollIntoView가 없는 환경에서는 건너뛴다.
-    if (!panel?.scrollIntoView) return
-    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    if (!panel?.scrollIntoView) return undefined
+    const reduceMotion = window.matchMedia?.(REDUCED_MOTION).matches
     panel.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' })
-    // 부드러운 이동이 동작하지 않는 환경도 있어, 잠시 뒤에도 카드가 화면 아래에 있으면 바로 옮긴다.
     const timer = window.setTimeout(() => {
       if (panel.getBoundingClientRect().top > window.innerHeight / 2) {
         panel.scrollIntoView({ behavior: 'auto', block: 'start' })
       }
     }, SCROLL_FALLBACK_MS)
     return () => window.clearTimeout(timer)
-  }, [activeSectionId])
+  }, [])
+
+  useEffect(() => {
+    if (activeSectionId === null) return
+    return scrollToPanel(seatPanelRef.current)
+  }, [activeSectionId, scrollToPanel])
+
+  // 좁은 화면에서는 결제 카드가 좌석표 아래에 있어, 결제 단계로 넘어가면 그쪽으로 옮겨 준다.
+  useEffect(() => {
+    if (hold === null) return
+    if (!window.matchMedia?.(NARROW_LAYOUT).matches) return
+    return scrollToPanel(summaryPanelRef.current)
+  }, [hold, scrollToPanel])
 
   const handleExpire = useCallback(() => {
     setHold(null)
@@ -393,7 +408,7 @@ export function GamePage() {
 
 
           <aside className="booking__side">
-            <section className="panel summary" aria-labelledby="summary-title">
+            <section className="panel summary" ref={summaryPanelRef} aria-labelledby="summary-title">
               <h2 id="summary-title" className="panel__title">
                 {hold ? '결제' : '선택한 좌석'}
               </h2>
@@ -492,6 +507,16 @@ export function GamePage() {
               )}
             </section>
           </aside>
+
+          {!hold && (
+            <BookingActionBar
+              seatCount={activeSelection.length}
+              totalPrice={totalPrice}
+              isAuthenticated={isAuthenticated}
+              submitting={submitting}
+              onSubmit={() => void handleHold()}
+            />
+          )}
         </div>
       )}
     </div>
