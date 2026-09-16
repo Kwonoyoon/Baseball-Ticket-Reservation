@@ -4,6 +4,7 @@ import { errorMessage, isAbortError } from '../api/client'
 import { api } from '../api/endpoints'
 import type { Reservation } from '../api/types'
 import { ReservationTicket } from '../components/ReservationTicket'
+import { ReservedSeatMap } from '../components/ReservedSeatMap'
 import { ErrorMessage, Loading } from '../components/StatusView'
 
 export function ReservationDetailPage() {
@@ -50,6 +51,16 @@ export function ReservationDetailPage() {
       )}
 
       <ReservationTicket reservation={reservation} />
+
+      {/* 배치도가 없는 구역만 예매했다면 카드 자체를 띄우지 않는다. */}
+      {reservation.seats.some((seat) => seat.sectionCode !== null) && (
+        <section className="panel seat-location-card" aria-labelledby="seat-location-title">
+          <h2 id="seat-location-title" className="panel__title">
+            내 좌석 위치
+          </h2>
+          <ReservedSeatMap seats={reservation.seats} />
+        </section>
+      )}
 
       <div className="page-actions">
         <Link className="button button--ghost" to="/my/reservations">
