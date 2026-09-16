@@ -110,7 +110,8 @@ def render(blocks):
 GRADE_ENUM = {"OUTFIELD": "OUTFIELD", "NAVY": "NAVY", "RED": "RED", "ORANGE": "ORANGE",
               "BLUE": "BLUE", "TABLE": "TABLE", "PREMIUM": "PREMIUM", "EXCITING": "EXCITING"}
 # 블록 구조는 모든 구장에서 같다. 이미 블록이 있는 구장은 건너뛴다.
-ALREADY_HAS_BLOCKS = "서울종합운동장 야구장 (잠실)"
+# 구장 이름은 마이그레이션으로 바뀔 수 있으니, 다시 생성할 때 현재 이름인지 확인할 것.
+ALREADY_HAS_BLOCKS = "서울종합운동장 야구장"
 NL = chr(10)
 
 
