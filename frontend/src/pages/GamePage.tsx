@@ -268,111 +268,108 @@ export function GamePage() {
         </EmptyState>
       ) : (
         <div className="booking">
-          <div className="booking__main">
-            <div className="booking__stadium">
-              <section className="panel seat-price-card" aria-label="좌석 가격">
-                <h2 className="panel__title">좌석 가격</h2>
-                <SeatPriceList sections={game.sections} />
-              </section>
+          <section className="panel" aria-label="구역 선택">
+            {hasStadiumMap(game.sections) ? (
+              <StadiumMap
+                sections={game.sections}
+                activeSectionId={activeSectionId}
+                remainingBySection={remainingBySection}
+                selectedBySection={selectedBySection}
+                onSelect={handleSelectSection}
+              />
+            ) : (
+              <StadiumOverview
+                sections={game.sections}
+                activeSectionId={activeSectionId}
+                remainingBySection={remainingBySection}
+                selectedBySection={selectedBySection}
+                onSelect={handleSelectSection}
+              />
+            )}
+          </section>
 
-              <section className="panel" aria-label="구역 선택">
-                {hasStadiumMap(game.sections) ? (
-                  <StadiumMap
-                    sections={game.sections}
-                    activeSectionId={activeSectionId}
-                    remainingBySection={remainingBySection}
-                    selectedBySection={selectedBySection}
-                    onSelect={handleSelectSection}
-                  />
-                ) : (
-                  <StadiumOverview
-                    sections={game.sections}
-                    activeSectionId={activeSectionId}
-                    remainingBySection={remainingBySection}
-                    selectedBySection={selectedBySection}
-                    onSelect={handleSelectSection}
-                  />
-                )}
-              </section>
-            </div>
+          <section className="panel seat-price-card" aria-label="좌석 가격">
+            <h2 className="panel__title">좌석 가격</h2>
+            <SeatPriceList sections={game.sections} />
+          </section>
 
-            {!activeSection && (
-              <section className="panel" aria-labelledby="seat-step-title">
+          {!activeSection && (
+            <section className="panel" aria-labelledby="seat-step-title">
+              <h2 id="seat-step-title" className="panel__title">
+                좌석 선택
+              </h2>
+              <p className="summary__empty">
+                먼저 위 배치도에서 구역을 선택해 주세요. 블록을 누르면 그 구역의 좌석이 나타납니다.
+              </p>
+            </section>
+          )}
+
+          {activeSection && (
+            <section className="panel" aria-labelledby="seat-step-title">
+              <div className="panel__header">
                 <h2 id="seat-step-title" className="panel__title">
                   좌석 선택
+                  <span className="panel__subtitle">
+                    {activeSection.name} · {formatPrice(activeSection.price)}
+                  </span>
                 </h2>
-                <p className="summary__empty">
-                  먼저 위 배치도에서 구역을 선택해 주세요. 블록을 누르면 그 구역의 좌석이 나타납니다.
+                <SeatLegend />
+              </div>
+
+              {quotaExhausted ? (
+                <p className="quota-hint quota-hint--blocked" role="status">
+                  이 경기는 최대 {seatLimit}석까지 예매할 수 있습니다. 이미 {reservedSeats}석을 예매하셨습니다.
                 </p>
-              </section>
-            )}
-
-            {activeSection && (
-              <section className="panel" aria-labelledby="seat-step-title">
-                <div className="panel__header">
-                  <h2 id="seat-step-title" className="panel__title">
-                    좌석 선택
-                    <span className="panel__subtitle">
-                      {activeSection.name} · {formatPrice(activeSection.price)}
-                    </span>
-                  </h2>
-                  <SeatLegend />
-                </div>
-
-                {quotaExhausted ? (
-                  <p className="quota-hint quota-hint--blocked" role="status">
-                    이 경기는 최대 {seatLimit}석까지 예매할 수 있습니다. 이미 {reservedSeats}석을 예매하셨습니다.
-                  </p>
-                ) : (
-                  <div className="seat-toolbar">
-                    <div className="quantity-picker" role="group" aria-label="매수 선택">
-                      <span className="quantity-picker__label">매수</span>
-                      {quantityOptions.map((option) => (
-                        <button
-                          key={option}
-                          type="button"
-                          aria-pressed={option === selectableQuantity}
-                          disabled={hold !== null || submitting}
-                          onClick={() => {
-                            setQuantity(option)
-                            setSelection([])
-                            setNotice(null)
-                          }}
-                        >
-                          {option}
-                        </button>
-                      ))}
-                    </div>
-                    <p className="quota-hint">
-                      좌석에 커서를 올리면 연속된 {selectableQuantity}석이 표시됩니다.
-                      {reservedSeats > 0 && ` (이미 ${reservedSeats}석 예매, ${remainingQuota}석 더 선택 가능)`}
-                    </p>
+              ) : (
+                <div className="seat-toolbar">
+                  <div className="quantity-picker" role="group" aria-label="매수 선택">
+                    <span className="quantity-picker__label">매수</span>
+                    {quantityOptions.map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        aria-pressed={option === selectableQuantity}
+                        disabled={hold !== null || submitting}
+                        onClick={() => {
+                          setQuantity(option)
+                          setSelection([])
+                          setNotice(null)
+                        }}
+                      >
+                        {option}
+                      </button>
+                    ))}
                   </div>
-                )}
+                  <p className="quota-hint">
+                    좌석에 커서를 올리면 연속된 {selectableQuantity}석이 표시됩니다.
+                    {reservedSeats > 0 && ` (이미 ${reservedSeats}석 예매, ${remainingQuota}석 더 선택 가능)`}
+                  </p>
+                </div>
+              )}
 
-                {currentStatus ? (
-                  <SeatMap
-                    section={activeSection}
-                    soldKeys={soldKeys}
-                    heldKeys={heldKeys}
-                    selectedKeys={selectedKeys}
-                    quantity={selectableQuantity}
-                    disabled={hold !== null || submitting || quotaExhausted}
-                    onSelectGroup={handleSelectGroup}
-                    onClearSelection={() => setSelection([])}
-                    onGroupUnavailable={handleGroupUnavailable}
-                  />
-                ) : sectionError ? (
-                  <ErrorMessage
-                    message="좌석 현황을 불러오지 못했습니다."
-                    onRetry={() => void refreshSection(activeSectionId)}
-                  />
-                ) : (
-                  <Loading label="좌석 현황을 불러오는 중…" />
-                )}
-              </section>
-            )}
-          </div>
+              {currentStatus ? (
+                <SeatMap
+                  section={activeSection}
+                  soldKeys={soldKeys}
+                  heldKeys={heldKeys}
+                  selectedKeys={selectedKeys}
+                  quantity={selectableQuantity}
+                  disabled={hold !== null || submitting || quotaExhausted}
+                  onSelectGroup={handleSelectGroup}
+                  onClearSelection={() => setSelection([])}
+                  onGroupUnavailable={handleGroupUnavailable}
+                />
+              ) : sectionError ? (
+                <ErrorMessage
+                  message="좌석 현황을 불러오지 못했습니다."
+                  onRetry={() => void refreshSection(activeSectionId)}
+                />
+              ) : (
+                <Loading label="좌석 현황을 불러오는 중…" />
+              )}
+            </section>
+          )}
+
 
           <aside className="booking__side">
             <section className="panel summary" aria-labelledby="summary-title">

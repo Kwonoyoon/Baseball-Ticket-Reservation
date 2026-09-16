@@ -630,18 +630,16 @@ p {
   font-weight: 600;
 }
 
+/* 위: 경기장 · 좌석 가격 / 아래: 좌석 선택 · 결제 */
 .booking {
   display: grid;
+  /* 좌석 배치도(max-content)가 열 너비를 밀어내지 않도록 최소 너비를 0으로 둔다. */
   grid-template-columns: minmax(0, 1fr) 340px;
   align-items: start;
   gap: 20px;
 }
 
-.booking__main {
-  display: grid;
-  /* 좌석 배치도(max-content)가 열 너비를 밀어내지 않도록 최소 너비를 0으로 둔다. */
-  grid-template-columns: minmax(0, 1fr);
-  gap: 20px;
+.booking > * {
   min-width: 0;
 }
 
@@ -1315,13 +1313,6 @@ p {
     grid-template-columns: 1fr;
   }
 
-  .booking__stadium {
-    grid-template-columns: 1fr;
-  }
-
-  .seat-price-card {
-    position: static;
-  }
 
   .booking__side {
     position: static;
@@ -1597,18 +1588,8 @@ p {
   pointer-events: none;
 }
 
-/* 배치도 왼쪽 가격 카드 */
-.booking__stadium {
-  display: grid;
-  grid-template-columns: 210px minmax(0, 1fr);
-  gap: 20px;
-  align-items: start;
-}
+/* 좌석 가격 카드 */
 
-.seat-price-card {
-  position: sticky;
-  top: 84px;
-}
 
 .seat-price-list {
   display: grid;
