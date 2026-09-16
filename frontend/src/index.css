@@ -630,7 +630,7 @@ p {
   font-weight: 600;
 }
 
-/* 위: 경기장 · 좌석 가격 / 아래: 좌석 선택 · 결제 */
+/* 위: 좌석 가격(전체 폭) / 아래: 왼쪽에 경기장·좌석 선택, 오른쪽에 결제 */
 .booking {
   display: grid;
   /* 좌석 배치도(max-content)가 열 너비를 밀어내지 않도록 최소 너비를 0으로 둔다. */
@@ -641,6 +641,28 @@ p {
 
 .booking > * {
   min-width: 0;
+  /* 경기장과 좌석 선택 카드는 왼쪽 열에 세로로 쌓는다. */
+  grid-column: 1;
+}
+
+/* 좌석 가격은 결제 카드 끝까지 한 줄로 펼친다. */
+.seat-price-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  grid-column: 1 / -1;
+}
+
+.seat-price-card > .panel__title {
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+
+/* 결제 카드는 오른쪽 열에서 경기장·좌석 선택 옆을 따라간다. */
+.booking__side {
+  grid-row: 2 / span 2;
+  grid-column: 2;
 }
 
 /* 구역을 고르면 좌석 선택 카드로 스스로 내려가므로 고정 헤더에 가리지 않게 여백을 둔다. */
@@ -1323,8 +1345,14 @@ p {
     grid-template-columns: 1fr;
   }
 
+  .booking > *,
+  .seat-price-card {
+    grid-column: auto;
+  }
+
   .booking__side {
     position: static;
+    grid-row: auto;
   }
 
   /* 결제 카드가 좌석표 아래로 밀리므로, 고른 좌석이 있으면 화면 아래에 결제 버튼을 띄운다. */
@@ -1642,8 +1670,11 @@ p {
 
 
 .seat-price-list {
+  /* 등급이 몇 개든 같은 너비로 나뉘도록 칸을 자동으로 채운다. */
   display: grid;
-  gap: 4px;
+  flex: 1;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1653,13 +1684,11 @@ p {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 6px;
-  border-bottom: 1px solid var(--border);
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
   font-size: 14px;
-}
-
-.seat-price-list li:last-child {
-  border-bottom: 0;
 }
 
 .seat-price-list__chip {

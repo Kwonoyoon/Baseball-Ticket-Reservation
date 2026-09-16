@@ -304,6 +304,11 @@ export function GamePage() {
         </EmptyState>
       ) : (
         <div className="booking">
+          <section className="panel seat-price-card" aria-label="좌석 가격">
+            <h2 className="panel__title">좌석 가격</h2>
+            <SeatPriceList sections={game.sections} />
+          </section>
+
           <section className="panel" aria-label="구역 선택">
             {hasStadiumMap(game.sections) ? (
               <StadiumMap
@@ -322,11 +327,6 @@ export function GamePage() {
                 onSelect={handleSelectSection}
               />
             )}
-          </section>
-
-          <section className="panel seat-price-card" aria-label="좌석 가격">
-            <h2 className="panel__title">좌석 가격</h2>
-            <SeatPriceList sections={game.sections} />
           </section>
 
           {!activeSection && (
