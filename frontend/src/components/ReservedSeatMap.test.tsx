@@ -51,8 +51,19 @@ describe('ReservedSeatMap', () => {
 
     await user.click(screen.getByRole('button', { name: '3열 8번' }))
 
-    // 10열 22석 블록에서 3열 8번을 짚어 준다.
-    expect(screen.getByRole('img', { name: '네이비석 1번 10열 22석 중 3열 8번' })).toBeInTheDocument()
+    // 10열 22석 블록의 좌석표에서 내 좌석을 짚어 준다.
+    expect(
+      screen.getByRole('img', { name: '네이비석 1번 10열 22석 중 내 좌석 3열 7번, 3열 8번' }),
+    ).toBeInTheDocument()
+  })
+
+  it('배치도에서 블록을 눌러도 좌석표가 열린다', async () => {
+    const user = userEvent.setup()
+    render(<ReservedSeatMap seats={[seat()]} />)
+
+    await user.click(screen.getByRole('button', { name: '네이비석 1번 좌석표 보기' }))
+
+    expect(screen.getByRole('img', { name: /네이비석 1번 10열 22석 중 내 좌석/ })).toBeInTheDocument()
   })
 
   it('같은 좌석을 다시 누르면 접힌다', async () => {

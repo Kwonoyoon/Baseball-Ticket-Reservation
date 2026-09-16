@@ -1775,6 +1775,184 @@ p {
 }
 
 .seat-location__block.is-mine path {
+  cursor: pointer;
+  fill: var(--grade-color, var(--navy-700));
+  opacity: 1;
+  /* 짙은 등급 색 위에서도 블록 경계가 보이도록 흰 테두리를 두른다. */
+  stroke: #ffffff;
+  stroke-width: 4;
+  paint-order: stroke;
+}
+
+/* 좌석표를 펼친 블록은 한 번 더 강조한다. */
+.seat-location__block.is-open path {
+  stroke: var(--navy-900);
+  stroke-width: 5;
+}
+
+.seat-location__number {
+  fill: #ffffff;
+  /* 블록 하나만 칠해져 있어 배치도를 줄여도 번호가 읽히도록 크게 쓴다. */
+  font-size: 26px;
+  font-weight: 800;
+  paint-order: stroke;
+  stroke: rgb(15 35 64 / 45%);
+  stroke-width: 3;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.seat-location__list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 배치도에서 칠해진 블록과 같은 색으로 묶어 준다. */
+.seat-location__list > li {
+  padding: 10px 12px;
+  border: 1px solid var(--grade-color, var(--border));
+  border-left: 5px solid var(--grade-color, var(--border));
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--grade-color, #ffffff) 10%, #ffffff);
+  font-size: 14px;
+}
+
+.seat-location__name strong {
+  color: var(--grade-color, var(--text));
+}
+
+.seat-location__name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+/* 좌석은 한 줄에 하나씩 적고, 누르면 블록 안 위치를 펼친다. */
+.seat-location__seats {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.seat-location__seat {
+  width: 100%;
+  padding: 3px 6px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+  cursor: pointer;
+}
+
+.seat-location__seat:hover {
+  background: color-mix(in srgb, var(--grade-color, #000000) 14%, #ffffff);
+  color: var(--text);
+}
+
+.seat-location__seat.is-open {
+  background: var(--grade-color, var(--navy-800));
+  color: #ffffff;
+  font-weight: 700;
+}
+
+/* 블록 안 좌석표 (예매 화면과 같은 모양, 읽기 전용) */
+.seat-location__grid {
+  grid-column: 1 / -1;
+}
+
+.block-grid {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+}
+
+.block-grid .seat {
+  cursor: default;
+}
+
+/* 내 좌석이 아닌 자리는 자리만 보이게 둔다. */
+.block-grid .seat--other {
+  border-color: var(--border);
+  background: #ffffff;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.block-grid .seat--mine {
+  border-color: var(--grade-color);
+  background: var(--grade-color);
+  color: #ffffff;
+}
+
+/* 목록에서 고른 좌석 하나는 테두리로 더 짚어 준다. */
+.block-grid .seat.is-focus {
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 0 0 4px var(--navy-900);
+}
+
+.block-grid__caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.block-grid__mark {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  background: var(--grade-color, var(--navy-700));
+}
+
+.block-grid__caption strong {
+  color: var(--grade-color, var(--text));
+  font-size: 15px;
+}
+/* ---------- 예매 상세: 내 좌석 위치 ---------- */
+
+.seat-location-card {
+  margin-top: 20px;
+}
+
+/* 좌석 목록을 왼쪽 위에 두고, 배치도를 그 옆에 놓는다. */
+.seat-location {
+  display: grid;
+  grid-template-columns: minmax(150px, 200px) minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.seat-location svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: min(58vh, 520px);
+  margin-inline: auto;
+}
+
+.seat-location__field {
+  opacity: 0.35;
+}
+
+/* 내 좌석이 아닌 블록은 자리만 알아볼 수 있게 옅게 둔다. */
+.seat-location__block path {
+  fill: var(--border);
+  opacity: 0.55;
+}
+
+.seat-location__block.is-mine path {
   fill: var(--grade-color, var(--navy-700));
   opacity: 1;
   /* 짙은 등급 색 위에서도 블록 경계가 보이도록 흰 테두리를 두른다. */

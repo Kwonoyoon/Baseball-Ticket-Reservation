@@ -96,13 +96,35 @@ export function ReservedSeatMap({ seats }: ReservedSeatMapProps) {
         </g>
 
         {STADIUM_BLOCKS.map((block) => {
-          const isMine = seatsByCode.has(block.code)
+          const group = seatsByCode.get(block.code)
+          const isMine = group !== undefined
+          const isOpen = isMine && openSeat?.sectionCode === block.code
+          // 내 블록을 누르면 그 블록의 좌석표를 펼친다.
+          const toggle = () => {
+            if (!group) return
+            setOpenSeat(isOpen ? null : group[0])
+          }
           return (
             <g
               key={block.code}
-              className={`seat-location__block grade--${block.grade.toLowerCase()}${isMine ? ' is-mine' : ''}`}
+              className={`seat-location__block grade--${block.grade.toLowerCase()}${isMine ? ' is-mine' : ''}${
+                isOpen ? ' is-open' : ''
+              }`}
             >
-              <path d={block.d} />
+              <path
+                d={block.d}
+                role={isMine ? 'button' : undefined}
+                tabIndex={isMine ? 0 : undefined}
+                aria-expanded={isMine ? isOpen : undefined}
+                aria-label={isMine ? `${group[0].sectionName} 좌석표 보기` : undefined}
+                onClick={toggle}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    toggle()
+                  }
+                }}
+              />
               {isMine && (
                 <text
                   className="seat-location__number"
