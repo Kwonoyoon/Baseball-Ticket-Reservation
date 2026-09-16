@@ -30,9 +30,9 @@ export function Layout() {
             {member ? (
               <>
                 <span className="site-header__user">{member.name}님</span>
-                <a className="button button--ghost-light button--sm" href="http://localhost:5174/myticket">
+                <Link className="button button--ghost-light button--sm" to="/myticket">
                   내 티켓
-                </a>
+                </Link>
                 <button type="button" className="button button--ghost-light button--sm" onClick={handleLogout}>
                   로그아웃
                 </button>

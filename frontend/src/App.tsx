@@ -5,6 +5,7 @@ import { Layout } from './components/Layout'
 import { GamePage } from './pages/GamePage'
 import { LoginPage } from './pages/LoginPage'
 import { MyReservationsPage } from './pages/MyReservationsPage'
+import { MyTicketPage } from './pages/MyTicketPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { ReservationDetailPage } from './pages/ReservationDetailPage'
 import { SchedulePage } from './pages/SchedulePage'
@@ -24,6 +25,14 @@ const router = createBrowserRouter([
         element: (
           <RequireAuth>
             <MyReservationsPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'myticket',
+        element: (
+          <RequireAuth>
+            <MyTicketPage />
           </RequireAuth>
         ),
       },
