@@ -562,6 +562,23 @@ p {
   font-size: 16px;
 }
 
+/* 구단 로고는 색이 저마다 달라 흰 바탕에 올리고, 구단 색은 테두리로 남긴다. */
+.team-mark--logo {
+  padding: 5px;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 2px var(--team-color);
+}
+
+.team-mark--logo.team-mark--lg {
+  padding: 8px;
+}
+
+.team-mark__logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 /* ---------- 경기 상세 / 좌석 선택 ---------- */
 
 .back-link {
