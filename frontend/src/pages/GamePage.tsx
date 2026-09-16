@@ -329,7 +329,7 @@ export function GamePage() {
           </section>
 
           {!activeSection && (
-            <section className="panel" ref={seatPanelRef} aria-labelledby="seat-step-title">
+            <section className="panel seat-select-card" ref={seatPanelRef} aria-labelledby="seat-step-title">
               <h2 id="seat-step-title" className="panel__title">
                 좌석 선택
               </h2>
@@ -340,7 +340,7 @@ export function GamePage() {
           )}
 
           {activeSection && (
-            <section className="panel" ref={seatPanelRef} aria-labelledby="seat-step-title">
+            <section className="panel seat-select-card" ref={seatPanelRef} aria-labelledby="seat-step-title">
               <div className="panel__header">
                 <h2 id="seat-step-title" className="panel__title">
                   좌석 선택
