@@ -110,15 +110,17 @@ p {
   height: 64px;
 }
 
+/* 메인 화면의 .home-brand(SchedulePage.css)와 크기·자간·줄높이를 그대로 맞췄다. */
 .brand {
   display: inline-flex;
   align-items: center;
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 800;
+  line-height: 1;
   /* Archivo Black은 굵기가 하나(400)뿐이라, 위 800을 그대로 두면 브라우저가 억지로 두껍게 흉내 내(faux bold) 흐릿해진다. */
   font-synthesis: none;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.05em;
   text-decoration: none;
 }
 
