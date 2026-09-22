@@ -1,0 +1,691 @@
+/*
+ * 메인 화면(경기 일정) 전용 스타일.
+ * 다른 페이지가 쓰는 index.css의 토큰(--bg, --surface ...)과 이름이 겹치지 않도록
+ * 변수를 모두 --home-* 로 두고, 선택자도 .home 아래로만 쓴다.
+ */
+
+.home {
+  --home-bg: #f3f4f6;
+  --home-surface: #ffffff;
+  --home-sunk: #eaedf1;
+  --home-line: #dcdfe5;
+  --home-line-strong: #c3c8d1;
+  --home-ink: #141d29;
+  --home-ink-soft: #2e3a4a;
+  --home-muted: #5f6b79;
+  /* 초안의 #8a95a3은 흰 바탕에서 대비가 2.9:1이라 원정·홈 표시가 안 읽힌다. 4.5:1 이상이 되게 진하게 잡았다. */
+  --home-faint: #6b7785;
+  /* 흰 글자를 올리는 버튼 색. 초안의 #e4572e는 흰 글자와 대비가 3.7:1이라 4.5:1 이상이 되게 살짝 진하게 잡았다. */
+  --home-accent: #cf4620;
+  --home-accent-hover: #b23c19;
+  /* 토요일 표시 파랑도 같은 이유로 초안의 #3b7fd1보다 진하게 잡았다. */
+  --home-sat: #2f6fbf;
+  --home-hero-bg: #12151a;
+  --home-header-h: 62px;
+  --home-display: 'Archivo Black', Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', system-ui,
+    sans-serif;
+  --home-mono: ui-monospace, Menlo, Consolas, monospace;
+
+  min-height: 100vh;
+  background: var(--home-bg);
+  color: var(--home-ink);
+}
+
+/* index.css의 기본 포커스 링(연한 노랑)은 흰 바탕에서 잘 안 보여서 이 화면에서는 진한 색으로 바꾼다. */
+.home :focus-visible {
+  outline: 3px solid var(--home-accent);
+  outline-offset: 2px;
+}
+
+.home-hero :focus-visible {
+  outline-color: #ffffff;
+}
+
+/*
+ * 제목류에 쓰는 표시 글꼴. Archivo Black은 굵기가 하나뿐이고 한글 글리프가 없다.
+ * font-synthesis를 끄지 않으면 굵기 800을 억지로 흉내 내(faux bold) 영문이 번져 보인다.
+ * 끄면 영문은 원래 두께로, 한글은 대체 글꼴의 진짜 굵은체로 나온다.
+ */
+.home-brand,
+.home-hero__mark,
+.home-section-title,
+.home-slide__team strong,
+.home-slide__vs {
+  font-family: var(--home-display);
+  font-weight: 800;
+  font-synthesis: none;
+}
+
+/* ---------- 헤더 ---------- */
+
+.home-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  border-bottom: 1px solid var(--home-line);
+  background: color-mix(in srgb, var(--home-surface) 88%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.home-header__inner {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  max-width: 1120px;
+  height: var(--home-header-h);
+  margin-inline: auto;
+  padding-inline: 24px;
+}
+
+.home-brand {
+  color: var(--home-ink);
+  font-size: 16px;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.home-brand em {
+  color: var(--home-accent);
+  font-style: normal;
+}
+
+.home-nav a {
+  padding: 8px 12px;
+  border-radius: 6px;
+  color: var(--home-muted);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.home-nav a:hover {
+  color: var(--home-ink);
+}
+
+.home-header__auth {
+  margin-left: auto;
+}
+
+.home-outline-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--home-line-strong);
+  border-radius: 6px;
+  background: none;
+  color: var(--home-ink-soft);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.home-outline-button:hover {
+  border-color: var(--home-accent);
+  color: var(--home-accent);
+}
+
+/* ---------- 히어로: 오늘의 경기 캐러셀, 스크롤하면 고정된 채 흐려진다 ---------- */
+
+/*
+ * 바깥 영역(165vh) 안에서 안쪽(.home-hero__sticky, 화면 높이 ≈ 100vh)이 헤더 아래에 붙어 있는 동안
+ * 남는 약 65vh만큼 스크롤할 수 있다. 이 구간의 진행률이 --hero-p(0~1)이고 TodayHero가 스크롤마다 갱신한다.
+ * 흐림·밝기·이동량은 여기서 --hero-p 하나로 계산하므로 숫자를 바꿔도 JS는 건드릴 필요가 없다.
+ */
+.home-hero {
+  --hero-p: 0;
+  position: relative;
+  height: 165vh;
+}
+
+.home-hero__sticky {
+  position: sticky;
+  top: var(--home-header-h);
+  height: max(380px, calc(100vh - var(--home-header-h)));
+  overflow: hidden;
+  background: var(--home-hero-bg);
+}
+
+.home-hero__track {
+  display: flex;
+  height: 100%;
+  filter: blur(calc(var(--hero-p) * 14px)) brightness(calc(1 - var(--hero-p) * 0.5));
+  transition: transform 0.7s cubic-bezier(0.65, 0, 0.35, 1);
+  will-change: filter;
+}
+
+.home-slide {
+  display: flex;
+  flex: 0 0 100%;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 24px;
+  /* 원정팀 색에서 홈팀 색으로 이어지는 배경. 15%는 어두운 바탕색을 섞어 채도를 눌러 준다. */
+  background: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--away-color) 85%, var(--home-hero-bg)),
+    color-mix(in srgb, var(--home-color) 85%, var(--home-hero-bg))
+  );
+  color: #ffffff;
+}
+
+.home-slide--message {
+  background: var(--home-hero-bg);
+  color: rgb(255 255 255 / 75%);
+}
+
+.home-slide__teams {
+  --slide-logo: clamp(64px, 9vw, 96px);
+  display: flex;
+  /* 홈팀 캡션(구장 이름)이 좁은 화면에서 여러 줄로 접혀도 두 로고의 높이가 어긋나지 않게 위쪽 기준으로 맞춘다. */
+  align-items: flex-start;
+  gap: clamp(18px, 4vw, 56px);
+}
+
+.home-slide__team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: clamp(96px, 18vw, 160px);
+  text-align: center;
+}
+
+.home-slide__team .team-mark {
+  width: var(--slide-logo);
+  height: var(--slide-logo);
+  box-shadow:
+    inset 0 0 0 3px var(--team-color),
+    0 6px 18px rgb(0 0 0 / 35%);
+}
+
+.home-slide__team strong {
+  font-size: clamp(14px, 1.6vw, 18px);
+}
+
+.home-slide__team span {
+  color: rgb(255 255 255 / 88%);
+  font-size: 12px;
+}
+
+.home-slide__vs {
+  color: rgb(255 255 255 / 60%);
+  font-size: clamp(18px, 2.4vw, 26px);
+  /* 로고 높이와 같게 두면 VS가 로고의 세로 가운데에 놓인다. */
+  line-height: var(--slide-logo);
+}
+
+.home-hero__shade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to top, rgb(0 0 0 / 55%) 0%, transparent 46%),
+    linear-gradient(to right, rgb(0 0 0 / 28%), transparent 30%, transparent 70%, rgb(0 0 0 / 28%));
+  pointer-events: none;
+}
+
+.home-hero__copy {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 72px;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  max-width: 1120px;
+  margin-inline: auto;
+  padding-inline: 24px;
+  color: #ffffff;
+  opacity: max(0, calc(1 - var(--hero-p) * 1.6));
+  transform: translateY(calc(var(--hero-p) * -36px));
+  will-change: transform, opacity;
+}
+
+.home-hero__mark {
+  font-size: clamp(30px, 4.6vw, 52px);
+  letter-spacing: 0.01em;
+  line-height: 1.05;
+}
+
+.home-hero__mark em {
+  color: var(--home-accent);
+  font-style: normal;
+}
+
+.home-hero__sub {
+  margin-top: 10px;
+  color: rgb(255 255 255 / 85%);
+  font-size: 14px;
+}
+
+.home-hero__cta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 22px;
+  border-radius: 6px;
+  background: var(--home-accent);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.home-hero__cta:hover {
+  background: var(--home-accent-hover);
+}
+
+/* 점은 눈에 보이는 크기(7px)보다 눌러야 하는 영역을 넓게 잡는다. */
+.home-hero__dots {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  z-index: 2;
+  display: flex;
+  opacity: max(0, calc(1 - var(--hero-p) * 2.2));
+}
+
+.home-hero__dots button {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.home-hero__dots button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 4px;
+  background: rgb(255 255 255 / 45%);
+  transform: translate(-50%, -50%);
+  transition: width 0.2s;
+}
+
+.home-hero__dots button[aria-current='true']::after {
+  width: 20px;
+  background: #ffffff;
+}
+
+.home-hero__hint {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: rgb(255 255 255 / 65%);
+  font-family: var(--home-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.2em;
+  opacity: max(0, calc(1 - var(--hero-p) * 4));
+  translate: -50% 0;
+}
+
+.home-hero__hint i {
+  display: block;
+  width: 1px;
+  height: 26px;
+  background: linear-gradient(to bottom, rgb(255 255 255 / 60%), transparent);
+  animation: home-hint 1.6s ease-in-out infinite;
+}
+
+@keyframes home-hint {
+  0%,
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  50% {
+    opacity: 0.3;
+    transform: translateY(8px);
+  }
+}
+
+/* ---------- 날짜 · 구단 선택 ---------- */
+
+.home-main {
+  max-width: 1120px;
+  margin-inline: auto;
+  padding: 40px 24px 64px;
+  /* 히어로의 "일정 보러가기"로 이동할 때 고정 헤더에 제목이 가려지지 않게 한다. */
+  scroll-margin-top: var(--home-header-h);
+}
+
+.home-dates {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding-bottom: 4px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.home-date {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 56px;
+  padding: 9px 6px;
+  border: 1px solid var(--home-line);
+  border-radius: 8px;
+  background: var(--home-surface);
+  color: var(--home-ink-soft);
+  cursor: pointer;
+}
+
+.home-date:hover {
+  border-color: var(--home-line-strong);
+}
+
+.home-date__weekday {
+  color: var(--home-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.home-date__day {
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+.home-date.is-sat .home-date__weekday {
+  color: var(--home-sat);
+}
+
+.home-date.is-sun .home-date__weekday {
+  color: var(--home-accent);
+}
+
+/* 선택된 날짜의 토·일 색은 흰 바탕용이라 어두운 칩 위에서는 안 읽힌다. 위 규칙과 같은 우선순위라 뒤에 둬서 이긴다. */
+.home-date[aria-pressed='true'] {
+  border-color: var(--home-ink);
+  background: var(--home-ink);
+  color: #ffffff;
+}
+
+.home-date[aria-pressed='true'] .home-date__weekday {
+  color: rgb(255 255 255 / 75%);
+}
+
+.home-teams {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 32px;
+}
+
+.home-team {
+  --team-color: var(--home-accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--home-line-strong);
+  border-radius: 999px;
+  background: var(--home-surface);
+  color: var(--home-ink-soft);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.home-team__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--team-color);
+}
+
+.home-team:hover {
+  border-color: var(--team-color);
+}
+
+.home-team[aria-pressed='true'] {
+  border-color: var(--team-color);
+  background: var(--team-color);
+  color: #ffffff;
+}
+
+.home-team[aria-pressed='true'] .home-team__dot {
+  background: #ffffff;
+}
+
+/* ---------- 경기 목록 ---------- */
+
+.home-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.home-section-title {
+  font-size: clamp(18px, 2.4vw, 22px);
+  letter-spacing: -0.01em;
+}
+
+.home-section-count {
+  color: var(--home-muted);
+  font-size: 13px;
+}
+
+.home-games {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-game {
+  display: grid;
+  grid-template-columns: 150px 1fr auto;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 22px;
+  border: 1px solid var(--home-line);
+  border-radius: 12px;
+  background: var(--home-surface);
+}
+
+.home-game:hover {
+  border-color: var(--home-line-strong);
+  box-shadow: 0 1px 2px rgb(20 29 41 / 6%);
+}
+
+.home-game__time {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.home-game__time strong {
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+.home-game__time span {
+  color: var(--home-muted);
+  font-size: 13px;
+}
+
+.home-matchup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.home-matchup__team {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.home-matchup__team--away {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.home-matchup__label {
+  display: flex;
+  flex-direction: column;
+}
+
+.home-matchup__name {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.home-matchup__role {
+  color: var(--home-faint);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.home-matchup__vs {
+  color: var(--home-faint);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.home-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.home-button--primary {
+  background: var(--home-accent);
+  color: #ffffff;
+}
+
+.home-button--primary:hover {
+  background: var(--home-accent-hover);
+}
+
+.home-button--disabled {
+  background: var(--home-sunk);
+  color: var(--home-faint);
+  cursor: not-allowed;
+}
+
+.home-footer {
+  max-width: 1120px;
+  margin-inline: auto;
+  padding: 20px 24px 40px;
+  border-top: 1px solid var(--home-line);
+  color: var(--home-faint);
+  font-family: var(--home-mono);
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+/* ---------- 반응형 ---------- */
+
+@media (max-width: 760px) {
+  .home-game {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .home-game__time {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  .home-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .home-hero__copy {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 560px) {
+  .home-header__inner,
+  .home-hero__copy,
+  .home-main,
+  .home-footer {
+    padding-inline: 16px;
+  }
+
+  .home-game {
+    padding: 18px;
+  }
+
+  /* 좁은 화면에서는 로고를 위, 이름을 아래로 쌓아 양쪽 팀이 한 줄에 들어가게 한다. */
+  .home-matchup {
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .home-matchup__team,
+  .home-matchup__team--away {
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    text-align: center;
+  }
+
+  .home-matchup__team--away {
+    flex-direction: column-reverse;
+    justify-content: flex-end;
+  }
+
+  .home-matchup__name {
+    white-space: nowrap;
+  }
+
+  /* 로고(40px)의 세로 가운데에 맞춘다. */
+  .home-matchup__vs {
+    align-self: flex-start;
+    line-height: 40px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-hero__track {
+    transition: none;
+  }
+
+  .home-hero__hint i {
+    animation: none;
+  }
+}
