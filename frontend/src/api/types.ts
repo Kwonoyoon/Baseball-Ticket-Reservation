@@ -113,6 +113,24 @@ export type ReservedSeat = {
   price: number
 }
 
+export type NotificationType = 'RESERVATION_CONFIRMED' | 'RESERVATION_CANCELED' | 'GENERAL'
+
+export type Notification = {
+  id: number
+  type: NotificationType
+  title: string
+  message: string
+  read: boolean
+  /** 서울 시간 기준 ISO 문자열 */
+  createdAt: string
+}
+
+export type NotificationPreference = {
+  type: NotificationType
+  label: string
+  enabled: boolean
+}
+
 export type Reservation = {
   id: number
   reservationNumber: string

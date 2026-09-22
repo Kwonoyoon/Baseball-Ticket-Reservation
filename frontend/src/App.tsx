@@ -2,10 +2,12 @@ import { createBrowserRouter, RouterProvider } from 'react-router'
 import { AuthProvider } from './auth/AuthProvider'
 import { RequireAuth } from './auth/RequireAuth'
 import { Layout } from './components/Layout'
+import { NotificationProvider } from './notifications/NotificationProvider'
 import { GamePage } from './pages/GamePage'
 import { LoginPage } from './pages/LoginPage'
 import { MyReservationsPage } from './pages/MyReservationsPage'
 import { NotFoundPage } from './pages/NotFoundPage'
+import { NotificationSettingsPage } from './pages/NotificationSettingsPage'
 import { ReservationDetailPage } from './pages/ReservationDetailPage'
 import { SchedulePage } from './pages/SchedulePage'
 import { SignupPage } from './pages/SignupPage'
@@ -35,6 +37,14 @@ const router = createBrowserRouter([
           </RequireAuth>
         ),
       },
+      {
+        path: 'notifications/settings',
+        element: (
+          <RequireAuth>
+            <NotificationSettingsPage />
+          </RequireAuth>
+        ),
+      },
       { path: '*', element: <NotFoundPage /> },
     ],
   },
@@ -43,7 +53,9 @@ const router = createBrowserRouter([
 export default function App() {
   return (
     <AuthProvider>
-      <RouterProvider router={router} />
+      <NotificationProvider>
+        <RouterProvider router={router} />
+      </NotificationProvider>
     </AuthProvider>
   )
 }

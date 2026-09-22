@@ -1,14 +1,35 @@
+import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 import { useAuth } from '../auth/useAuth'
+import { NotificationBell } from './NotificationBell'
+
+function formatCountdown(remainingMs: number): string {
+  const totalSeconds = Math.max(0, Math.floor(remainingMs / 1000))
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+  const mm = String(minutes).padStart(2, '0')
+  const ss = String(seconds).padStart(2, '0')
+  return hours > 0 ? `${hours}:${mm}:${ss}` : `${mm}:${ss}`
+}
 
 export function Layout() {
-  const { member, logout } = useAuth()
+  const { member, expiresAt, logout } = useAuth()
   const navigate = useNavigate()
+  const [now, setNow] = useState(() => Date.now())
+
+  useEffect(() => {
+    if (!expiresAt) return
+    const interval = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(interval)
+  }, [expiresAt])
 
   const handleLogout = () => {
     logout()
     navigate('/')
   }
+
+  const logoutTimeLabel = expiresAt ? formatCountdown(expiresAt - now) : null
 
   return (
     <div className="app">
@@ -29,10 +50,14 @@ export function Layout() {
           <div className="site-header__auth">
             {member ? (
               <>
+                <NotificationBell />
                 <span className="site-header__user">{member.name}님</span>
                 <button type="button" className="button button--ghost-light button--sm" onClick={handleLogout}>
                   로그아웃
                 </button>
+                {logoutTimeLabel && (
+                  <span className="site-header__logout-time">{logoutTimeLabel} 후 자동 로그아웃</span>
+                )}
               </>
             ) : (
               <>

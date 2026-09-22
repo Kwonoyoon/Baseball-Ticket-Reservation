@@ -20,6 +20,8 @@ import jakarta.servlet.http.HttpServletResponse;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String BEARER_PREFIX = "Bearer ";
+    /** EventSource는 커스텀 헤더를 보낼 수 없어, 이 경로만 예외적으로 쿼리 파라미터 토큰을 허용한다. */
+    private static final String SSE_STREAM_PATH = "/api/notifications/stream";
 
     private final JwtTokenProvider tokenProvider;
 
@@ -30,9 +32,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        String header = request.getHeader(HttpHeaders.AUTHORIZATION);
-        if (header != null && header.startsWith(BEARER_PREFIX)) {
-            tokenProvider.parse(header.substring(BEARER_PREFIX.length())).ifPresent(member -> {
+        String token = resolveToken(request);
+        if (token != null) {
+            tokenProvider.parse(token).ifPresent(member -> {
                 SecurityContext context = SecurityContextHolder.createEmptyContext();
                 context.setAuthentication(
                         UsernamePasswordAuthenticationToken.authenticated(member, null, member.authorities()));
@@ -40,5 +42,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             });
         }
         filterChain.doFilter(request, response);
+    }
+
+    private String resolveToken(HttpServletRequest request) {
+        String header = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (header != null && header.startsWith(BEARER_PREFIX)) {
+            return header.substring(BEARER_PREFIX.length());
+        }
+        if (SSE_STREAM_PATH.equals(request.getRequestURI())) {
+            return request.getParameter("token");
+        }
+        return null;
     }
 }

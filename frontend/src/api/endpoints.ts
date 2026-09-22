@@ -5,6 +5,9 @@ import type {
   HoldResult,
   LoginResult,
   Member,
+  Notification,
+  NotificationPreference,
+  NotificationType,
   PaymentMethod,
   Reservation,
   SeatPosition,
@@ -52,4 +55,20 @@ export const api = {
 
   cancelReservation: (reservationId: number) =>
     request<Reservation>(`/reservations/${reservationId}/cancel`, { method: 'POST' }),
+
+  getNotifications: (signal?: AbortSignal) => request<Notification[]>('/notifications', { signal }),
+
+  getUnreadNotificationCount: (signal?: AbortSignal) =>
+    request<{ count: number }>('/notifications/unread-count', { signal }),
+
+  markNotificationRead: (notificationId: number) =>
+    request<void>(`/notifications/${notificationId}/read`, { method: 'POST' }),
+
+  markAllNotificationsRead: () => request<void>('/notifications/read-all', { method: 'POST' }),
+
+  getNotificationPreferences: (signal?: AbortSignal) =>
+    request<NotificationPreference[]>('/notifications/preferences', { signal }),
+
+  updateNotificationPreference: (type: NotificationType, enabled: boolean) =>
+    request<void>(`/notifications/preferences/${type}`, { method: 'POST', body: { enabled } }),
 }

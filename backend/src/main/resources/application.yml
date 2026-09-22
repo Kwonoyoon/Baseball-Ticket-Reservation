@@ -41,7 +41,7 @@ ticketing:
   jwt:
     # 운영 환경에서는 반드시 JWT_SECRET 환경 변수로 32바이트 이상의 비밀 값을 주입한다.
     secret: ${JWT_SECRET:local-development-only-secret-key-change-me!!}
-    access-token-validity: 2h
+    access-token-validity: 1h
   seat-hold:
     # redis | memory
     store: redis

@@ -28,8 +28,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener(AUTH_EXPIRED_EVENT, logout)
   }, [logout])
 
+  useEffect(() => {
+    if (!auth) return
+    const remaining = auth.expiresAt - Date.now()
+    if (remaining <= 0) {
+      logout()
+      return
+    }
+    const timer = window.setTimeout(logout, remaining)
+    return () => window.clearTimeout(timer)
+  }, [auth, logout])
+
   const value = useMemo<AuthContextValue>(
-    () => ({ member: auth?.member ?? null, isAuthenticated: auth !== null, login, logout }),
+    () => ({
+      member: auth?.member ?? null,
+      isAuthenticated: auth !== null,
+      expiresAt: auth?.expiresAt ?? null,
+      login,
+      logout,
+    }),
     [auth, login, logout],
   )
 
