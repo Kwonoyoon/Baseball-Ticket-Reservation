@@ -4,8 +4,9 @@
   --navy-700: #1b3a63;
   --grass-600: #2f7d4f;
   --grass-100: #e7f4ec;
-  --red-600: #bf2a30;
-  --red-500: #d6343a;
+  /* SAFETICKET 브랜드 액센트. 흰 글자와 대비가 4.5:1 이상 되도록 잡은 값이다 (메인 화면과 동일). */
+  --red-600: #b23c19;
+  --red-500: #cf4620;
   --red-50: #fdecec;
   --amber-400: #f2b53c;
 
@@ -31,6 +32,10 @@
   --radius: 14px;
   --radius-lg: 20px;
   --shadow: 0 1px 2px rgb(15 35 64 / 6%), 0 8px 24px rgb(15 35 64 / 6%);
+
+  /* 메인 화면(SchedulePage.css의 --home-display)과 같은 로고 글꼴. index.html에서 전역으로 불러온다. */
+  --font-display: 'Archivo Black', Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', system-ui,
+    sans-serif;
 
   font-family: Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', system-ui, sans-serif;
   line-height: 1.5;
@@ -88,12 +93,14 @@ p {
   flex-direction: column;
 }
 
+/* 메인 화면(SchedulePage.css의 .home-header)과 같은 톤: 흰 바탕에 가까운 반투명 + 블러 스티키 바. */
 .site-header {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: var(--navy-800);
-  color: #fff;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(10px);
 }
 
 .site-header__inner {
@@ -106,25 +113,18 @@ p {
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 20px;
+  font-family: var(--font-display);
+  font-size: 18px;
   font-weight: 800;
-  letter-spacing: -0.02em;
+  /* Archivo Black은 굵기가 하나(400)뿐이라, 위 800을 그대로 두면 브라우저가 억지로 두껍게 흉내 내(faux bold) 흐릿해진다. */
+  font-synthesis: none;
+  letter-spacing: 0.03em;
   text-decoration: none;
 }
 
-.brand__ball {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow:
-    inset 5px 0 0 -3px var(--red-500),
-    inset -5px 0 0 -3px var(--red-500);
-}
-
-.brand__sub {
-  color: var(--amber-400);
+.brand em {
+  color: var(--red-500);
+  font-style: normal;
 }
 
 .site-nav {
@@ -135,19 +135,19 @@ p {
 .site-nav a {
   padding: 8px 12px;
   border-radius: var(--radius-sm);
-  color: rgb(255 255 255 / 72%);
+  color: var(--text-muted);
   font-weight: 600;
   text-decoration: none;
 }
 
 .site-nav a:hover {
-  color: #fff;
-  background: rgb(255 255 255 / 8%);
+  color: var(--text);
+  background: var(--surface-muted);
 }
 
 .site-nav a.active {
-  color: #fff;
-  background: rgb(255 255 255 / 14%);
+  color: var(--text);
+  background: var(--border);
 }
 
 .site-header__auth {
@@ -160,7 +160,7 @@ p {
 .site-header__user {
   margin-right: 4px;
   font-size: 14px;
-  color: rgb(255 255 255 / 85%);
+  color: var(--text-muted);
 }
 
 .site-main {
@@ -206,11 +206,6 @@ p {
   background: var(--red-600);
 }
 
-.button--accent {
-  background: var(--amber-400);
-  color: var(--navy-900);
-}
-
 .button--ghost {
   background: var(--surface);
   border-color: var(--border);
@@ -219,16 +214,6 @@ p {
 
 .button--ghost:hover {
   border-color: var(--navy-700);
-}
-
-.button--ghost-light {
-  background: transparent;
-  border-color: rgb(255 255 255 / 30%);
-  color: #fff;
-}
-
-.button--ghost-light:hover {
-  background: rgb(255 255 255 / 10%);
 }
 
 .button--danger {
@@ -334,211 +319,7 @@ p {
   margin-top: 24px;
 }
 
-/* ---------- 경기 일정 ---------- */
-
-.hero {
-  position: relative;
-  overflow: hidden;
-  margin-bottom: 24px;
-  padding: 32px;
-  border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, var(--navy-800), var(--navy-700) 60%, var(--grass-600));
-  color: #fff;
-}
-
-.hero::after {
-  content: '';
-  position: absolute;
-  right: -40px;
-  bottom: -110px;
-  width: 240px;
-  height: 240px;
-  border: 34px solid rgb(255 255 255 / 7%);
-  transform: rotate(45deg);
-}
-
-.hero__eyebrow {
-  color: var(--amber-400);
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.hero__title {
-  margin-top: 6px;
-  font-size: clamp(24px, 4vw, 34px);
-  letter-spacing: -0.03em;
-}
-
-.hero__desc {
-  margin-top: 8px;
-  color: rgb(255 255 255 / 78%);
-}
-
-.date-strip {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 6px;
-  scrollbar-width: thin;
-}
-
-.date-chip {
-  display: flex;
-  flex: 0 0 auto;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  width: 64px;
-  padding: 10px 0;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  cursor: pointer;
-}
-
-.date-chip:hover {
-  border-color: var(--navy-700);
-}
-
-.date-chip__weekday {
-  color: var(--text-muted);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.date-chip__day {
-  font-size: 16px;
-  font-weight: 800;
-}
-
-.date-chip.is-sat .date-chip__weekday {
-  color: var(--grade-infield);
-}
-
-.date-chip.is-sun .date-chip__weekday {
-  color: var(--red-500);
-}
-
-.date-chip[aria-pressed='true'] {
-  border-color: var(--navy-800);
-  background: var(--navy-800);
-  color: #fff;
-}
-
-.date-chip[aria-pressed='true'] .date-chip__weekday {
-  color: rgb(255 255 255 / 80%);
-}
-
-.team-filter {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 16px;
-}
-
-.team-chip {
-  --team-color: var(--navy-800);
-  padding: 6px 14px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.team-chip:hover {
-  border-color: var(--team-color);
-}
-
-.team-chip[aria-pressed='true'] {
-  border-color: var(--team-color);
-  background: var(--team-color);
-  color: #fff;
-}
-
-.section-title {
-  margin: 28px 0 14px;
-  font-size: 20px;
-  letter-spacing: -0.02em;
-}
-
-.game-list {
-  display: grid;
-  gap: 12px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.game-card {
-  display: grid;
-  grid-template-columns: 170px 1fr auto;
-  align-items: center;
-  gap: 20px;
-  padding: 20px 24px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-}
-
-.game-card__time {
-  display: flex;
-  flex-direction: column;
-}
-
-.game-card__time strong {
-  font-size: 24px;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-}
-
-.game-card__time span {
-  color: var(--text-muted);
-  font-size: 14px;
-}
-
-.matchup {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
-}
-
-.matchup__team {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-.matchup__team--away {
-  justify-content: flex-end;
-  text-align: right;
-}
-
-.matchup__label {
-  display: flex;
-  flex-direction: column;
-}
-
-.matchup__name {
-  font-weight: 700;
-}
-
-.matchup__role {
-  color: var(--text-muted);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.matchup__vs {
-  color: #9aa6b6;
-  font-size: 14px;
-  font-weight: 800;
-}
+/* ---------- 구단 마크 (여러 화면 공용) ---------- */
 
 .team-mark {
   --team-color: var(--navy-800);
@@ -1422,18 +1203,8 @@ p {
     font-size: 14px;
   }
 
-  .site-header__user,
-  .brand__sub {
+  .site-header__user {
     display: none;
-  }
-
-  .hero {
-    padding: 24px;
-  }
-
-  .game-card {
-    grid-template-columns: 1fr;
-    gap: 14px;
   }
 
   .ticket {
@@ -1463,39 +1234,8 @@ p {
     white-space: nowrap;
   }
 
-  .game-card {
-    padding: 18px;
-  }
-
-  .matchup {
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .matchup__team,
-  .matchup__team--away {
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    text-align: center;
-  }
-
-  .matchup__team--away {
-    flex-direction: column-reverse;
-    justify-content: flex-end;
-  }
-
-  .matchup__name {
-    font-size: 14px;
-    white-space: nowrap;
-  }
-
-  .matchup__vs {
-    align-self: center;
-    margin-top: -24px;
-  }
-
-  .site-header__auth .button--accent {
+  /* 아주 좁은 화면에서는 로그인만 남기고 회원가입 버튼을 접어 헤더 줄바꿈을 막는다. */
+  .site-header__auth .button--primary {
     display: none;
   }
 
