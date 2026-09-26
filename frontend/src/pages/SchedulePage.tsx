@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router'
 import { errorMessage, isAbortError } from '../api/client'
 import { api } from '../api/endpoints'
 import type { GameSummary, Team } from '../api/types'
-import { HomeHeader } from '../components/HomeHeader'
+import { Header } from '../components/Header'
 import { EmptyState, ErrorMessage, Loading } from '../components/StatusView'
 import { TeamMark } from '../components/TeamMark'
 import { TodayHero } from '../components/TodayHero'
@@ -77,7 +77,7 @@ export function SchedulePage() {
 
   return (
     <div className="home">
-      <HomeHeader />
+      <Header />
       <TodayHero />
 
       <main className="home-main" id="schedule">

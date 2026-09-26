@@ -93,7 +93,7 @@ p {
   flex-direction: column;
 }
 
-/* 메인 화면(SchedulePage.css의 .home-header)과 같은 톤: 흰 바탕에 가까운 반투명 + 블러 스티키 바. */
+/* 모든 화면이 함께 쓰는 헤더 (components/Header.tsx). 메인 화면도 이 스타일을 그대로 쓴다. */
 .site-header {
   position: sticky;
   top: 0;
@@ -110,7 +110,6 @@ p {
   height: 64px;
 }
 
-/* 메인 화면의 .home-brand(SchedulePage.css)와 크기·자간·줄높이를 그대로 맞췄다. */
 .brand {
   display: inline-flex;
   align-items: center;
@@ -163,6 +162,104 @@ p {
   margin-right: 4px;
   font-size: 14px;
   color: var(--text-muted);
+}
+
+.icon-button {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.icon-button:hover {
+  background: var(--surface-muted);
+  color: var(--text);
+}
+
+/* 맨 앞 메뉴 버튼은 로고와 붙어 보이도록 헤더의 gap만큼 당긴다. */
+.site-header__menu {
+  margin-right: -12px;
+}
+
+/* ---------- 사이드바 (components/Sidebar.tsx) ---------- */
+
+.sidebar-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+}
+
+.sidebar-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgb(15 35 64 / 45%);
+  cursor: default;
+}
+
+.sidebar {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  width: min(300px, 86vw);
+  background: var(--surface);
+  box-shadow: 8px 0 32px rgb(15 35 64 / 18%);
+}
+
+.sidebar__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  padding: 0 12px 0 20px;
+  border-bottom: 1px solid var(--border);
+  font-size: 17px;
+}
+
+.sidebar__nav {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+}
+
+.sidebar__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text);
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sidebar__item:hover {
+  background: var(--surface-muted);
+}
+
+.sidebar__item svg {
+  flex-shrink: 0;
+  color: var(--red-500);
+}
+
+.sidebar__item small {
+  display: block;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .site-main {
@@ -1228,12 +1325,10 @@ p {
     gap: 8px;
   }
 
+  /* 로그인 상태의 헤더(메뉴+로고+알림+로그아웃)만으로도 좁은 화면이 꽉 차서 링크는 접는다.
+     로고가 홈 링크이고, 예매내역은 사이드바에 있다. */
   .site-nav {
-    gap: 0;
-  }
-
-  .site-nav a {
-    white-space: nowrap;
+    display: none;
   }
 
   /* 아주 좁은 화면에서는 로그인만 남기고 회원가입 버튼을 접어 헤더 줄바꿈을 막는다. */
