@@ -11,8 +11,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuth(null)
   }, [])
 
-  const login = useCallback(async (email: string, password: string) => {
-    const result = await api.login({ email, password })
+  const login = useCallback(async (username: string, password: string) => {
+    const result = await api.login({ username, password })
     const stored: StoredAuth = {
       accessToken: result.accessToken,
       expiresAt: Date.now() + result.expiresIn * 1000,

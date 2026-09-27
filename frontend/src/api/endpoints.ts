@@ -14,10 +14,10 @@ import type {
 } from './types'
 
 export const api = {
-  signup: (body: { email: string; password: string; name: string }) =>
+  signup: (body: { username: string; email: string; password: string; name: string }) =>
     request<Member>('/auth/signup', { method: 'POST', body }),
 
-  login: (body: { email: string; password: string }) =>
+  login: (body: { username: string; password: string }) =>
     request<LoginResult>('/auth/login', { method: 'POST', body }),
 
   getTeams: (signal?: AbortSignal) => request<Team[]>('/teams', { signal }),

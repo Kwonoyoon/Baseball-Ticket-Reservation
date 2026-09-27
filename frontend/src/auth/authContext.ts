@@ -4,7 +4,7 @@ import type { Member } from '../api/types'
 export type AuthContextValue = {
   member: Member | null
   isAuthenticated: boolean
-  login: (email: string, password: string) => Promise<Member>
+  login: (username: string, password: string) => Promise<Member>
   logout: () => void
 }
 

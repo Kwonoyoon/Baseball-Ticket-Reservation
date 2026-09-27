@@ -20,7 +20,7 @@ function storeLogin() {
     JSON.stringify({
       accessToken: 'access-token',
       expiresAt: Date.now() + 60_000,
-      member: { id: 1, email: 'fan@ballpark.com', name: '야구팬' },
+      member: { id: 1, username: 'fan01', email: 'fan@ballpark.com', name: '야구팬' },
     }),
   )
 }

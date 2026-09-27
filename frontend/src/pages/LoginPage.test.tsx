@@ -24,9 +24,9 @@ function jsonResponse(status: number, body: unknown) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 }
 
-async function submitLogin(email: string, password: string) {
+async function submitLogin(username: string, password: string) {
   const user = userEvent.setup()
-  await user.type(screen.getByLabelText('이메일'), email)
+  await user.type(screen.getByLabelText('아이디'), username)
   await user.type(screen.getByLabelText('비밀번호'), password)
   await user.click(screen.getByRole('button', { name: '로그인' }))
 }
@@ -42,16 +42,19 @@ describe('LoginPage', () => {
         accessToken: 'access-token',
         tokenType: 'Bearer',
         expiresIn: 7200,
-        member: { id: 1, email: 'fan@ballpark.com', name: '야구팬' },
+        member: { id: 1, username: 'fan01', email: 'fan@ballpark.com', name: '야구팬' },
       }),
     )
     vi.stubGlobal('fetch', fetchMock)
     renderLoginPage('/login?redirect=/games/7')
 
-    await submitLogin('fan@ballpark.com', 'password123')
+    await submitLogin('fan01', 'password123')
 
     expect(await screen.findByText('좌석 선택 화면')).toBeInTheDocument()
-    expect(fetchMock).toHaveBeenCalledWith('/api/auth/login', expect.objectContaining({ method: 'POST' }))
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/auth/login',
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ username: 'fan01', password: 'password123' }) }),
+    )
     expect(localStorage.getItem('ballpark.auth')).toContain('access-token')
   })
 
@@ -59,13 +62,13 @@ describe('LoginPage', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(
-        jsonResponse(401, { code: 'INVALID_CREDENTIALS', message: '이메일 또는 비밀번호가 올바르지 않습니다.' }),
+        jsonResponse(401, { code: 'INVALID_CREDENTIALS', message: '아이디 또는 비밀번호가 올바르지 않습니다.' }),
       ),
     )
     renderLoginPage('/login')
 
-    await submitLogin('fan@ballpark.com', 'wrong-password')
+    await submitLogin('fan01', 'wrong-password')
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('이메일 또는 비밀번호가 올바르지 않습니다.')
+    expect(await screen.findByRole('alert')).toHaveTextContent('아이디 또는 비밀번호가 올바르지 않습니다.')
   })
 })
