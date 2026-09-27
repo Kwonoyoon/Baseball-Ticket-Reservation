@@ -69,9 +69,17 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  const deleteAll = useCallback(() => {
+    setNotifications([])
+    setUnreadCount(0)
+    api.deleteAllNotifications().catch(() => {
+      // 실패해도 다음 목록 새로고침 시 서버 상태로 다시 맞춰진다.
+    })
+  }, [])
+
   const value = useMemo<NotificationContextValue>(
-    () => ({ notifications, unreadCount, markAsRead, markAllAsRead }),
-    [notifications, unreadCount, markAsRead, markAllAsRead],
+    () => ({ notifications, unreadCount, markAsRead, markAllAsRead, deleteAll }),
+    [notifications, unreadCount, markAsRead, markAllAsRead, deleteAll],
   )
 
   return <NotificationContext value={value}>{children}</NotificationContext>

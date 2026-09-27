@@ -100,6 +100,11 @@ public class NotificationService {
         notificationRepository.findAllByMemberIdAndReadFalse(memberId).forEach(Notification::markAsRead);
     }
 
+    @Transactional
+    public void deleteAll(Long memberId) {
+        notificationRepository.deleteAllByMemberId(memberId);
+    }
+
     public SseEmitter subscribe(Long memberId) {
         return emitterRegistry.register(memberId);
     }

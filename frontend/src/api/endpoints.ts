@@ -66,6 +66,8 @@ export const api = {
 
   markAllNotificationsRead: () => request<void>('/notifications/read-all', { method: 'POST' }),
 
+  deleteAllNotifications: () => request<void>('/notifications', { method: 'DELETE' }),
+
   getNotificationPreferences: (signal?: AbortSignal) =>
     request<NotificationPreference[]>('/notifications/preferences', { signal }),
 

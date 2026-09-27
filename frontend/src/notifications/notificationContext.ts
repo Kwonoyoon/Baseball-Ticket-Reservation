@@ -6,6 +6,7 @@ export type NotificationContextValue = {
   unreadCount: number
   markAsRead: (notificationId: number) => void
   markAllAsRead: () => void
+  deleteAll: () => void
 }
 
 export const NotificationContext = createContext<NotificationContextValue | null>(null)

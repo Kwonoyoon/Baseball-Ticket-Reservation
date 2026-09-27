@@ -1,5 +1,6 @@
 import { Link } from 'react-router'
 import { useAuth } from '../auth/useAuth'
+import { NotificationBell } from './NotificationBell'
 
 /**
  * 메인 화면 전용 헤더. 메뉴는 예매내역과 로그인/로그아웃뿐이다.
@@ -24,9 +25,13 @@ export function HomeHeader() {
 
         <div className="home-header__auth">
           {member ? (
-            <button type="button" className="home-outline-button" onClick={logout}>
-              로그아웃
-            </button>
+            <>
+              <NotificationBell />
+              <span className="site-header__user">{member.name}님</span>
+              <button type="button" className="home-outline-button" onClick={logout}>
+                로그아웃
+              </button>
+            </>
           ) : (
             <Link className="home-outline-button" to="/login">
               로그인

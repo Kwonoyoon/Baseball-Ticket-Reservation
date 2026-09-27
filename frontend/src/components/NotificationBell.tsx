@@ -4,7 +4,7 @@ import { formatDateTime } from '../lib/format'
 import { useNotifications } from '../notifications/useNotifications'
 
 export function NotificationBell() {
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications()
+  const { notifications, unreadCount, markAsRead, markAllAsRead, deleteAll } = useNotifications()
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
 
@@ -49,6 +49,11 @@ export function NotificationBell() {
               {notifications.length > 0 && (
                 <button type="button" className="notification-panel__mark-all" onClick={markAllAsRead}>
                   모두 읽음
+                </button>
+              )}
+              {notifications.length > 0 && (
+                <button type="button" className="notification-panel__delete-all" onClick={deleteAll}>
+                  모두 삭제
                 </button>
               )}
               <Link to="/notifications/settings" className="notification-panel__settings" onClick={() => setOpen(false)}>
