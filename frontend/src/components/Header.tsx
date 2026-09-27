@@ -8,11 +8,11 @@ import { Sidebar } from './Sidebar'
  * 모든 화면이 함께 쓰는 헤더. 메인 화면(SchedulePage)도 다른 화면(Layout)도 이 파일 하나만 가져다 쓴다.
  * 예전엔 이 둘이 따로 구현돼 있어서 로고 크기·글꼴이 서로 어긋나는 일이 있었다 — 그래서 하나로 합쳤다.
  *
- * 로그인 전에는 예매내역·메뉴(사이드바)·알림을 아예 렌더링하지 않는다. (숨김이 아니라 DOM에 없음)
- * 다만 이건 화면 정리일 뿐 접근 제어가 아니다. /my/reservations, /my/calendar는 RequireAuth와 서버 401이 막는다.
+ * 비회원(로그인 전)에게는 예매내역·메뉴(사이드바)·알림을 아예 렌더링하지 않고, 회원 관리는 관리자에게만 보인다. (숨김이 아니라 DOM에 없음)
+ * 다만 이건 화면 정리일 뿐 접근 제어가 아니다. 회원 화면은 RequireAuth와 서버 401이, 관리자 화면은 RequireAdmin과 서버 403이 막는다.
  */
 export function Header() {
-  const { member, logout } = useAuth()
+  const { member, isAdmin, loading, logout } = useAuth()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const menuButtonRef = useRef<HTMLButtonElement>(null)
@@ -24,7 +24,7 @@ export function Header() {
   }, [])
 
   const handleLogout = () => {
-    logout()
+    void logout()
     navigate('/')
   }
 
@@ -53,6 +53,7 @@ export function Header() {
             경기 일정
           </NavLink>
           {member && <NavLink to="/my/reservations">예매내역</NavLink>}
+          {isAdmin && <NavLink to="/admin/members">회원 관리</NavLink>}
         </nav>
 
         <div className="site-header__auth">
@@ -62,12 +63,14 @@ export function Header() {
               <button type="button" className="icon-button" aria-label="알림">
                 <BellIcon />
               </button>
-              <span className="site-header__user">{member.name}님</span>
+              <Link to="/my/account" className="site-header__user" title="마이페이지">
+                {member.name}님
+              </Link>
               <button type="button" className="button button--ghost button--sm" onClick={handleLogout}>
                 로그아웃
               </button>
             </>
-          ) : (
+          ) : loading ? null : (
             <>
               <Link className="button button--ghost button--sm" to="/login">
                 로그인

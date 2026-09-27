@@ -1,7 +1,9 @@
 import { createBrowserRouter, RouterProvider } from 'react-router'
 import { AuthProvider } from './auth/AuthProvider'
-import { RequireAuth } from './auth/RequireAuth'
+import { RequireAdmin, RequireAuth } from './auth/RequireAuth'
 import { Layout } from './components/Layout'
+import { AccountPage } from './pages/AccountPage'
+import { AdminMembersPage } from './pages/AdminMembersPage'
 import { CalendarPage } from './pages/CalendarPage'
 import { GamePage } from './pages/GamePage'
 import { LoginPage } from './pages/LoginPage'
@@ -43,6 +45,22 @@ const router = createBrowserRouter([
           <RequireAuth>
             <ReservationDetailPage />
           </RequireAuth>
+        ),
+      },
+      {
+        path: 'my/account',
+        element: (
+          <RequireAuth>
+            <AccountPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'admin/members',
+        element: (
+          <RequireAdmin>
+            <AdminMembersPage />
+          </RequireAdmin>
         ),
       },
       { path: '*', element: <NotFoundPage /> },

@@ -1,5 +1,6 @@
 package com.ballpark.ticketing.reservation;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,4 +30,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             where r.id = :id
             """)
     Optional<Reservation> findDetailById(@Param("id") Long id);
+
+    /** 아직 시작하지 않은 경기의 예매가 남아 있는지 (회원 탈퇴 전 확인) */
+    boolean existsByMemberIdAndStatusAndGameStartAtAfter(Long memberId, ReservationStatus status, LocalDateTime now);
 }
