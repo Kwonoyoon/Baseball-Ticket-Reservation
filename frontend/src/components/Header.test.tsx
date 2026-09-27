@@ -141,7 +141,17 @@ describe('Header 사이드바', () => {
 
     expect(within(sidebar).getByRole('link', { name: '예매내역' })).toHaveAttribute('href', '/my/reservations')
     expect(within(sidebar).getByRole('link', { name: '마이페이지' })).toHaveAttribute('href', '/my/account')
-    expect(within(sidebar).queryByRole('link', { name: '회원 관리' })).not.toBeInTheDocument()
+    expect(within(sidebar).queryByRole('link', { name: /관리자 페이지/ })).not.toBeInTheDocument()
+  })
+
+  it('관리자는 사이드바에서 관리자 페이지로 갈 수 있다', async () => {
+    await renderLoggedIn('ADMIN')
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: '메뉴 열기' }))
+    const sidebar = screen.getByRole('complementary', { name: '사이드바' })
+
+    expect(within(sidebar).getByRole('link', { name: /관리자 페이지/ })).toHaveAttribute('href', '/admin')
   })
 
   it('직관 캘린더를 누르면 새 창으로 열고 사이드바를 닫는다', async () => {

@@ -1,4 +1,4 @@
-import { createBrowserRouter, RouterProvider } from 'react-router'
+import { createBrowserRouter, Navigate, RouterProvider } from 'react-router'
 import { AuthProvider } from './auth/AuthProvider'
 import { RequireAdmin, RequireAuth } from './auth/RequireAuth'
 import { Layout } from './components/Layout'
@@ -55,6 +55,8 @@ const router = createBrowserRouter([
           </RequireAuth>
         ),
       },
+      // 관리자 페이지 입구. 지금은 회원 관리 하나뿐이라 바로 보낸다. (메뉴가 늘면 여기에 관리자 홈을 둔다)
+      { path: 'admin', element: <Navigate to="/admin/members" replace /> },
       {
         path: 'admin/members',
         element: (

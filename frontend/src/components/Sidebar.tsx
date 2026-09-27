@@ -69,10 +69,14 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             <UserIcon />
             <span>마이페이지</span>
           </Link>
+          {/* 관리자에게만 렌더링한다. 접근 제어는 RequireAdmin과 서버(/api/admin/**)가 한다. */}
           {isAdmin && (
-            <Link to="/admin/members" className="sidebar__item" onClick={onClose}>
+            <Link to="/admin" className="sidebar__item" onClick={onClose}>
               <UsersIcon />
-              <span>회원 관리</span>
+              <span>
+                관리자 페이지
+                <small>회원 관리</small>
+              </span>
             </Link>
           )}
         </nav>
