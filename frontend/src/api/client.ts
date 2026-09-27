@@ -57,7 +57,7 @@ export function errorMessage(error: unknown, fallback = '요청을 처리하지 
 }
 
 type RequestOptions = {
-  method?: 'GET' | 'POST' | 'DELETE'
+  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE'
   body?: unknown
   signal?: AbortSignal
 }

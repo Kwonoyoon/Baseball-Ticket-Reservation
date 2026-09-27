@@ -62,7 +62,9 @@ export function Header() {
               <button type="button" className="icon-button" aria-label="알림">
                 <BellIcon />
               </button>
-              <span className="site-header__user">{member.name}님</span>
+              <Link to="/my" className="site-header__user">
+                {member.name}님
+              </Link>
               <button type="button" className="button button--ghost button--sm" onClick={handleLogout}>
                 로그아웃
               </button>

@@ -160,8 +160,16 @@ p {
 
 .site-header__user {
   margin-right: 4px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
   font-size: 14px;
   color: var(--text-muted);
+  text-decoration: none;
+}
+
+.site-header__user:hover {
+  color: var(--text);
+  background: var(--surface-muted);
 }
 
 .icon-button {
@@ -605,6 +613,64 @@ p {
   color: var(--text-muted);
   font-size: 14px;
   font-weight: 600;
+}
+
+.mypage__profile {
+  margin-bottom: 20px;
+}
+
+.mypage__name {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.mypage__email {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.mypage__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.mypage__placeholder {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.mypage__stat {
+  margin-bottom: 8px;
+  font-size: 15px;
+}
+
+.mypage__teams {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mypage__team {
+  padding: 6px;
+  border: 2px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+}
+
+.mypage__team:hover {
+  background: var(--surface-muted);
+}
+
+.mypage__team[aria-pressed='true'] {
+  border-color: var(--red-500);
+}
+
+.mypage__team:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .grade--premium {

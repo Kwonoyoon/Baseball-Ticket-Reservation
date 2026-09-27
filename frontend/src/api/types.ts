@@ -4,6 +4,7 @@ export type Member = {
   id: number
   email: string
   name: string
+  favoriteTeamId: number | null
 }
 
 export type LoginResult = {
@@ -27,12 +28,17 @@ export type Stadium = {
   city: string
 }
 
+export type GameStatus = 'SCHEDULED' | 'FINISHED' | 'CANCELED'
+
 export type GameSummary = {
   id: number
   startAt: string
   homeTeam: Team
   awayTeam: Team
   stadium: Stadium
+  status: GameStatus
+  homeScore: number | null
+  awayScore: number | null
 }
 
 export type SeatGrade =

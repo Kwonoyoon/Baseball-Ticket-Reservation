@@ -5,6 +5,7 @@ import { Layout } from './components/Layout'
 import { CalendarPage } from './pages/CalendarPage'
 import { GamePage } from './pages/GamePage'
 import { LoginPage } from './pages/LoginPage'
+import { MyPage } from './pages/MyPage'
 import { MyReservationsPage } from './pages/MyReservationsPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { ReservationDetailPage } from './pages/ReservationDetailPage'
@@ -29,6 +30,14 @@ const router = createBrowserRouter([
       { path: 'games/:gameId', element: <GamePage /> },
       { path: 'login', element: <LoginPage /> },
       { path: 'signup', element: <SignupPage /> },
+      {
+        path: 'my',
+        element: (
+          <RequireAuth>
+            <MyPage />
+          </RequireAuth>
+        ),
+      },
       {
         path: 'my/reservations',
         element: (

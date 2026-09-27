@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { AUTH_EXPIRED_EVENT, loadStoredAuth, saveStoredAuth, type StoredAuth } from '../api/client'
 import { api } from '../api/endpoints'
+import type { Member } from '../api/types'
 import { AuthContext, type AuthContextValue } from './authContext'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -28,9 +29,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener(AUTH_EXPIRED_EVENT, logout)
   }, [logout])
 
+  // 관심 구단처럼 로그인 이후 바뀌는 회원 정보를 저장된 인증 정보에 반영한다.
+  const updateMember = useCallback((member: Member) => {
+    setAuth((current) => {
+      if (!current) return current
+      const next = { ...current, member }
+      saveStoredAuth(next)
+      return next
+    })
+  }, [])
+
   const value = useMemo<AuthContextValue>(
-    () => ({ member: auth?.member ?? null, isAuthenticated: auth !== null, login, logout }),
-    [auth, login, logout],
+    () => ({ member: auth?.member ?? null, isAuthenticated: auth !== null, login, logout, updateMember }),
+    [auth, login, logout, updateMember],
   )
 
   return <AuthContext value={value}>{children}</AuthContext>

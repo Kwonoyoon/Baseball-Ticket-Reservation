@@ -35,6 +35,9 @@ public class Member {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "favorite_team_id")
+    private Long favoriteTeamId;
+
     protected Member() {
     }
 
@@ -68,5 +71,13 @@ public class Member {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public Long getFavoriteTeamId() {
+        return favoriteTeamId;
+    }
+
+    public void setFavoriteTeamId(Long favoriteTeamId) {
+        this.favoriteTeamId = favoriteTeamId;
     }
 }

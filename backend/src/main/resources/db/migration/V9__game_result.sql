@@ -1,0 +1,8 @@
+ALTER TABLE games
+    ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'SCHEDULED';
+
+ALTER TABLE games
+    ADD COLUMN home_score INT NULL;
+
+ALTER TABLE games
+    ADD COLUMN away_score INT NULL;

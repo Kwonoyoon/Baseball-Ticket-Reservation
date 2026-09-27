@@ -22,6 +22,9 @@ const reservation: Reservation = {
     homeTeam: team,
     awayTeam: { ...team, id: 2, code: 'KIA', name: 'KIA 타이거즈', shortName: 'KIA' },
     stadium: { id: 1, name: '서울종합운동장 야구장', city: '서울' },
+    status: 'SCHEDULED',
+    homeScore: null,
+    awayScore: null,
   },
   seats: [
     {

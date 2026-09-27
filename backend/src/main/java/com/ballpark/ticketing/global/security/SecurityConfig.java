@@ -37,6 +37,7 @@ public class SecurityConfig {
                                 "/api/games/*/seats", "/api/games/*/seats/summary")
                         .permitAll()
                         .requestMatchers("/actuator/health", "/h2-console/**", "/error").permitAll()
+                        .requestMatchers(HttpMethod.PATCH, "/api/games/*/result").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, e) ->
