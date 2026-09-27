@@ -57,7 +57,7 @@ function renderLogin(message = '') {
       <p class="login-card__description">예매한 경기의 QR 티켓을 확인하려면 로그인해 주세요.</p>
       ${message ? `<p class="form-message" role="alert">${escapeHtml(message)}</p>` : ''}
       <form id="login-form" class="login-form">
-        <label>이메일<input type="email" name="email" autocomplete="email" required /></label>
+        <label>아이디<input name="username" autocomplete="username" autocapitalize="none" required /></label>
         <label>비밀번호<input type="password" name="password" autocomplete="current-password" required /></label>
         <button type="submit">QR 티켓 불러오기</button>
       </form>
@@ -71,7 +71,7 @@ async function login(event) {
   const button = event.currentTarget.querySelector('button')
   button.disabled = true
   try {
-    auth = await api('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: form.get('email'), password: form.get('password') }) })
+    auth = await api('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: form.get('username'), password: form.get('password') }) })
     localStorage.setItem(AUTH_KEY, JSON.stringify(auth))
     await loadTickets()
   } catch (error) {
