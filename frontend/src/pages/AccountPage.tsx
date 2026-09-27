@@ -3,6 +3,7 @@ import { errorMessage } from '../api/client'
 import { api } from '../api/endpoints'
 import { USER_TYPE_LABELS } from '../auth/roles'
 import { useAuth } from '../auth/useAuth'
+import { PasswordInput } from '../components/PasswordInput'
 
 const MIN_PASSWORD_LENGTH = 8
 
@@ -85,8 +86,7 @@ function PasswordChangeForm() {
       <form className="form" onSubmit={handleSubmit} noValidate>
         <label className="field">
           <span className="field__label">현재 비밀번호</span>
-          <input
-            type="password"
+          <PasswordInput
             autoComplete="current-password"
             value={form.currentPassword}
             onChange={(event) => update('currentPassword')(event.target.value)}
@@ -94,8 +94,7 @@ function PasswordChangeForm() {
         </label>
         <label className="field">
           <span className="field__label">새 비밀번호</span>
-          <input
-            type="password"
+          <PasswordInput
             autoComplete="new-password"
             value={form.newPassword}
             onChange={(event) => update('newPassword')(event.target.value)}
@@ -104,8 +103,7 @@ function PasswordChangeForm() {
         </label>
         <label className="field">
           <span className="field__label">새 비밀번호 확인</span>
-          <input
-            type="password"
+          <PasswordInput
             autoComplete="new-password"
             value={form.newPasswordConfirm}
             onChange={(event) => update('newPasswordConfirm')(event.target.value)}
@@ -169,8 +167,7 @@ function WithdrawForm() {
       <form className="form" onSubmit={handleSubmit} noValidate>
         <label className="field">
           <span className="field__label">비밀번호 확인</span>
-          <input
-            type="password"
+          <PasswordInput
             autoComplete="current-password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}

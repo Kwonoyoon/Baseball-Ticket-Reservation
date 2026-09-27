@@ -4,6 +4,7 @@ import { errorMessage } from '../api/client'
 import { safeRedirect } from '../auth/redirect'
 import { useAuth } from '../auth/useAuth'
 import { AuthCard } from '../components/AuthCard'
+import { PasswordInput } from '../components/PasswordInput'
 
 export function LoginPage() {
   const { login, isAuthenticated } = useAuth()
@@ -54,8 +55,7 @@ export function LoginPage() {
         </label>
         <label className="field">
           <span className="field__label">비밀번호</span>
-          <input
-            type="password"
+          <PasswordInput
             autoComplete="current-password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}

@@ -2375,3 +2375,39 @@ p {
     align-items: stretch;
   }
 }
+
+/* 비밀번호 보기/숨기기 (PasswordInput) */
+.password-input {
+  position: relative;
+  display: block;
+}
+
+.password-input input {
+  width: 100%;
+  padding-right: 48px;
+}
+
+.password-input__toggle {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 38px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.password-input__toggle:hover {
+  color: var(--text);
+}
+
+.password-input__toggle:focus-visible {
+  outline: 2px solid var(--red-500);
+  outline-offset: -2px;
+}
