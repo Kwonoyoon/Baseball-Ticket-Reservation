@@ -22,7 +22,24 @@
 - **1인 예매 제한**: 한 경기에서 한 회원은 최대 4석까지 (취소하면 한도 복구)
 - **Redis 좌석 선점**: 결제 전 5분간 좌석을 선점하고, 다른 고객에게는 "선택 중"으로 표시
 - 가상 결제로 예매 확정, 예매 내역 조회 및 경기 시작 전 취소
-- JWT 기반 회원가입/로그인
+- 아이디 기반 회원가입/로그인, 자동 로그인, 마이페이지(비밀번호 변경·회원 탈퇴)
+- 관리자 회원 관리: 회원 검색, 잠금/해제, 권한 변경
+
+## 회원 종류와 로그인
+
+| 종류 | 할 수 있는 것 |
+| --- | --- |
+| 비회원 (로그인 전) | 경기 일정, 좌석 현황 조회 |
+| 회원 `MEMBER` | 좌석 선점·예매·취소, 예매 내역, 마이페이지 |
+| 관리자 `ADMIN` | 회원 기능 + 회원 관리 (`/admin/members`, `/api/admin/**`) |
+
+- **토큰**: 액세스 토큰(JWT, 30분)은 응답 본문으로 받아 프론트엔드 메모리에만 둡니다. 리프레시 토큰(7일)은 `HttpOnly` · `SameSite=Strict` 쿠키(`Path=/api/auth`)로만 오가며, DB에는 SHA-256 해시만 저장합니다.
+- **자동 로그인**: 체크하면 쿠키를 7일 유지하고, 아니면 브라우저를 닫을 때 사라지는 세션 쿠키입니다.
+- **토큰 교체**: 갱신할 때마다 리프레시 토큰을 새로 발급합니다. 이미 교체된 토큰이 다시 쓰이면(탈취 의심) 그 로그인 전체를 끊습니다. 여러 탭이 동시에 갱신하는 경우를 위해 10초의 유예가 있습니다.
+- **계정 상태는 요청마다 확인**: 잠금·탈퇴·권한 변경은 다음 요청부터 바로 반영됩니다. 비밀번호를 바꾸면 다른 기기의 로그인은 모두 끊기고 지금 기기만 유지됩니다.
+- **계정 잠금**: 비밀번호를 5회 연속 틀리면 잠기고, 관리자가 풀어야 합니다. 없는 아이디와 틀린 비밀번호는 같은 오류로 응답합니다.
+- **첫 관리자**: 서버 시작 시 `ADMIN_USERNAME`/`ADMIN_PASSWORD`가 있고 같은 아이디가 없으면 만듭니다. `local` 프로필은 `application-local.yml`에 로컬 전용 값이 들어 있습니다. 이후 관리자는 회원 관리 화면에서 권한을 바꿔 추가합니다.
+- **탈퇴**: 관람 예정인 예매가 없어야 하며, 예매 이력은 남기고 이름·이메일만 지웁니다. 아이디는 다시 쓸 수 없고, 관리자는 탈퇴할 수 없습니다.
 
 ## 좌석 중복 판매 방지 설계
 
@@ -105,7 +122,7 @@ DB_PORT=3307 DB_PASSWORD=change-me-db-password ./gradlew bootRun
 ### 3. Docker Compose로 전체 배포
 
 ```bash
-cp .env.example .env   # 비밀번호와 JWT_SECRET을 반드시 변경
+cp .env.example .env   # 비밀번호, JWT_SECRET, ADMIN_PASSWORD를 반드시 변경
 docker compose up -d --build
 ```
 
@@ -123,8 +140,15 @@ cd frontend && npm run test:run   # 포맷 유틸, 좌석 배치도, 로그인 �
 | Method | Path | 인증 | 설명 |
 | --- | --- | --- | --- |
 | POST | `/api/auth/signup` | | 회원가입 |
-| POST | `/api/auth/login` | | 로그인 (JWT 발급) |
+| POST | `/api/auth/login` | | 로그인 (액세스 토큰 + 리프레시 쿠키) |
+| POST | `/api/auth/refresh` | 쿠키 | 액세스 토큰 갱신 (리프레시 토큰 교체) |
+| POST | `/api/auth/logout` | 쿠키 | 로그아웃 (이 브라우저의 로그인 폐기) |
+| PUT | `/api/auth/password` | ✅ | 비밀번호 변경 (다른 기기 로그아웃) |
 | GET | `/api/members/me` | ✅ | 내 정보 |
+| POST | `/api/members/me/withdraw` | ✅ | 회원 탈퇴 |
+| GET | `/api/admin/members?keyword=` | 관리자 | 회원 목록·검색 |
+| POST | `/api/admin/members/{id}/lock`, `/unlock` | 관리자 | 계정 잠금/해제 |
+| PUT | `/api/admin/members/{id}/role` | 관리자 | 권한 변경 (`MEMBER`/`ADMIN`) |
 | GET | `/api/teams` | | 구단 목록 |
 | GET | `/api/games?date=YYYY-MM-DD&teamId=` | | 경기 일정 |
 | GET | `/api/games/{gameId}` | | 경기 상세 + 좌석 구역 |

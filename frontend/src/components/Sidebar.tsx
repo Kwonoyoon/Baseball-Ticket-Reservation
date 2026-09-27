@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router'
+import { useAuth } from '../auth/useAuth'
 import { openCalendarWindow } from '../lib/calendarWindow'
-import { CalendarIcon, CloseIcon, TicketIcon } from './icons'
+import { CalendarIcon, CloseIcon, TicketIcon, UserIcon, UsersIcon } from './icons'
 
 type SidebarProps = {
   open: boolean
@@ -18,6 +19,7 @@ type SidebarProps = {
  */
 export function Sidebar({ open, onClose }: SidebarProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const { isAdmin } = useAuth()
 
   useEffect(() => {
     if (!open) return undefined
@@ -63,6 +65,20 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               <small>새 창으로 열려요</small>
             </span>
           </button>
+          <Link to="/my/account" className="sidebar__item" onClick={onClose}>
+            <UserIcon />
+            <span>마이페이지</span>
+          </Link>
+          {/* 관리자에게만 렌더링한다. 접근 제어는 RequireAdmin과 서버(/api/admin/**)가 한다. */}
+          {isAdmin && (
+            <Link to="/admin" className="sidebar__item" onClick={onClose}>
+              <UsersIcon />
+              <span>
+                관리자 페이지
+                <small>회원 관리</small>
+              </span>
+            </Link>
+          )}
         </nav>
       </aside>
     </div>,

@@ -4,6 +4,7 @@ import { errorMessage } from '../api/client'
 import { safeRedirect } from '../auth/redirect'
 import { useAuth } from '../auth/useAuth'
 import { AuthCard } from '../components/AuthCard'
+import { PasswordInput } from '../components/PasswordInput'
 
 export function LoginPage() {
   const { login, isAuthenticated } = useAuth()
@@ -12,6 +13,7 @@ export function LoginPage() {
 
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [autoLogin, setAutoLogin] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -22,7 +24,7 @@ export function LoginPage() {
     setError(null)
     setSubmitting(true)
     try {
-      await login(username.trim(), password)
+      await login(username.trim(), password, autoLogin)
     } catch (e) {
       setError(errorMessage(e, '로그인에 실패했습니다.'))
       setSubmitting(false)
@@ -53,13 +55,17 @@ export function LoginPage() {
         </label>
         <label className="field">
           <span className="field__label">비밀번호</span>
-          <input
-            type="password"
+          <PasswordInput
             autoComplete="current-password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             required
           />
+        </label>
+        <label className="check">
+          <input type="checkbox" checked={autoLogin} onChange={(event) => setAutoLogin(event.target.checked)} />
+          <span>자동 로그인</span>
+          <small>공용 PC에서는 사용하지 마세요.</small>
         </label>
         {error && (
           <p className="form__error" role="alert">

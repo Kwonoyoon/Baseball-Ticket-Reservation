@@ -1,10 +1,29 @@
 /** 백엔드 API 응답 타입. 날짜(LocalDateTime)는 서울 시간 기준 ISO 문자열이다. */
 
+/** 계정 권한. 로그인하지 않은 방문자(비회원)는 계정이 없으므로 여기에 없다. (auth/roles.ts의 UserType 참고) */
+export type MemberRole = 'MEMBER' | 'ADMIN'
+
+export type MemberStatus = 'ACTIVE' | 'LOCKED' | 'WITHDRAWN'
+
 export type Member = {
   id: number
   username: string
   email: string
   name: string
+  role: MemberRole
+}
+
+/** 관리자 회원 관리 화면의 회원 한 명 */
+export type AdminMember = {
+  id: number
+  username: string
+  name: string
+  email: string
+  role: MemberRole
+  status: MemberStatus
+  failedLoginAttempts: number
+  lastLoginAt: string | null
+  createdAt: string
 }
 
 export type LoginResult = {

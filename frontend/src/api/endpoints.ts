@@ -1,10 +1,12 @@
 import { request } from './client'
 import type {
+  AdminMember,
   GameDetail,
   GameSummary,
   HoldResult,
   LoginResult,
   Member,
+  MemberRole,
   PaymentMethod,
   Reservation,
   SeatPosition,
@@ -17,8 +19,30 @@ export const api = {
   signup: (body: { username: string; email: string; password: string; name: string }) =>
     request<Member>('/auth/signup', { method: 'POST', body }),
 
-  login: (body: { username: string; password: string }) =>
+  login: (body: { username: string; password: string; autoLogin: boolean }) =>
     request<LoginResult>('/auth/login', { method: 'POST', body }),
+
+  logout: () => request<void>('/auth/logout', { method: 'POST' }),
+
+  /** 다른 기기는 모두 로그아웃되고, 이 브라우저는 새 토큰을 받는다. */
+  changePassword: (body: { currentPassword: string; newPassword: string }) =>
+    request<LoginResult>('/auth/password', { method: 'PUT', body }),
+
+  withdraw: (password: string) => request<void>('/members/me/withdraw', { method: 'POST', body: { password } }),
+
+  getAdminMembers: (keyword: string, signal?: AbortSignal) => {
+    const params = new URLSearchParams()
+    if (keyword.trim()) params.set('keyword', keyword.trim())
+    const query = params.size > 0 ? `?${params}` : ''
+    return request<AdminMember[]>(`/admin/members${query}`, { signal })
+  },
+
+  lockMember: (memberId: number) => request<AdminMember>(`/admin/members/${memberId}/lock`, { method: 'POST' }),
+
+  unlockMember: (memberId: number) => request<AdminMember>(`/admin/members/${memberId}/unlock`, { method: 'POST' }),
+
+  changeMemberRole: (memberId: number, role: MemberRole) =>
+    request<AdminMember>(`/admin/members/${memberId}/role`, { method: 'PUT', body: { role } }),
 
   getTeams: (signal?: AbortSignal) => request<Team[]>('/teams', { signal }),
 

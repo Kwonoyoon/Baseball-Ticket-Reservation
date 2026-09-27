@@ -1,7 +1,9 @@
-import { createBrowserRouter, RouterProvider } from 'react-router'
+import { createBrowserRouter, Navigate, RouterProvider } from 'react-router'
 import { AuthProvider } from './auth/AuthProvider'
-import { RequireAuth } from './auth/RequireAuth'
+import { RequireAdmin, RequireAuth } from './auth/RequireAuth'
 import { Layout } from './components/Layout'
+import { AccountPage } from './pages/AccountPage'
+import { AdminMembersPage } from './pages/AdminMembersPage'
 import { CalendarPage } from './pages/CalendarPage'
 import { GamePage } from './pages/GamePage'
 import { LoginPage } from './pages/LoginPage'
@@ -43,6 +45,24 @@ const router = createBrowserRouter([
           <RequireAuth>
             <ReservationDetailPage />
           </RequireAuth>
+        ),
+      },
+      {
+        path: 'my/account',
+        element: (
+          <RequireAuth>
+            <AccountPage />
+          </RequireAuth>
+        ),
+      },
+      // 관리자 페이지 입구. 지금은 회원 관리 하나뿐이라 바로 보낸다. (메뉴가 늘면 여기에 관리자 홈을 둔다)
+      { path: 'admin', element: <Navigate to="/admin/members" replace /> },
+      {
+        path: 'admin/members',
+        element: (
+          <RequireAdmin>
+            <AdminMembersPage />
+          </RequireAdmin>
         ),
       },
       { path: '*', element: <NotFoundPage /> },

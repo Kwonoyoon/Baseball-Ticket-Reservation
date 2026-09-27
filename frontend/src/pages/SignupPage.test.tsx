@@ -36,7 +36,7 @@ async function submitSignup(username: string) {
   await user.click(screen.getByRole('button', { name: '가입하기' }))
 }
 
-const member = { id: 1, username: 'fan01', email: 'fan@ballpark.com', name: '야구팬' }
+const member = { id: 1, username: 'fan01', email: 'fan@ballpark.com', name: '야구팬', role: 'MEMBER' }
 
 describe('SignupPage', () => {
   afterEach(() => {
@@ -60,7 +60,7 @@ describe('SignupPage', () => {
       email: 'fan@ballpark.com',
       password: 'password123',
     })
-    expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({ username: 'fan01', password: 'password123' })
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({ username: 'fan01', password: 'password123', autoLogin: false })
   })
 
   it('형식에 맞지 않는 아이디는 서버로 보내지 않는다', async () => {

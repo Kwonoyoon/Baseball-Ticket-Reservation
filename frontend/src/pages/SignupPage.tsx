@@ -5,6 +5,7 @@ import { api } from '../api/endpoints'
 import { safeRedirect } from '../auth/redirect'
 import { useAuth } from '../auth/useAuth'
 import { AuthCard } from '../components/AuthCard'
+import { PasswordInput } from '../components/PasswordInput'
 
 const MIN_PASSWORD_LENGTH = 8
 /** 백엔드 SignupRequest.USERNAME_PATTERN과 같은 규칙: 영문으로 시작하는 영문·숫자 4~20자 */
@@ -88,8 +89,7 @@ export function SignupPage() {
         </label>
         <label className="field">
           <span className="field__label">비밀번호</span>
-          <input
-            type="password"
+          <PasswordInput
             autoComplete="new-password"
             value={form.password}
             onChange={(event) => update('password')(event.target.value)}
@@ -98,8 +98,7 @@ export function SignupPage() {
         </label>
         <label className="field">
           <span className="field__label">비밀번호 확인</span>
-          <input
-            type="password"
+          <PasswordInput
             autoComplete="new-password"
             value={form.passwordConfirm}
             onChange={(event) => update('passwordConfirm')(event.target.value)}
