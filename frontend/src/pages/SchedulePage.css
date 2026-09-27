@@ -21,7 +21,8 @@
   /* 토요일 표시 파랑도 같은 이유로 초안의 #3b7fd1보다 진하게 잡았다. */
   --home-sat: #2f6fbf;
   --home-hero-bg: #12151a;
-  --home-header-h: 62px;
+  /* 공용 헤더(index.css의 .site-header__inner, 64px)에 border-bottom 1px을 더한 실제 높이. */
+  --home-header-h: 65px;
   --home-display: 'Archivo Black', Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', system-ui,
     sans-serif;
   --home-mono: ui-monospace, Menlo, Consolas, monospace;
@@ -46,7 +47,6 @@
  * font-synthesis를 끄지 않으면 굵기 800을 억지로 흉내 내(faux bold) 영문이 번져 보인다.
  * 끄면 영문은 원래 두께로, 한글은 대체 글꼴의 진짜 굵은체로 나온다.
  */
-.home-brand,
 .home-hero__mark,
 .home-section-title,
 .home-slide__team strong,
@@ -56,75 +56,10 @@
   font-synthesis: none;
 }
 
-/* ---------- 헤더 ---------- */
-
-.home-header {
-  position: sticky;
-  top: 0;
-  z-index: 40;
-  border-bottom: 1px solid var(--home-line);
-  background: color-mix(in srgb, var(--home-surface) 88%, transparent);
-  backdrop-filter: blur(10px);
-}
-
-.home-header__inner {
-  display: flex;
-  align-items: center;
-  gap: 24px;
+/* 헤더는 이제 index.css의 공용 Header(.site-header)를 그대로 쓴다. 폭만 이 화면의 콘텐츠 폭(1120px)에 맞춘다. */
+.home .container {
   max-width: 1120px;
-  height: var(--home-header-h);
-  margin-inline: auto;
   padding-inline: 24px;
-}
-
-.home-brand {
-  color: var(--home-ink);
-  font-size: 16px;
-  letter-spacing: 0.05em;
-  line-height: 1;
-  text-decoration: none;
-}
-
-.home-brand em {
-  color: var(--home-accent);
-  font-style: normal;
-}
-
-.home-nav a {
-  padding: 8px 12px;
-  border-radius: 6px;
-  color: var(--home-muted);
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.home-nav a:hover {
-  color: var(--home-ink);
-}
-
-.home-header__auth {
-  margin-left: auto;
-}
-
-.home-outline-button {
-  display: inline-flex;
-  align-items: center;
-  min-height: 36px;
-  padding: 0 14px;
-  border: 1px solid var(--home-line-strong);
-  border-radius: 6px;
-  background: none;
-  color: var(--home-ink-soft);
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.home-outline-button:hover {
-  border-color: var(--home-accent);
-  color: var(--home-accent);
 }
 
 /* ---------- 히어로: 오늘의 경기 캐러셀, 스크롤하면 고정된 채 흐려진다 ---------- */
@@ -639,7 +574,7 @@
 }
 
 @media (max-width: 560px) {
-  .home-header__inner,
+  .home .container,
   .home-hero__copy,
   .home-main,
   .home-footer {
