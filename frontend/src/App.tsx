@@ -13,11 +13,11 @@ import { SchedulePage } from './pages/SchedulePage'
 import { SignupPage } from './pages/SignupPage'
 
 const router = createBrowserRouter([
+  // 메인 화면은 자체 헤더(HomeHeader)와 전체 폭 히어로를 쓰므로 공용 Layout 밖에 둔다.
+  { path: '/', element: <SchedulePage /> },
   {
-    path: '/',
     element: <Layout />,
     children: [
-      { index: true, element: <SchedulePage /> },
       { path: 'games/:gameId', element: <GamePage /> },
       { path: 'login', element: <LoginPage /> },
       { path: 'signup', element: <SignupPage /> },
