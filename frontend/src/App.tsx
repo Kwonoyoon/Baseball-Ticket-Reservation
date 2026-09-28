@@ -12,6 +12,7 @@ import { MyReservationsPage } from './pages/MyReservationsPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { NotificationSettingsPage } from './pages/NotificationSettingsPage'
 import { PasswordChangePage } from './pages/PasswordChangePage'
+import { ProfileEditPage } from './pages/ProfileEditPage'
 import { ReservationDetailPage } from './pages/ReservationDetailPage'
 import { SchedulePage } from './pages/SchedulePage'
 import { SignupPage } from './pages/SignupPage'
@@ -64,6 +65,14 @@ const router = createBrowserRouter([
         element: (
           <RequireAuth>
             <PasswordChangePage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'my/account/profile',
+        element: (
+          <RequireAuth>
+            <ProfileEditPage />
           </RequireAuth>
         ),
       },

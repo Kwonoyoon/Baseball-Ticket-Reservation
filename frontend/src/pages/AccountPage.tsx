@@ -66,6 +66,14 @@ export function AccountPage() {
         </h2>
         <ul className="account-menu">
           <li>
+            <Link to="/my/account/profile" className="account-menu__item">
+              <span className="account-menu__text">
+                <strong>프로필 수정</strong>
+                <small>이름과 이메일을 바꿀 수 있어요</small>
+              </span>
+            </Link>
+          </li>
+          <li>
             <Link to="/my/account/password" className="account-menu__item">
               <span className="account-menu__text">
                 <strong>비밀번호 변경</strong>
