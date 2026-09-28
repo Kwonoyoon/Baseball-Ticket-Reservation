@@ -2464,6 +2464,67 @@ p {
   margin-bottom: 0;
 }
 
+.account__back {
+  justify-self: start;
+  color: var(--text-muted);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.account__back:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+/* 마이페이지 메뉴: 한 줄이 한 화면으로 들어가는 링크다. */
+.account-menu {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.account-menu > li + li {
+  border-top: 1px solid var(--border);
+}
+
+.account-menu__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 4px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.account-menu__item::after {
+  content: '›';
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 22px;
+  line-height: 1;
+}
+
+.account-menu__item:hover {
+  background: var(--surface-muted);
+}
+
+.account-menu__text {
+  display: grid;
+  gap: 2px;
+  margin-right: auto;
+}
+
+.account-menu__text small {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.account-menu__item--danger strong {
+  color: var(--red-500);
+}
+
 .account .panel__subtitle {
   margin-bottom: 16px;
 }
