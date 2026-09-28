@@ -41,7 +41,18 @@ ticketing:
   jwt:
     # 운영 환경에서는 반드시 JWT_SECRET 환경 변수로 32바이트 이상의 비밀 값을 주입한다.
     secret: ${JWT_SECRET:local-development-only-secret-key-change-me!!}
-    access-token-validity: 2h
+    access-token-validity: 30m
+  auth:
+    refresh-token-validity: 7d
+    refresh-reuse-grace: 10s
+    # HTTPS가 아닌 곳(로컬 개발)에서만 false로 둔다.
+    cookie-secure: ${AUTH_COOKIE_SECURE:true}
+    max-login-failures: 5
+  admin:
+    # 첫 관리자 계정. 둘 다 설정되어 있고 같은 아이디가 없을 때만 서버 시작 시 만든다.
+    username: ${ADMIN_USERNAME:}
+    password: ${ADMIN_PASSWORD:}
+    email: ${ADMIN_EMAIL:}
   seat-hold:
     # redis | memory
     store: redis

@@ -16,13 +16,14 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.ballpark.ticketing.global.error.ErrorCode;
+import com.ballpark.ticketing.member.MemberRole;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtTokenProvider tokenProvider) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, AccessTokenAuthenticator authenticator) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
@@ -32,19 +33,25 @@ public class SecurityConfig {
                 // H2 콘솔(local 프로필)이 iframe을 사용한다.
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/api/auth/signup", "/api/auth/login").permitAll()
+                        // 비회원(로그인 전)도 쓸 수 있는 API: 가입·로그인·토큰 갱신, 경기 일정과 좌석 현황 조회
+                        .requestMatchers(HttpMethod.POST, "/api/auth/signup", "/api/auth/login", "/api/auth/refresh",
+                                "/api/auth/logout")
+                        .permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/teams", "/api/games", "/api/games/*",
                                 "/api/games/*/seats", "/api/games/*/seats/summary")
                         .permitAll()
                         .requestMatchers("/actuator/health", "/h2-console/**", "/error").permitAll()
-                        .requestMatchers(HttpMethod.PATCH, "/api/games/*/result").hasRole("ADMIN")
+                        // 관리자
+                        .requestMatchers("/api/admin/**").hasRole(MemberRole.ADMIN.name())
+                        .requestMatchers(HttpMethod.PATCH, "/api/games/*/result").hasRole(MemberRole.ADMIN.name())
+                        // 그 밖의 API는 회원(관리자 포함)
                         .anyRequest().authenticated())
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, e) ->
                                 JsonErrorWriter.write(response, ErrorCode.UNAUTHORIZED))
                         .accessDeniedHandler((request, response, e) ->
                                 JsonErrorWriter.write(response, ErrorCode.FORBIDDEN)))
-                .addFilterBefore(new JwtAuthenticationFilter(tokenProvider), UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(new JwtAuthenticationFilter(authenticator), UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 

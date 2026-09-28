@@ -23,11 +23,21 @@ function reservation(id: number, startAt: string, status: ReservationStatus = 'C
       homeTeam: team(1, 'LG 트윈스'),
       awayTeam: team(2, '두산 베어스'),
       stadium: { id: 1, name: '잠실야구장', city: '서울' },
+      status: 'SCHEDULED',
+      homeScore: null,
+      awayScore: null,
     },
-    seats: [
-      { sectionId: 1, sectionName: '1루 내야석', grade: 'INFIELD', rowNo: 1, seatNo: 1, price: 20000 },
-      { sectionId: 1, sectionName: '1루 내야석', grade: 'INFIELD', rowNo: 1, seatNo: 2, price: 20000 },
-    ],
+    seats: [1, 2].map((seatNo) => ({
+      sectionId: 1,
+      sectionCode: null,
+      sectionName: '1루 내야석',
+      grade: 'INFIELD' as const,
+      rowNo: 1,
+      seatNo,
+      seatRows: 10,
+      seatsPerRow: 20,
+      price: 20000,
+    })),
   }
 }
 

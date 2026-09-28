@@ -160,8 +160,6 @@ p {
 
 .site-header__user {
   margin-right: 4px;
-  padding: 6px 10px;
-  border-radius: var(--radius-sm);
   font-size: 14px;
   color: var(--text-muted);
   text-decoration: none;
@@ -169,7 +167,7 @@ p {
 
 .site-header__user:hover {
   color: var(--text);
-  background: var(--surface-muted);
+  text-decoration: underline;
 }
 
 .icon-button {
@@ -184,6 +182,61 @@ p {
   background: none;
   color: var(--text-muted);
   cursor: pointer;
+}
+
+/* 햄버거 아이콘: 세 줄이 X로 바뀐다. (components/Header.tsx) */
+.site-header__menu {
+  margin-left: 4px;
+}
+
+.hamburger {
+  position: relative;
+  display: block;
+  width: 20px;
+  height: 14px;
+}
+
+.hamburger > span {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  border-radius: 2px;
+  background: currentcolor;
+  transition:
+    transform 0.25s ease,
+    opacity 0.15s ease,
+    width 0.25s ease;
+}
+
+.hamburger > span:nth-child(1) {
+  top: 0;
+}
+
+.hamburger > span:nth-child(2) {
+  top: 6px;
+}
+
+.hamburger > span:nth-child(3) {
+  top: 12px;
+}
+
+/* 커서를 올리면 가운데 줄이 짧아진다. */
+.site-header__menu:hover .hamburger > span:nth-child(2) {
+  width: 65%;
+}
+
+.site-header__menu.is-open .hamburger > span:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+
+.site-header__menu.is-open .hamburger > span:nth-child(2) {
+  width: 100%;
+  opacity: 0;
+}
+
+.site-header__menu.is-open .hamburger > span:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
 }
 
 .icon-button:hover {
@@ -210,17 +263,101 @@ p {
   border: 0;
   background: rgb(15 35 64 / 45%);
   cursor: default;
+  animation: sidebar-fade-in 0.28s ease both;
 }
 
+.sidebar-layer.is-closing .sidebar-backdrop {
+  animation-name: sidebar-fade-out;
+}
+
+/* 오른쪽에서 밀려 들어오고, 닫을 때 같은 길로 나간다. */
 .sidebar {
   position: absolute;
   inset-block: 0;
-  left: 0;
+  right: 0;
   display: flex;
   flex-direction: column;
   width: min(300px, 86vw);
   background: var(--surface);
-  box-shadow: 8px 0 32px rgb(15 35 64 / 18%);
+  box-shadow: -8px 0 32px rgb(15 35 64 / 18%);
+  animation: sidebar-slide-in 0.28s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+.sidebar-layer.is-closing .sidebar {
+  animation-name: sidebar-slide-out;
+}
+
+/* 메뉴 항목은 살짝 늦게, 아래에서 떠오르듯 나타난다. */
+.sidebar-layer:not(.is-closing) .sidebar__item {
+  animation: sidebar-item-in 0.3s ease both;
+}
+
+.sidebar-layer:not(.is-closing) .sidebar__item:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.sidebar-layer:not(.is-closing) .sidebar__item:nth-child(2) {
+  animation-delay: 0.16s;
+}
+
+.sidebar-layer:not(.is-closing) .sidebar__item:nth-child(3) {
+  animation-delay: 0.22s;
+}
+
+.sidebar-layer:not(.is-closing) .sidebar__item:nth-child(4) {
+  animation-delay: 0.28s;
+}
+
+@keyframes sidebar-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sidebar-slide-in {
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes sidebar-slide-out {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes sidebar-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes sidebar-fade-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
 }
 
 .sidebar__head {
@@ -395,6 +532,17 @@ p {
 @media (prefers-reduced-motion: reduce) {
   .spinner {
     animation-duration: 2.4s;
+  }
+
+  .hamburger > span {
+    transition: none;
+  }
+
+  .sidebar,
+  .sidebar-backdrop,
+  .sidebar__item {
+    animation-duration: 0.01s;
+    animation-delay: 0s;
   }
 }
 
@@ -615,25 +763,10 @@ p {
   font-weight: 600;
 }
 
-.mypage__profile {
-  margin-bottom: 20px;
-}
-
-.mypage__name {
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.mypage__email {
-  margin-top: 4px;
-  color: var(--text-muted);
-  font-size: 14px;
-}
-
+/* 마이페이지(.account)는 폭이 좁은 한 줄 배치라 관심 구단·직관 기록도 세로로 쌓는다. */
 .mypage__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
+  gap: 20px;
 }
 
 .mypage__placeholder {
@@ -2259,4 +2392,304 @@ p {
 .stadium-map__tooltip strong {
   color: #ffffff;
   font-size: 14px;
+}
+
+/* 체크박스 한 줄 (자동 로그인 등) */
+.check {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--red-500);
+}
+
+.check small {
+  flex-basis: 100%;
+  padding-left: 26px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* 권한·계정 상태 배지 */
+.badge--role-member {
+  background: #e8eef8;
+  color: var(--navy-700);
+}
+
+.badge--role-admin {
+  background: var(--red-50);
+  color: var(--red-600);
+}
+
+.badge--status-active {
+  background: var(--grass-100);
+  color: #1f6b41;
+}
+
+.badge--status-locked {
+  background: #fff4d6;
+  color: #8a5a00;
+}
+
+.badge--status-withdrawn {
+  background: #eceff3;
+  color: #6b7686;
+}
+
+/* 마이페이지 */
+.account {
+  display: grid;
+  gap: 20px;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.account .page-title {
+  margin-bottom: 0;
+}
+
+.account .panel__subtitle {
+  margin-bottom: 16px;
+}
+
+.info-list {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 10px 20px;
+  font-size: 15px;
+}
+
+.info-list dt {
+  color: var(--text-muted);
+}
+
+.info-list dd {
+  overflow-wrap: anywhere;
+}
+
+/* 관리자 회원 관리 */
+.admin-search {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  max-width: 520px;
+  margin-bottom: 16px;
+}
+
+.admin-search .field {
+  flex: 1;
+}
+
+.admin-search .button {
+  min-height: 46px;
+}
+
+.admin-table__scroll {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.admin-table {
+  width: 100%;
+  min-width: 860px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.admin-table th {
+  background: var(--bg);
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.admin-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.admin-table__row--muted td {
+  color: var(--text-muted);
+}
+
+/* 권한 드롭다운 (components/RoleSelect.tsx) */
+.role-select {
+  position: relative;
+  display: inline-block;
+}
+
+.role-select__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 96px;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.role-select__toggle:hover:not(:disabled),
+.role-select.is-open .role-select__toggle {
+  border-color: var(--navy-800);
+}
+
+.role-select__toggle:disabled {
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  cursor: default;
+}
+
+/* 아래를 가리키는 작은 화살표. 열리면 위를 향한다. */
+.role-select__arrow {
+  width: 7px;
+  height: 7px;
+  border-right: 1.6px solid currentcolor;
+  border-bottom: 1.6px solid currentcolor;
+  margin-top: -3px;
+  transform: rotate(45deg);
+  transition: transform 0.15s;
+}
+
+.role-select.is-open .role-select__arrow {
+  margin-top: 3px;
+  transform: rotate(-135deg);
+}
+
+.role-select__list {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 100%;
+  margin: 0;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: 0 10px 24px rgb(15 35 64 / 14%);
+  list-style: none;
+}
+
+.role-select__option {
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.role-select__option:hover {
+  background: var(--surface-muted);
+}
+
+.role-select__option.is-current {
+  background: var(--navy-800);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+/* 잠금·삭제 버튼을 나란히 둔다. 칸이 좁으면 줄바꿈한다. */
+.admin-table__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.admin-table__self {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--navy-800);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.admin-table__hint {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+@media (max-width: 640px) {
+  .admin-search {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* 비밀번호 보기/숨기기 (PasswordInput) */
+.password-input {
+  position: relative;
+  display: block;
+}
+
+.password-input input {
+  width: 100%;
+  padding-right: 48px;
+}
+
+.password-input__toggle {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 38px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.password-input__toggle:hover {
+  color: var(--text);
+}
+
+.password-input__toggle:focus-visible {
+  outline: 2px solid var(--red-500);
+  outline-offset: -2px;
 }

@@ -1,47 +1,71 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { AUTH_EXPIRED_EVENT, loadStoredAuth, saveStoredAuth, type StoredAuth } from '../api/client'
+import { endSession, hasSessionHint, onSessionChange, refreshSession, startSession } from '../api/client'
 import { api } from '../api/endpoints'
-import type { Member } from '../api/types'
+import type { LoginResult, Member } from '../api/types'
 import { AuthContext, type AuthContextValue } from './authContext'
+import { userTypeOf } from './roles'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [auth, setAuth] = useState<StoredAuth | null>(() => loadStoredAuth())
+  const [member, setMember] = useState<Member | null>(null)
+  // 로그인했던 브라우저면 리프레시 쿠키로 세션을 복원할 때까지 기다린다.
+  const [loading, setLoading] = useState(hasSessionHint)
+  const [loggedOut, setLoggedOut] = useState(false)
 
-  const logout = useCallback(() => {
-    saveStoredAuth(null)
-    setAuth(null)
+  useEffect(
+    () =>
+      onSessionChange((next) => {
+        setMember(next)
+        if (next) setLoggedOut(false)
+      }),
+    [],
+  )
+
+  useEffect(() => {
+    if (!hasSessionHint()) return
+    let active = true
+    refreshSession().finally(() => {
+      if (active) setLoading(false)
+    })
+    return () => {
+      active = false
+    }
   }, [])
 
-  const login = useCallback(async (email: string, password: string) => {
-    const result = await api.login({ email, password })
-    const stored: StoredAuth = {
-      accessToken: result.accessToken,
-      expiresAt: Date.now() + result.expiresIn * 1000,
-      member: result.member,
-    }
-    saveStoredAuth(stored)
-    setAuth(stored)
+  const login = useCallback(async (username: string, password: string, autoLogin = false) => {
+    const result = await api.login({ username, password, autoLogin })
+    startSession(result)
     return result.member
   }, [])
 
-  useEffect(() => {
-    window.addEventListener(AUTH_EXPIRED_EVENT, logout)
-    return () => window.removeEventListener(AUTH_EXPIRED_EVENT, logout)
-  }, [logout])
-
-  // 관심 구단처럼 로그인 이후 바뀌는 회원 정보를 저장된 인증 정보에 반영한다.
-  const updateMember = useCallback((member: Member) => {
-    setAuth((current) => {
-      if (!current) return current
-      const next = { ...current, member }
-      saveStoredAuth(next)
-      return next
-    })
+  const logout = useCallback(async () => {
+    setLoggedOut(true)
+    endSession()
+    try {
+      await api.logout()
+    } catch {
+      // 서버에 닿지 않아도 이 화면에서는 로그아웃된 상태다. 쿠키는 만료되면 사라진다.
+    }
   }, [])
 
+  const applyLoginResult = useCallback((result: LoginResult) => startSession(result), [])
+
+  // 관심 구단처럼 로그인 이후 바뀌는 회원 정보를 화면에 반영한다. 새로고침하면 서버가 최신 회원 정보를 다시 내려 준다.
+  const updateMember = useCallback((next: Member) => setMember(next), [])
+
   const value = useMemo<AuthContextValue>(
-    () => ({ member: auth?.member ?? null, isAuthenticated: auth !== null, login, logout, updateMember }),
-    [auth, login, logout, updateMember],
+    () => ({
+      member,
+      userType: userTypeOf(member),
+      isAuthenticated: member !== null,
+      isAdmin: member?.role === 'ADMIN',
+      loading,
+      loggedOut,
+      login,
+      logout,
+      applyLoginResult,
+      updateMember,
+    }),
+    [member, loading, loggedOut, login, logout, applyLoginResult, updateMember],
   )
 
   return <AuthContext value={value}>{children}</AuthContext>
