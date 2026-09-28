@@ -18,6 +18,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import com.ballpark.ticketing.global.error.ErrorCode;
 import com.ballpark.ticketing.member.MemberRole;
 
+import jakarta.servlet.DispatcherType;
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -33,6 +35,10 @@ public class SecurityConfig {
                 // H2 콘솔(local 프로필)이 iframe을 사용한다.
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .authorizeHttpRequests(auth -> auth
+                        // 알림 스트림(SSE)이 끝나거나 끊기면 서블릿이 같은 요청을 ASYNC로 한 번 더 태운다.
+                        // 이때는 토큰 필터가 다시 돌지 않아 익명으로 보이고, 이미 보낸 응답이라 거절도 못 해
+                        // 'Access Denied' 오류 로그만 쌓인다. 처음 요청에서 이미 인가됐으므로 통과시킨다.
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
                         // 비회원(로그인 전)도 쓸 수 있는 API: 가입·로그인·토큰 갱신, 경기 일정과 좌석 현황 조회
                         .requestMatchers(HttpMethod.POST, "/api/auth/signup", "/api/auth/login", "/api/auth/refresh",
                                 "/api/auth/logout")

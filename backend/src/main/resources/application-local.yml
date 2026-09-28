@@ -18,6 +18,8 @@ management:
 ticketing:
   seat-hold:
     store: memory
+  notification:
+    broadcast: local
   auth:
     cookie-secure: false
   admin:

@@ -49,6 +49,14 @@ export function endSession(): void {
   sessionListeners.forEach((listener) => listener(null))
 }
 
+/**
+ * 지금 쓰는 액세스 토큰. 알림 스트림(EventSource)처럼 fetch를 거치지 않아
+ * Authorization 헤더를 붙일 수 없는 곳에서만 쓴다. 토큰은 30분마다 바뀌므로 매번 새로 읽어야 한다.
+ */
+export function currentAccessToken(): string | null {
+  return accessToken
+}
+
 export function hasSessionHint(): boolean {
   try {
     return localStorage.getItem(SESSION_HINT_KEY) === '1'

@@ -24,6 +24,7 @@ public enum ErrorCode {
     MEMBER_WITHDRAWN(HttpStatus.CONFLICT, "탈퇴한 회원입니다."),
     RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND, "예매 내역을 찾을 수 없습니다."),
     DUPLICATE_USERNAME(HttpStatus.CONFLICT, "이미 사용 중인 아이디입니다."),
+    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다."),
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 가입된 이메일입니다."),
     BOOKING_CLOSED(HttpStatus.CONFLICT, "예매가 마감된 경기입니다."),
     INVALID_SEAT(HttpStatus.BAD_REQUEST, "존재하지 않는 좌석이 포함되어 있습니다."),

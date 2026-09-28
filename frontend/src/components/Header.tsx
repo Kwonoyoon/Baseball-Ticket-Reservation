@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router'
 import { useAuth } from '../auth/useAuth'
-import { BellIcon } from './icons'
+import { NotificationBell } from './NotificationBell'
 import { Sidebar } from './Sidebar'
 
 /**
@@ -47,10 +47,7 @@ export function Header() {
         <div className="site-header__auth">
           {member ? (
             <>
-              {/* 알림은 모양만 있다. 눌렀을 때의 동작은 알림 담당 팀원이 연결한다. */}
-              <button type="button" className="icon-button" aria-label="알림">
-                <BellIcon />
-              </button>
+              <NotificationBell />
               <Link to="/my/account" className="site-header__user" title="마이페이지">
                 {member.name}님
               </Link>
