@@ -188,7 +188,7 @@
 }
 
 .home-hero__mark em {
-  color: var(--home-accent);
+  color: var(--accent-on-dark, var(--home-accent));
   font-style: normal;
 }
 

@@ -14,6 +14,8 @@ export type TeamTheme = {
   accent: string
   /** 마우스를 올렸을 때 등에 쓰는 강조색 */
   accentStrong: string
+  /** 어두운 배경(메인 히어로 등) 위의 글자에 쓰는 밝은 강조색 */
+  accentOnDark: string
 }
 
 export type Rgb = readonly [number, number, number]
@@ -47,6 +49,11 @@ export function contrastRatio(a: Rgb, b: Rgb): number {
 export const WHITE: Rgb = [255, 255, 255]
 const BLACK: Rgb = [0, 0, 0]
 
+/** 화면에 실제로 쓰이는 정수 색으로 맞춘다. 대비는 반올림한 이 값으로 판정해야 기준을 확실히 넘는다. */
+function rounded([r, g, b]: Rgb): Rgb {
+  return [Math.round(r), Math.round(g), Math.round(b)]
+}
+
 /** color를 target 쪽으로 amount(0~1)만큼 섞는다. */
 function mix(color: Rgb, target: Rgb, amount: number): Rgb {
   return [
@@ -58,9 +65,21 @@ function mix(color: Rgb, target: Rgb, amount: number): Rgb {
 
 /** 흰색과의 대비가 기준 이상이 될 때까지 검정 쪽으로 조금씩 어둡게 한다. */
 function ensureReadableOnWhite(color: Rgb): Rgb {
-  let result = color
+  let result = rounded(color)
   for (let step = 1; contrastRatio(result, WHITE) < MIN_CONTRAST && step <= 100; step += 1) {
-    result = mix(color, BLACK, step / 100)
+    result = rounded(mix(color, BLACK, step / 100))
+  }
+  return result
+}
+
+/** 메인 히어로처럼 어두운 배경. 이 색과의 대비를 기준으로 밝기를 맞춘다. */
+const DARK_BACKGROUND: Rgb = [16, 16, 16]
+
+/** 어두운 배경과의 대비가 기준 이상이 될 때까지 흰색 쪽으로 조금씩 밝게 한다. */
+function ensureReadableOnDark(color: Rgb): Rgb {
+  let result = rounded(color)
+  for (let step = 1; contrastRatio(result, DARK_BACKGROUND) < MIN_CONTRAST && step <= 100; step += 1) {
+    result = rounded(mix(color, WHITE, step / 100))
   }
   return result
 }
@@ -76,5 +95,5 @@ export function buildTeamTheme(primaryColor: string | null | undefined): TeamThe
   const accent = ensureReadableOnWhite(parsed)
   const veryDark = luminance(accent) < 0.02
   const strong = veryDark ? mix(accent, WHITE, 0.22) : mix(accent, BLACK, 0.16)
-  return { accent: toHex(accent), accentStrong: toHex(strong) }
+  return { accent: toHex(accent), accentStrong: toHex(strong), accentOnDark: toHex(ensureReadableOnDark(parsed)) }
 }

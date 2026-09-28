@@ -11,10 +11,12 @@ export function applyTeamTheme(theme: TeamTheme | null): void {
   if (theme) {
     root.style.setProperty('--accent', theme.accent)
     root.style.setProperty('--accent-strong', theme.accentStrong)
+    root.style.setProperty('--accent-on-dark', theme.accentOnDark)
     root.setAttribute('data-team-theme', '')
   } else {
     root.style.removeProperty('--accent')
     root.style.removeProperty('--accent-strong')
+    root.style.removeProperty('--accent-on-dark')
     root.removeAttribute('data-team-theme')
   }
 }
@@ -24,8 +26,11 @@ function readSavedTheme(): TeamTheme | null {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw) as Partial<TeamTheme>
-    return typeof parsed.accent === 'string' && typeof parsed.accentStrong === 'string'
-      ? { accent: parsed.accent, accentStrong: parsed.accentStrong }
+    // 예전 형식(accentOnDark가 없는 값)은 쓰지 않는다. 로그인 복원 뒤에 새로 계산해 덮어쓴다.
+    return typeof parsed.accent === 'string' &&
+      typeof parsed.accentStrong === 'string' &&
+      typeof parsed.accentOnDark === 'string'
+      ? { accent: parsed.accent, accentStrong: parsed.accentStrong, accentOnDark: parsed.accentOnDark }
       : null
   } catch {
     return null

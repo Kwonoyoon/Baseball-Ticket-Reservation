@@ -25,6 +25,7 @@ describe('TeamThemeApplier', () => {
     localStorage.clear()
     root.style.removeProperty('--accent')
     root.style.removeProperty('--accent-strong')
+    root.style.removeProperty('--accent-on-dark')
     root.removeAttribute('data-team-theme')
   })
 
@@ -77,12 +78,25 @@ describe('TeamThemeApplier', () => {
   })
 
   it('새로고침하면 저장해 둔 마지막 테마를 먼저 입힌다', () => {
-    localStorage.setItem('ballpark.teamTheme', JSON.stringify({ accent: '#123456', accentStrong: '#0a1f33' }))
+    localStorage.setItem(
+      'ballpark.teamTheme',
+      JSON.stringify({ accent: '#123456', accentStrong: '#0a1f33', accentOnDark: '#7fa8d6' }),
+    )
 
     applySavedTeamTheme()
 
     expect(accent()).toBe('#123456')
+    expect(root.style.getPropertyValue('--accent-on-dark')).toBe('#7fa8d6')
     expect(root.hasAttribute('data-team-theme')).toBe(true)
+  })
+
+  it('예전 형식(어두운 배경용 색이 없는 값)으로 저장돼 있으면 무시한다', () => {
+    localStorage.setItem('ballpark.teamTheme', JSON.stringify({ accent: '#123456', accentStrong: '#0a1f33' }))
+
+    applySavedTeamTheme()
+
+    expect(accent()).toBe('')
+    expect(root.hasAttribute('data-team-theme')).toBe(false)
   })
 
   it('저장된 값이 깨져 있어도 오류 없이 기본 색으로 둔다', () => {

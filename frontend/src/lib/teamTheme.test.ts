@@ -25,6 +25,20 @@ describe('buildTeamTheme', () => {
     expect(ratioOnWhite(theme.accentStrong)).toBeGreaterThanOrEqual(MIN_CONTRAST)
   })
 
+  it.each(Object.entries(TEAM_COLORS))('%s: 어두운 배경 위 글자용 색도 대비가 기준 이상이다', (_code, color) => {
+    const theme = buildTeamTheme(color)!
+
+    expect(contrastRatio(parseHexColor(theme.accentOnDark)!, [16, 16, 16])).toBeGreaterThanOrEqual(MIN_CONTRAST)
+  })
+
+  it('검정 구단(KT)은 어두운 배경에서 검정 글자가 되지 않고 밝게 바뀐다', () => {
+    const theme = buildTeamTheme('#000000')!
+
+    expect(theme.accent).toBe('#000000')
+    expect(theme.accentOnDark).not.toBe('#000000')
+    expect(parseHexColor(theme.accentOnDark)![0]).toBeGreaterThan(100)
+  })
+
   it('이미 충분히 어두운 색은 그대로 쓴다', () => {
     expect(buildTeamTheme('#131230')!.accent).toBe('#131230')
   })

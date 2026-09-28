@@ -17,6 +17,8 @@
    */
   --accent: var(--red-500);
   --accent-strong: var(--red-600);
+  /* 어두운 배경(메인 히어로) 위 글자용. 흰 바탕용 --accent는 어두운 구단 색이면 어두운 배경에서 안 보인다. */
+  --accent-on-dark: var(--red-500);
 
   --bg: #f3f5f9;
   --surface: #ffffff;
@@ -111,10 +113,91 @@ p {
   backdrop-filter: blur(10px);
 }
 
-/* 관심 구단을 정한 회원에게만 헤더 아래에 구단 색 띠가 붙는다. (구단 미선택이면 기존 모습 그대로) */
+/*
+ * 관심 구단 테마. 관심 구단을 정한 회원에게만 <html data-team-theme>가 붙어 적용된다.
+ * (구단 미선택이면 이 블록은 전혀 쓰이지 않아 기존 모습 그대로다)
+ * --accent는 흰색과 대비 4.5:1 이상으로 보정돼 있으므로 구단 색 바탕에 흰 글자를 올려도 읽힌다.
+ */
+:root[data-team-theme] {
+  /* 페이지 바탕에 구단 색을 아주 옅게 섞어 화면 전체가 구단 분위기가 나게 한다. */
+  --bg: color-mix(in srgb, var(--accent) 7%, #f6f7fa);
+  --surface-muted: color-mix(in srgb, var(--accent) 6%, #f7f9fc);
+}
+
+/* 헤더는 구단 색 바탕에 흰 글자로 바꾼다. */
 :root[data-team-theme] .site-header {
-  border-bottom-color: var(--accent);
-  box-shadow: inset 0 -3px 0 var(--accent);
+  border-bottom-color: var(--accent-strong);
+  background: var(--accent);
+  backdrop-filter: none;
+  color: #fff;
+}
+
+:root[data-team-theme] .site-header .brand,
+:root[data-team-theme] .site-header .brand em {
+  color: #fff;
+}
+
+:root[data-team-theme] .site-header .site-nav a,
+:root[data-team-theme] .site-header .site-header__user,
+:root[data-team-theme] .site-header .icon-button {
+  color: rgb(255 255 255 / 88%);
+}
+
+:root[data-team-theme] .site-header .site-nav a:hover,
+:root[data-team-theme] .site-header .icon-button:hover {
+  background: rgb(255 255 255 / 16%);
+  color: #fff;
+}
+
+:root[data-team-theme] .site-header .site-nav a.active {
+  background: rgb(255 255 255 / 22%);
+  color: #fff;
+}
+
+:root[data-team-theme] .site-header .site-header__user:hover {
+  color: #fff;
+}
+
+/* 구단 색 바탕 위에서 사라지지 않게 흰 테두리·흰 글자로 바꾼다. */
+:root[data-team-theme] .site-header .button--ghost {
+  border-color: rgb(255 255 255 / 70%);
+  background: transparent;
+  color: #fff;
+}
+
+:root[data-team-theme] .site-header .button--ghost:hover {
+  border-color: #fff;
+  background: rgb(255 255 255 / 16%);
+}
+
+:root[data-team-theme] .site-header .button--primary {
+  background: #fff;
+  color: var(--accent);
+}
+
+:root[data-team-theme] .site-header .button--primary:hover {
+  background: rgb(255 255 255 / 88%);
+}
+
+/* 페이지 안쪽에도 구단 색이 보이도록 제목 밑줄과 패널 윗선에 넣는다. */
+:root[data-team-theme] .page-title::after {
+  content: '';
+  display: block;
+  width: 56px;
+  height: 5px;
+  margin-top: 10px;
+  border-radius: 3px;
+  background: var(--accent);
+}
+
+:root[data-team-theme] .panel {
+  border-top: 3px solid var(--accent);
+}
+
+/* 알림 뱃지도 헤더 색과 같아지지 않게 뒤집는다. */
+:root[data-team-theme] .site-header .notification-bell__badge {
+  background: #fff;
+  color: var(--accent);
 }
 
 .site-header__inner {
