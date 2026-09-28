@@ -41,6 +41,9 @@ export const api = {
 
   unlockMember: (memberId: number) => request<AdminMember>(`/admin/members/${memberId}/unlock`, { method: 'POST' }),
 
+  /** 회원 삭제. 서버는 행을 지우지 않고 탈퇴 처리한다. (예매 이력 보존) */
+  deleteMember: (memberId: number) => request<AdminMember>(`/admin/members/${memberId}`, { method: 'DELETE' }),
+
   changeMemberRole: (memberId: number, role: MemberRole) =>
     request<AdminMember>(`/admin/members/${memberId}/role`, { method: 'PUT', body: { role } }),
 

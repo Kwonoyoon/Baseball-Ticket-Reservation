@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -129,7 +129,10 @@ describe('Header 사이드바', () => {
     expect(screen.getByRole('button', { name: '메뉴 열기' })).toHaveAttribute('aria-expanded', 'true')
 
     await user.click(screen.getByRole('button', { name: '닫기' }))
-    expect(screen.queryByRole('complementary', { name: '사이드바' })).not.toBeInTheDocument()
+    // 닫는 애니메이션이 끝나야 화면에서 빠진다.
+    await waitFor(() =>
+      expect(screen.queryByRole('complementary', { name: '사이드바' })).not.toBeInTheDocument(),
+    )
   })
 
   it('사이드바에서도 예매내역으로 갈 수 있다 (좁은 화면에서는 헤더 링크를 접기 때문)', async () => {
@@ -163,7 +166,10 @@ describe('Header 사이드바', () => {
     await user.click(screen.getByRole('button', { name: /직관 캘린더/ }))
 
     expect(openMock).toHaveBeenCalledWith('/my/calendar', 'safeticket-calendar', expect.stringContaining('width='))
-    expect(screen.queryByRole('complementary', { name: '사이드바' })).not.toBeInTheDocument()
+    // 닫는 애니메이션이 끝나야 화면에서 빠진다.
+    await waitFor(() =>
+      expect(screen.queryByRole('complementary', { name: '사이드바' })).not.toBeInTheDocument(),
+    )
   })
 
   it('Esc를 누르면 닫히고 포커스가 메뉴 버튼으로 돌아온다', async () => {
@@ -173,7 +179,10 @@ describe('Header 사이드바', () => {
     await user.click(screen.getByRole('button', { name: '메뉴 열기' }))
     await user.keyboard('{Escape}')
 
-    expect(screen.queryByRole('complementary', { name: '사이드바' })).not.toBeInTheDocument()
+    // 닫는 애니메이션이 끝나야 화면에서 빠진다.
+    await waitFor(() =>
+      expect(screen.queryByRole('complementary', { name: '사이드바' })).not.toBeInTheDocument(),
+    )
     expect(screen.getByRole('button', { name: '메뉴 열기' })).toHaveFocus()
   })
 
@@ -184,6 +193,9 @@ describe('Header 사이드바', () => {
     await user.click(screen.getByRole('button', { name: '메뉴 열기' }))
     await user.click(screen.getByRole('button', { name: '로그아웃' }))
 
-    expect(screen.queryByRole('complementary', { name: '사이드바' })).not.toBeInTheDocument()
+    // 닫는 애니메이션이 끝나야 화면에서 빠진다.
+    await waitFor(() =>
+      expect(screen.queryByRole('complementary', { name: '사이드바' })).not.toBeInTheDocument(),
+    )
   })
 })

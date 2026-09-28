@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -77,7 +77,7 @@ describe('AdminMembersPage', () => {
     renderAdminPage()
 
     const selfRow = (await screen.findByText('나')).closest('tr')!
-    expect(within(selfRow).getByRole('combobox')).toBeDisabled()
+    expect(within(selfRow).getByRole('button', { name: 'admin 권한' })).toBeDisabled()
     expect(within(selfRow).getByRole('button', { name: '잠금' })).toBeDisabled()
 
     const lockedRow = screen.getByText('locked03').closest('tr')!
@@ -104,7 +104,39 @@ describe('AdminMembersPage', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/admin/members/2/lock', expect.objectContaining({ method: 'POST' }))
   })
 
-  it('권한 변경을 취소하면 요청하지 않는다', async () => {
+  it('삭제를 확인하면 목록에서 사라진다', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const fetchMock = restoreSessionAs(testMember('ADMIN', { id: 1 }), (url, init) => {
+      if (url === '/api/admin/members/2' && init?.method === 'DELETE') {
+        return jsonResponse(
+          200,
+          adminMember({ id: 2, username: 'fan02', name: '탈퇴회원', status: 'WITHDRAWN' }),
+        )
+      }
+      return url.startsWith('/api/admin/members') ? jsonResponse(200, members) : undefined
+    })
+    renderAdminPage()
+
+    const row = (await screen.findByText('fan02')).closest('tr')!
+    await userEvent.setup().click(within(row).getByRole('button', { name: '삭제' }))
+
+    // 삭제한 회원은 목록에서 사라진다.
+    await waitFor(() => expect(screen.queryByText('fan02')).not.toBeInTheDocument())
+    expect(screen.getByRole('status')).toHaveTextContent('fan02 회원을 삭제했습니다.')
+    expect(fetchMock).toHaveBeenCalledWith('/api/admin/members/2', expect.objectContaining({ method: 'DELETE' }))
+  })
+
+  it('관리자 계정과 본인 계정은 삭제할 수 없다', async () => {
+    restoreSessionAs(testMember('ADMIN', { id: 1 }), (url) =>
+      url.startsWith('/api/admin/members') ? jsonResponse(200, members) : undefined,
+    )
+    renderAdminPage()
+
+    const adminRow = (await screen.findByText('admin')).closest('tr')!
+    expect(within(adminRow).getByRole('button', { name: '삭제' })).toBeDisabled()
+  })
+
+  it('삭제를 취소하면 요청하지 않는다', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(false)
     const fetchMock = restoreSessionAs(testMember('ADMIN', { id: 1 }), (url) =>
       url.startsWith('/api/admin/members') ? jsonResponse(200, members) : undefined,
@@ -112,7 +144,22 @@ describe('AdminMembersPage', () => {
     renderAdminPage()
 
     const row = (await screen.findByText('fan02')).closest('tr')!
-    await userEvent.setup().selectOptions(within(row).getByRole('combobox'), 'ADMIN')
+    await userEvent.setup().click(within(row).getByRole('button', { name: '삭제' }))
+
+    expect(fetchMock.mock.calls.some((call) => String(call[1] && call[1].method) === 'DELETE')).toBe(false)
+  })
+
+  it('권한 변경을 취소하면 요청하지 않는다', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const fetchMock = restoreSessionAs(testMember('ADMIN', { id: 1 }), (url) =>
+      url.startsWith('/api/admin/members') ? jsonResponse(200, members) : undefined,
+    )
+    renderAdminPage()
+
+    const user = userEvent.setup()
+    const row = (await screen.findByText('fan02')).closest('tr')!
+    await user.click(within(row).getByRole('button', { name: 'fan02 권한' }))
+    await user.click(screen.getByRole('option', { name: '관리자' }))
 
     expect(fetchMock.mock.calls.some((call) => String(call[0]).endsWith('/role'))).toBe(false)
   })

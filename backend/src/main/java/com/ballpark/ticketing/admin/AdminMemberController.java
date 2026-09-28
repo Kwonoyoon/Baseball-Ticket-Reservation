@@ -3,6 +3,7 @@ package com.ballpark.ticketing.admin;
 import java.util.List;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -42,6 +43,12 @@ public class AdminMemberController {
     @PostMapping("/{memberId}/unlock")
     public AdminMemberResponse unlock(@AuthenticationPrincipal AuthMember admin, @PathVariable Long memberId) {
         return adminMemberService.unlock(admin.id(), memberId);
+    }
+
+    /** 회원 삭제(탈퇴 처리). 예매 이력을 남기려고 행은 지우지 않는다. */
+    @DeleteMapping("/{memberId}")
+    public AdminMemberResponse withdraw(@AuthenticationPrincipal AuthMember admin, @PathVariable Long memberId) {
+        return adminMemberService.withdraw(admin.id(), memberId);
     }
 
     @PutMapping("/{memberId}/role")
