@@ -114,7 +114,7 @@ public class ReservationService {
         }
         reservation.confirm(payment.transactionId());
 
-        notificationService.create(memberId, NotificationType.RESERVATION_CONFIRMED, "예매가 완료되었습니다",
+        notifyAfterCommit(memberId, NotificationType.RESERVATION_CONFIRMED, "예매가 완료되었습니다",
                 reservation.getReservationNumber() + " 예매가 정상적으로 완료되었습니다.");
         releaseHoldsAfterCommit(game.getId(), memberId, seats.keySet());
         return ReservationResponse.from(reservation, now);
@@ -138,9 +138,30 @@ public class ReservationService {
         reservation.cancel(now);
         soldSeatRepository.deleteByReservationId(reservation.getId());
         paymentGateway.cancel(reservation.getPaymentTransactionId(), reservation.getTotalPrice());
-        notificationService.create(memberId, NotificationType.RESERVATION_CANCELED, "예매가 취소되었습니다",
+        notifyAfterCommit(memberId, NotificationType.RESERVATION_CANCELED, "예매가 취소되었습니다",
                 reservation.getReservationNumber() + " 예매가 취소되었습니다.");
         return ReservationResponse.from(reservation, now);
+    }
+
+    /**
+     * 알림은 결제·취소와 무관한 부가 작업이라 커밋이 끝난 뒤에 보낸다. (releaseHoldsAfterCommit과 같은 이유)
+     * <ul>
+     *   <li>알림에서 무슨 오류가 나도 이미 승인된 결제가 롤백되지 않는다.</li>
+     *   <li>예매가 롤백되면 알림도 나가지 않는다. (예전엔 커밋 전에 보내 실패한 예매에도 알림이 갔다)</li>
+     * </ul>
+     * 자세한 경위: docs/troubleshooting/notification-transaction-500.md
+     */
+    private void notifyAfterCommit(Long memberId, NotificationType type, String title, String message) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                try {
+                    notificationService.create(memberId, type, title, message);
+                } catch (RuntimeException e) {
+                    log.warn("알림을 보내지 못했습니다. 예매는 정상 처리됐습니다. memberId={}, type={}", memberId, type, e);
+                }
+            }
+        });
     }
 
     /** 다른 회원의 예매는 존재 여부도 드러내지 않도록 404로 응답한다. */

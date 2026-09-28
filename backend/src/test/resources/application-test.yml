@@ -14,5 +14,7 @@ management:
 ticketing:
   seat-hold:
     store: memory
+  notification:
+    broadcast: local
   sample-data:
     enabled: false

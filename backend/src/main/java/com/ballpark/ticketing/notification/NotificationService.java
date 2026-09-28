@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -26,26 +27,33 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final NotificationPreferenceRepository preferenceRepository;
     private final NotificationEmitterRegistry emitterRegistry;
+    private final NotificationBroadcaster broadcaster;
     private final Clock clock;
 
     public NotificationService(NotificationRepository notificationRepository,
             NotificationPreferenceRepository preferenceRepository, NotificationEmitterRegistry emitterRegistry,
-            Clock clock) {
+            NotificationBroadcaster broadcaster, Clock clock) {
         this.notificationRepository = notificationRepository;
         this.preferenceRepository = preferenceRepository;
         this.emitterRegistry = emitterRegistry;
+        this.broadcaster = broadcaster;
         this.clock = clock;
     }
 
-    /** 회원이 이 종류의 알림을 꺼두었다면 알림을 만들지도, 보내지도 않는다. */
-    @Transactional
+    /**
+     * 회원이 이 종류의 알림을 꺼두었다면 알림을 만들지도, 보내지도 않는다.
+     *
+     * <p>예매·취소는 커밋이 끝난 뒤(afterCommit)에 이 메서드를 부른다. 그 시점에는 원래 트랜잭션이 이미 끝나
+     * 그대로 합류하면 저장이 반영되지 않으므로, 언제나 새 트랜잭션에서 저장한다.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void create(Long memberId, NotificationType type, String title, String message) {
         if (!isEnabled(memberId, type)) {
             return;
         }
         LocalDateTime now = LocalDateTime.now(clock);
         Notification notification = notificationRepository.save(new Notification(memberId, type, title, message, now));
-        emitterRegistry.send(memberId, NotificationResponse.from(notification));
+        broadcaster.broadcast(memberId, NotificationResponse.from(notification));
     }
 
     public List<NotificationPreferenceResponse> getPreferences(Long memberId) {

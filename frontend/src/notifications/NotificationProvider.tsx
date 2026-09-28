@@ -37,6 +37,23 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
     let source: EventSource | null = null
     let retryTimer: number | undefined
+    let syncController: AbortController | null = null
+
+    // 끊긴 사이(토큰 갱신·서버 재시작·네트워크)에 생긴 알림은 스트림으로 다시 오지 않는다.
+    // 서버는 연결을 받으면 'connected'를 보내므로, 그때마다 목록을 서버 기준으로 다시 맞춘다.
+    const sync = () => {
+      syncController?.abort()
+      const controller = new AbortController()
+      syncController = controller
+      Promise.all([api.getNotifications(controller.signal), api.getUnreadNotificationCount(controller.signal)])
+        .then(([list, { count }]) => {
+          setNotifications(list)
+          setUnreadCount(count)
+        })
+        .catch(() => {
+          // 다음 연결 때 다시 맞춘다.
+        })
+    }
 
     // EventSource는 Authorization 헤더를 못 보내므로 토큰을 쿼리 파라미터로 전달한다.
     // 액세스 토큰은 30분마다 바뀌므로, 붙을 때마다 지금 토큰을 새로 읽는다.
@@ -45,6 +62,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       source?.close()
       if (!token) return
       source = new EventSource(`/api/notifications/stream?token=${encodeURIComponent(token)}`)
+      source.addEventListener('connected', sync)
       source.addEventListener('notification', (event) => {
         const notification = JSON.parse((event as MessageEvent<string>).data) as Notification
         setNotifications((prev) => [notification, ...prev])
@@ -67,6 +85,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     return () => {
       unsubscribe()
       window.clearTimeout(retryTimer)
+      syncController?.abort()
       source?.close()
     }
   }, [isAuthenticated])
