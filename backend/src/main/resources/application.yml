@@ -53,6 +53,9 @@ ticketing:
     username: ${ADMIN_USERNAME:}
     password: ${ADMIN_PASSWORD:}
     email: ${ADMIN_EMAIL:}
+  notification:
+    # redis: 서버가 여러 대여도 모든 서버의 연결로 알림을 보낸다 | local: 이 서버에 연결된 회원에게만 (Redis 없이 실행할 때)
+    broadcast: redis
   seat-hold:
     # redis | memory
     store: redis

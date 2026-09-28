@@ -3,14 +3,18 @@ import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AuthProvider } from '../auth/AuthProvider'
+import { NotificationProvider } from '../notifications/NotificationProvider'
 import { restoreSessionAs, testMember } from '../test/session'
 import { Header } from './Header'
 
 function renderHeader(initialEntry = '/') {
   const router = createMemoryRouter([{ path: '*', element: <Header /> }], { initialEntries: [initialEntry] })
+  // 실제 앱(App.tsx)과 같은 순서로 감싼다. 헤더의 알림 벨이 NotificationProvider를 쓴다.
   render(
     <AuthProvider>
-      <RouterProvider router={router} />
+      <NotificationProvider>
+        <RouterProvider router={router} />
+      </NotificationProvider>
     </AuthProvider>,
   )
 }

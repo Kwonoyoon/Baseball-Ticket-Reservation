@@ -5,10 +5,12 @@ import { Layout } from './components/Layout'
 import { AccountPage } from './pages/AccountPage'
 import { AdminMembersPage } from './pages/AdminMembersPage'
 import { CalendarPage } from './pages/CalendarPage'
+import { NotificationProvider } from './notifications/NotificationProvider'
 import { GamePage } from './pages/GamePage'
 import { LoginPage } from './pages/LoginPage'
 import { MyReservationsPage } from './pages/MyReservationsPage'
 import { NotFoundPage } from './pages/NotFoundPage'
+import { NotificationSettingsPage } from './pages/NotificationSettingsPage'
 import { ReservationDetailPage } from './pages/ReservationDetailPage'
 import { SchedulePage } from './pages/SchedulePage'
 import { SignupPage } from './pages/SignupPage'
@@ -65,6 +67,14 @@ const router = createBrowserRouter([
           </RequireAdmin>
         ),
       },
+      {
+        path: 'notifications/settings',
+        element: (
+          <RequireAuth>
+            <NotificationSettingsPage />
+          </RequireAuth>
+        ),
+      },
       { path: '*', element: <NotFoundPage /> },
     ],
   },
@@ -73,7 +83,9 @@ const router = createBrowserRouter([
 export default function App() {
   return (
     <AuthProvider>
-      <RouterProvider router={router} />
+      <NotificationProvider>
+        <RouterProvider router={router} />
+      </NotificationProvider>
     </AuthProvider>
   )
 }
