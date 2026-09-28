@@ -28,15 +28,17 @@ public class NotificationService {
     private final NotificationPreferenceRepository preferenceRepository;
     private final NotificationEmitterRegistry emitterRegistry;
     private final NotificationBroadcaster broadcaster;
+    private final NotificationEmailSender emailSender;
     private final Clock clock;
 
     public NotificationService(NotificationRepository notificationRepository,
             NotificationPreferenceRepository preferenceRepository, NotificationEmitterRegistry emitterRegistry,
-            NotificationBroadcaster broadcaster, Clock clock) {
+            NotificationBroadcaster broadcaster, NotificationEmailSender emailSender, Clock clock) {
         this.notificationRepository = notificationRepository;
         this.preferenceRepository = preferenceRepository;
         this.emitterRegistry = emitterRegistry;
         this.broadcaster = broadcaster;
+        this.emailSender = emailSender;
         this.clock = clock;
     }
 
@@ -47,21 +49,30 @@ public class NotificationService {
      * 그대로 합류하면 저장이 반영되지 않으므로, 언제나 새 트랜잭션에서 저장한다.
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void create(Long memberId, NotificationType type, String title, String message) {
-        if (!isEnabled(memberId, type)) {
-            return;
+    public void create(Long memberId, NotificationType type, String title, String message,
+            ReservationEmailContent emailContent) {
+        if (isEnabled(memberId, type)) {
+            LocalDateTime now = LocalDateTime.now(clock);
+            Notification notification = notificationRepository
+                    .save(new Notification(memberId, type, title, message, now));
+            broadcaster.broadcast(memberId, NotificationResponse.from(notification));
         }
-        LocalDateTime now = LocalDateTime.now(clock);
-        Notification notification = notificationRepository.save(new Notification(memberId, type, title, message, now));
-        broadcaster.broadcast(memberId, NotificationResponse.from(notification));
+        if (isEmailEnabled(memberId, type)) {
+            emailSender.sendReservationMail(memberId, type, emailContent);
+        }
     }
 
     public List<NotificationPreferenceResponse> getPreferences(Long memberId) {
-        Map<NotificationType, Boolean> saved = preferenceRepository.findAllByMemberId(memberId).stream()
-                .collect(Collectors.toMap(NotificationPreference::getType, NotificationPreference::isEnabled));
+        Map<NotificationType, NotificationPreference> saved = preferenceRepository.findAllByMemberId(memberId).stream()
+                .collect(Collectors.toMap(NotificationPreference::getType, preference -> preference));
         return Arrays.stream(NotificationType.values())
                 .filter(NotificationType::isControllable)
-                .map(type -> new NotificationPreferenceResponse(type, type.getLabel(), saved.getOrDefault(type, true)))
+                .map(type -> {
+                    NotificationPreference preference = saved.get(type);
+                    boolean enabled = preference == null || preference.isEnabled();
+                    boolean emailEnabled = preference == null || preference.isEmailEnabled();
+                    return new NotificationPreferenceResponse(type, type.getLabel(), enabled, emailEnabled);
+                })
                 .toList();
     }
 
@@ -73,7 +84,19 @@ public class NotificationService {
         preferenceRepository.findByMemberIdAndType(memberId, type)
                 .ifPresentOrElse(
                         preference -> preference.updateEnabled(enabled),
-                        () -> preferenceRepository.save(new NotificationPreference(memberId, type, enabled)));
+                        () -> preferenceRepository.save(new NotificationPreference(memberId, type, enabled, true)));
+    }
+
+    /** 이메일 알림은 회원이 꺼두지 않은 이상 보낸다. (기본값 켜짐) */
+    @Transactional
+    public void updateEmailPreference(Long memberId, NotificationType type, boolean emailEnabled) {
+        if (!type.isControllable()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "설정할 수 없는 알림 유형입니다.");
+        }
+        preferenceRepository.findByMemberIdAndType(memberId, type)
+                .ifPresentOrElse(
+                        preference -> preference.updateEmailEnabled(emailEnabled),
+                        () -> preferenceRepository.save(new NotificationPreference(memberId, type, true, emailEnabled)));
     }
 
     private boolean isEnabled(Long memberId, NotificationType type) {
@@ -82,6 +105,15 @@ public class NotificationService {
         }
         return preferenceRepository.findByMemberIdAndType(memberId, type)
                 .map(NotificationPreference::isEnabled)
+                .orElse(true);
+    }
+
+    private boolean isEmailEnabled(Long memberId, NotificationType type) {
+        if (!type.isControllable()) {
+            return false;
+        }
+        return preferenceRepository.findByMemberIdAndType(memberId, type)
+                .map(NotificationPreference::isEmailEnabled)
                 .orElse(true);
     }
 

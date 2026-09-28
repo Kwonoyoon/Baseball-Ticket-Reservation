@@ -54,6 +54,10 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-true}
       SAMPLE_DATA_ENABLED: ${SAMPLE_DATA_ENABLED:-true}
+      # 알림 메일 발송용 SMTP 계정, 메일 속 "예매 내역 보기" 링크가 가리킬 실제 서비스 주소
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost}
       TZ: Asia/Seoul
     depends_on:
       mysql:

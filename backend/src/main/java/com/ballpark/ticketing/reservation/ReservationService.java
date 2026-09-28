@@ -23,6 +23,7 @@ import com.ballpark.ticketing.member.Member;
 import com.ballpark.ticketing.member.MemberRepository;
 import com.ballpark.ticketing.notification.NotificationService;
 import com.ballpark.ticketing.notification.NotificationType;
+import com.ballpark.ticketing.notification.ReservationEmailContent;
 import com.ballpark.ticketing.reservation.dto.ReservationRequest;
 import com.ballpark.ticketing.reservation.dto.ReservationResponse;
 import com.ballpark.ticketing.reservation.payment.PaymentGateway;
@@ -115,7 +116,7 @@ public class ReservationService {
         reservation.confirm(payment.transactionId());
 
         notifyAfterCommit(memberId, NotificationType.RESERVATION_CONFIRMED, "예매가 완료되었습니다",
-                reservation.getReservationNumber() + " 예매가 정상적으로 완료되었습니다.");
+                reservation.getReservationNumber() + " 예매가 정상적으로 완료되었습니다.", buildEmailContent(reservation));
         releaseHoldsAfterCommit(game.getId(), memberId, seats.keySet());
         return ReservationResponse.from(reservation, now);
     }
@@ -139,8 +140,22 @@ public class ReservationService {
         soldSeatRepository.deleteByReservationId(reservation.getId());
         paymentGateway.cancel(reservation.getPaymentTransactionId(), reservation.getTotalPrice());
         notifyAfterCommit(memberId, NotificationType.RESERVATION_CANCELED, "예매가 취소되었습니다",
-                reservation.getReservationNumber() + " 예매가 취소되었습니다.");
+                reservation.getReservationNumber() + " 예매가 취소되었습니다.", buildEmailContent(reservation));
         return ReservationResponse.from(reservation, now);
+    }
+
+    /**
+     * 알림 메일에 쓸 경기·좌석·결제 정보를 미리 뽑아 둔다. afterCommit 콜백은 트랜잭션이 끝난 뒤 실행되어
+     * 지연 로딩된 엔티티 필드에 접근할 수 없으므로, 값이 살아 있는 지금(커밋 전)에 문자열/숫자로 옮겨 둔다.
+     */
+    private ReservationEmailContent buildEmailContent(Reservation reservation) {
+        Game game = reservation.getGame();
+        List<String> seatLabels = reservation.getSeats().stream()
+                .map(seat -> seat.getSection().getName() + " " + seat.getRowNo() + "열 " + seat.getSeatNo() + "번")
+                .toList();
+        return new ReservationEmailContent(reservation.getId(), reservation.getReservationNumber(),
+                game.getHomeTeam().getName(), game.getAwayTeam().getName(), game.getStadium().getName(),
+                game.getStartAt(), seatLabels, reservation.getTotalPrice());
     }
 
     /**
@@ -151,12 +166,13 @@ public class ReservationService {
      * </ul>
      * 자세한 경위: docs/troubleshooting/notification-transaction-500.md
      */
-    private void notifyAfterCommit(Long memberId, NotificationType type, String title, String message) {
+    private void notifyAfterCommit(Long memberId, NotificationType type, String title, String message,
+            ReservationEmailContent emailContent) {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
                 try {
-                    notificationService.create(memberId, type, title, message);
+                    notificationService.create(memberId, type, title, message, emailContent);
                 } catch (RuntimeException e) {
                     log.warn("알림을 보내지 못했습니다. 예매는 정상 처리됐습니다. memberId={}, type={}", memberId, type, e);
                 }

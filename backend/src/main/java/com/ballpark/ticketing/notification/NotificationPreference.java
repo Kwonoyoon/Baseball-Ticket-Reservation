@@ -29,17 +29,25 @@ public class NotificationPreference {
     @Column(nullable = false)
     private boolean enabled;
 
+    @Column(nullable = false)
+    private boolean emailEnabled;
+
     protected NotificationPreference() {
     }
 
-    public NotificationPreference(Long memberId, NotificationType type, boolean enabled) {
+    public NotificationPreference(Long memberId, NotificationType type, boolean enabled, boolean emailEnabled) {
         this.memberId = memberId;
         this.type = type;
         this.enabled = enabled;
+        this.emailEnabled = emailEnabled;
     }
 
     public void updateEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public void updateEmailEnabled(boolean emailEnabled) {
+        this.emailEnabled = emailEnabled;
     }
 
     public Long getId() {
@@ -56,5 +64,9 @@ public class NotificationPreference {
 
     public boolean isEnabled() {
         return enabled;
+    }
+
+    public boolean isEmailEnabled() {
+        return emailEnabled;
     }
 }

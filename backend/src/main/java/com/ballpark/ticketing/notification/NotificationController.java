@@ -73,6 +73,13 @@ public class NotificationController {
         notificationService.updatePreference(authMember.id(), type, request.enabled());
     }
 
+    @PostMapping("/preferences/{type}/email")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void updateEmailPreference(@AuthenticationPrincipal AuthMember authMember,
+            @PathVariable NotificationType type, @Valid @RequestBody NotificationPreferenceRequest request) {
+        notificationService.updateEmailPreference(authMember.id(), type, request.enabled());
+    }
+
     /**
      * 브라우저 EventSource는 커스텀 헤더를 못 보내므로, 이 요청만 JwtAuthenticationFilter가
      * 쿼리 파라미터 token으로도 인증을 받아준다.

@@ -99,7 +99,7 @@ class NotificationFlowIntegrationTest {
     @Test
     void 알림에서_오류가_나도_결제된_예매는_취소되지_않는다() throws Exception {
         doThrow(new IllegalStateException("알림 저장소 장애"))
-                .when(notificationService).create(anyLong(), any(), anyString(), anyString());
+                .when(notificationService).create(anyLong(), any(), anyString(), anyString(), any());
         String token = signupAndLogin();
         hold(token).andExpect(status().isOk());
 

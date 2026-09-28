@@ -8,7 +8,7 @@ export function NotificationSettingsPage() {
   const [preferences, setPreferences] = useState<NotificationPreference[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
-  const [pendingType, setPendingType] = useState<string | null>(null)
+  const [pendingKey, setPendingKey] = useState<string | null>(null)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -23,7 +23,7 @@ export function NotificationSettingsPage() {
 
   const handleToggle = async (preference: NotificationPreference) => {
     const nextEnabled = !preference.enabled
-    setPendingType(preference.type)
+    setPendingKey(preference.type)
     setPreferences((current) =>
       current?.map((p) => (p.type === preference.type ? { ...p, enabled: nextEnabled } : p)) ?? null,
     )
@@ -35,7 +35,27 @@ export function NotificationSettingsPage() {
         current?.map((p) => (p.type === preference.type ? { ...p, enabled: preference.enabled } : p)) ?? null,
       )
     } finally {
-      setPendingType(null)
+      setPendingKey(null)
+    }
+  }
+
+  const handleEmailToggle = async (preference: NotificationPreference) => {
+    const nextEmailEnabled = !preference.emailEnabled
+    const key = `${preference.type}-email`
+    setPendingKey(key)
+    setPreferences((current) =>
+      current?.map((p) => (p.type === preference.type ? { ...p, emailEnabled: nextEmailEnabled } : p)) ?? null,
+    )
+    try {
+      await api.updateNotificationEmailPreference(preference.type, nextEmailEnabled)
+    } catch {
+      // 실패하면 원래 상태로 되돌린다.
+      setPreferences((current) =>
+        current?.map((p) => (p.type === preference.type ? { ...p, emailEnabled: preference.emailEnabled } : p)) ??
+        null,
+      )
+    } finally {
+      setPendingKey(null)
     }
   }
 
@@ -63,7 +83,7 @@ export function NotificationSettingsPage() {
                 <input
                   type="checkbox"
                   checked={preference.enabled}
-                  disabled={pendingType === preference.type}
+                  disabled={pendingKey === preference.type}
                   onChange={() => handleToggle(preference)}
                   aria-label={`${preference.label} 수신 ${preference.enabled ? '끄기' : '켜기'}`}
                 />
@@ -73,6 +93,30 @@ export function NotificationSettingsPage() {
           ))}
         </ul>
       )}
+
+      {preferences !== null && !error ? (
+        <>
+          <h2 className="page-title">이메일 알림</h2>
+          <p className="page-desc">예매 완료·취소 메일을 켜면 알림이 이메일로도 발송됩니다.</p>
+          <ul className="preference-list">
+            {preferences.map((preference) => (
+              <li key={`${preference.type}-email`} className="preference-item">
+                <span className="preference-item__label">{preference.label} 메일</span>
+                <label className="switch">
+                  <input
+                    type="checkbox"
+                    checked={preference.emailEnabled}
+                    disabled={pendingKey === `${preference.type}-email`}
+                    onChange={() => handleEmailToggle(preference)}
+                    aria-label={`${preference.label} 이메일 수신 ${preference.emailEnabled ? '끄기' : '켜기'}`}
+                  />
+                  <span className="switch__track" aria-hidden="true" />
+                </label>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
     </div>
   )
 }
