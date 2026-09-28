@@ -4,6 +4,7 @@ import { api } from '../api/endpoints'
 import type { AdminMember, MemberRole, MemberStatus } from '../api/types'
 import { USER_TYPE_LABELS } from '../auth/roles'
 import { useAuth } from '../auth/useAuth'
+import { RoleSelect } from '../components/RoleSelect'
 import { EmptyState, ErrorMessage, Loading } from '../components/StatusView'
 import { formatDateTime } from '../lib/format'
 
@@ -64,6 +65,27 @@ export function AdminMembersPage() {
     }
     if (!window.confirm(`${target.username} 계정을 잠글까요?\n모든 기기에서 즉시 로그아웃됩니다.`)) return
     void runAction(target, () => api.lockMember(target.id), `${target.username} 계정을 잠갔습니다.`)
+  }
+
+  /** 삭제한 회원은 목록에서 바로 뺀다. (서버도 다음 조회부터 내려 주지 않는다) */
+  const deleteMember = async (target: AdminMember) => {
+    const ok = window.confirm(
+      `${target.username} 회원을 삭제할까요?` +
+        `\n이름과 이메일은 지워지고, 예매 이력은 통계를 위해 남습니다.` +
+        `\n되돌릴 수 없습니다.`,
+    )
+    if (!ok) return
+    setBusyId(target.id)
+    setNotice(null)
+    try {
+      await api.deleteMember(target.id)
+      setMembers((current) => current?.filter((m) => m.id !== target.id) ?? null)
+      setNotice({ type: 'success', message: `${target.username} 회원을 삭제했습니다.` })
+    } catch (e) {
+      setNotice({ type: 'error', message: errorMessage(e, '삭제하지 못했습니다.') })
+    } finally {
+      setBusyId(null)
+    }
   }
 
   const changeRole = (target: AdminMember, role: MemberRole) => {
@@ -140,15 +162,12 @@ export function AdminMembersPage() {
                     <td>{target.name}</td>
                     <td>{withdrawn ? '-' : target.email}</td>
                     <td>
-                      <select
-                        aria-label={`${target.username} 권한`}
+                      <RoleSelect
+                        label={`${target.username} 권한`}
                         value={target.role}
                         disabled={disabled}
-                        onChange={(event) => changeRole(target, event.target.value as MemberRole)}
-                      >
-                        <option value="MEMBER">{USER_TYPE_LABELS.MEMBER}</option>
-                        <option value="ADMIN">{USER_TYPE_LABELS.ADMIN}</option>
-                      </select>
+                        onChange={(role) => changeRole(target, role)}
+                      />
                     </td>
                     <td>
                       <span className={`badge badge--status-${target.status.toLowerCase()}`}>
@@ -161,14 +180,26 @@ export function AdminMembersPage() {
                     <td>{target.lastLoginAt ? formatDateTime(target.lastLoginAt) : '-'}</td>
                     <td>{formatDateTime(target.createdAt)}</td>
                     <td>
-                      <button
-                        type="button"
-                        className={`button button--sm ${target.status === 'LOCKED' ? 'button--ghost' : 'button--danger'}`}
-                        disabled={disabled}
-                        onClick={() => toggleLock(target)}
-                      >
-                        {target.status === 'LOCKED' ? '잠금 해제' : '잠금'}
-                      </button>
+                      <div className="admin-table__actions">
+                        <button
+                          type="button"
+                          className={`button button--sm ${
+                            target.status === 'LOCKED' ? 'button--ghost' : 'button--danger'
+                          }`}
+                          disabled={disabled}
+                          onClick={() => toggleLock(target)}
+                        >
+                          {target.status === 'LOCKED' ? '잠금 해제' : '잠금'}
+                        </button>
+                        <button
+                          type="button"
+                          className="button button--sm button--danger"
+                          disabled={disabled || target.role === 'ADMIN'}
+                          onClick={() => void deleteMember(target)}
+                        >
+                          삭제
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 )

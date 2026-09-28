@@ -184,6 +184,61 @@ p {
   cursor: pointer;
 }
 
+/* 햄버거 아이콘: 세 줄이 X로 바뀐다. (components/Header.tsx) */
+.site-header__menu {
+  margin-left: 4px;
+}
+
+.hamburger {
+  position: relative;
+  display: block;
+  width: 20px;
+  height: 14px;
+}
+
+.hamburger > span {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  border-radius: 2px;
+  background: currentcolor;
+  transition:
+    transform 0.25s ease,
+    opacity 0.15s ease,
+    width 0.25s ease;
+}
+
+.hamburger > span:nth-child(1) {
+  top: 0;
+}
+
+.hamburger > span:nth-child(2) {
+  top: 6px;
+}
+
+.hamburger > span:nth-child(3) {
+  top: 12px;
+}
+
+/* 커서를 올리면 가운데 줄이 짧아진다. */
+.site-header__menu:hover .hamburger > span:nth-child(2) {
+  width: 65%;
+}
+
+.site-header__menu.is-open .hamburger > span:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+
+.site-header__menu.is-open .hamburger > span:nth-child(2) {
+  width: 100%;
+  opacity: 0;
+}
+
+.site-header__menu.is-open .hamburger > span:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
 .icon-button:hover {
   background: var(--surface-muted);
   color: var(--text);
@@ -208,17 +263,101 @@ p {
   border: 0;
   background: rgb(15 35 64 / 45%);
   cursor: default;
+  animation: sidebar-fade-in 0.28s ease both;
 }
 
+.sidebar-layer.is-closing .sidebar-backdrop {
+  animation-name: sidebar-fade-out;
+}
+
+/* 오른쪽에서 밀려 들어오고, 닫을 때 같은 길로 나간다. */
 .sidebar {
   position: absolute;
   inset-block: 0;
-  left: 0;
+  right: 0;
   display: flex;
   flex-direction: column;
   width: min(300px, 86vw);
   background: var(--surface);
-  box-shadow: 8px 0 32px rgb(15 35 64 / 18%);
+  box-shadow: -8px 0 32px rgb(15 35 64 / 18%);
+  animation: sidebar-slide-in 0.28s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+.sidebar-layer.is-closing .sidebar {
+  animation-name: sidebar-slide-out;
+}
+
+/* 메뉴 항목은 살짝 늦게, 아래에서 떠오르듯 나타난다. */
+.sidebar-layer:not(.is-closing) .sidebar__item {
+  animation: sidebar-item-in 0.3s ease both;
+}
+
+.sidebar-layer:not(.is-closing) .sidebar__item:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.sidebar-layer:not(.is-closing) .sidebar__item:nth-child(2) {
+  animation-delay: 0.16s;
+}
+
+.sidebar-layer:not(.is-closing) .sidebar__item:nth-child(3) {
+  animation-delay: 0.22s;
+}
+
+.sidebar-layer:not(.is-closing) .sidebar__item:nth-child(4) {
+  animation-delay: 0.28s;
+}
+
+@keyframes sidebar-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sidebar-slide-in {
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes sidebar-slide-out {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes sidebar-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes sidebar-fade-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
 }
 
 .sidebar__head {
@@ -393,6 +532,17 @@ p {
 @media (prefers-reduced-motion: reduce) {
   .spinner {
     animation-duration: 2.4s;
+  }
+
+  .hamburger > span {
+    transition: none;
+  }
+
+  .sidebar,
+  .sidebar-backdrop,
+  .sidebar__item {
+    animation-duration: 0.01s;
+    animation-delay: 0s;
   }
 }
 
@@ -2344,12 +2494,101 @@ p {
   color: var(--text-muted);
 }
 
-.admin-table select {
+/* 권한 드롭다운 (components/RoleSelect.tsx) */
+.role-select {
+  position: relative;
+  display: inline-block;
+}
+
+.role-select__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 96px;
   height: 34px;
-  padding: 0 8px;
+  padding: 0 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.role-select__toggle:hover:not(:disabled),
+.role-select.is-open .role-select__toggle {
+  border-color: var(--navy-800);
+}
+
+.role-select__toggle:disabled {
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  cursor: default;
+}
+
+/* 아래를 가리키는 작은 화살표. 열리면 위를 향한다. */
+.role-select__arrow {
+  width: 7px;
+  height: 7px;
+  border-right: 1.6px solid currentcolor;
+  border-bottom: 1.6px solid currentcolor;
+  margin-top: -3px;
+  transform: rotate(45deg);
+  transition: transform 0.15s;
+}
+
+.role-select.is-open .role-select__arrow {
+  margin-top: 3px;
+  transform: rotate(-135deg);
+}
+
+.role-select__list {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 100%;
+  margin: 0;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: 0 10px 24px rgb(15 35 64 / 14%);
+  list-style: none;
+}
+
+.role-select__option {
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.role-select__option:hover {
+  background: var(--surface-muted);
+}
+
+.role-select__option.is-current {
+  background: var(--navy-800);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+/* 잠금·삭제 버튼을 나란히 둔다. 칸이 좁으면 줄바꿈한다. */
+.admin-table__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .admin-table__self {

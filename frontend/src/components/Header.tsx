@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router'
 import { useAuth } from '../auth/useAuth'
-import { BellIcon, MenuIcon } from './icons'
+import { BellIcon } from './icons'
 import { Sidebar } from './Sidebar'
 
 /**
@@ -31,18 +31,6 @@ export function Header() {
   return (
     <header className="site-header">
       <div className="container site-header__inner">
-        {member && (
-          <button
-            ref={menuButtonRef}
-            type="button"
-            className="icon-button site-header__menu"
-            aria-label="메뉴 열기"
-            aria-expanded={sidebarOpen}
-            onClick={() => setSidebarOpen(true)}
-          >
-            <MenuIcon />
-          </button>
-        )}
 
         <Link to="/" className="brand">
           SAFE<em>TICKET</em>
@@ -81,6 +69,24 @@ export function Header() {
             </>
           )}
         </div>
+
+        {member && (
+          <button
+            ref={menuButtonRef}
+            type="button"
+            className={`icon-button site-header__menu${sidebarOpen ? ' is-open' : ''}`}
+            aria-label="메뉴 열기"
+            aria-expanded={sidebarOpen}
+            onClick={() => setSidebarOpen((open) => !open)}
+          >
+            {/* 세 줄이 X로 바뀌는 애니메이션이라 아이콘 대신 선을 직접 그린다. */}
+            <span className="hamburger" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </span>
+          </button>
+        )}
       </div>
 
       <Sidebar open={sidebarOpen && member !== null} onClose={closeSidebar} />

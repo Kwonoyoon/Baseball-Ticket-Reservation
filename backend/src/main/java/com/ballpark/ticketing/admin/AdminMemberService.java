@@ -1,5 +1,7 @@
 package com.ballpark.ticketing.admin;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 
@@ -14,6 +16,8 @@ import com.ballpark.ticketing.member.MemberRepository;
 import com.ballpark.ticketing.member.MemberRole;
 import com.ballpark.ticketing.member.MemberStatus;
 import com.ballpark.ticketing.member.RefreshTokenService;
+import com.ballpark.ticketing.reservation.ReservationRepository;
+import com.ballpark.ticketing.reservation.ReservationStatus;
 
 /**
  * 관리자 회원 관리. 본인 계정은 잠그거나 권한을 바꿀 수 없다. (마지막 관리자가 스스로 권한을 잃는 일을 막는다)
@@ -25,10 +29,15 @@ public class AdminMemberService {
 
     private final MemberRepository memberRepository;
     private final RefreshTokenService refreshTokenService;
+    private final ReservationRepository reservationRepository;
+    private final Clock clock;
 
-    public AdminMemberService(MemberRepository memberRepository, RefreshTokenService refreshTokenService) {
+    public AdminMemberService(MemberRepository memberRepository, RefreshTokenService refreshTokenService,
+            ReservationRepository reservationRepository, Clock clock) {
         this.memberRepository = memberRepository;
         this.refreshTokenService = refreshTokenService;
+        this.reservationRepository = reservationRepository;
+        this.clock = clock;
     }
 
     public List<AdminMemberResponse> search(String keyword) {
@@ -57,6 +66,27 @@ public class AdminMemberService {
     public AdminMemberResponse changeRole(Long adminId, Long memberId, MemberRole role) {
         Member member = getModifiableMember(adminId, memberId);
         member.changeRole(role);
+        return AdminMemberResponse.from(member);
+    }
+
+    /**
+     * 회원 삭제. 예매 이력이 회원을 참조하므로 행을 지우지 않고 탈퇴 처리한다.
+     * (이름·이메일은 지워지고 예매 이력은 남는다. 회원 본인이 하는 탈퇴와 같은 처리다)
+     * 관람 예정인 예매가 있으면 먼저 취소해야 한다.
+     */
+    @Transactional
+    public AdminMemberResponse withdraw(Long adminId, Long memberId) {
+        Member member = getModifiableMember(adminId, memberId);
+        if (member.getRole() == MemberRole.ADMIN) {
+            throw new BusinessException(ErrorCode.ADMIN_CANNOT_WITHDRAW);
+        }
+        LocalDateTime now = LocalDateTime.now(clock);
+        if (reservationRepository.existsByMemberIdAndStatusAndGameStartAtAfter(memberId, ReservationStatus.CONFIRMED,
+                now)) {
+            throw new BusinessException(ErrorCode.HAS_UPCOMING_RESERVATIONS);
+        }
+        member.withdraw(now);
+        refreshTokenService.revokeAll(memberId);
         return AdminMemberResponse.from(member);
     }
 

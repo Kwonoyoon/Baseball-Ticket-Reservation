@@ -1,6 +1,7 @@
 package com.ballpark.ticketing.admin;
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -143,6 +144,49 @@ class AdminMemberIntegrationTest {
                         .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"password\":\"root-admin-password\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("ADMIN_CANNOT_WITHDRAW"));
+    }
+
+    @Test
+    void 회원을_삭제하면_탈퇴_처리되고_개인정보가_지워진다() throws Exception {
+        Member member = signupAndLogin();
+
+        admin(delete("/api/admin/members/" + member.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("WITHDRAWN"))
+                .andExpect(jsonPath("$.name").value("탈퇴회원"));
+
+        // 삭제된 회원은 로그인도, 남아 있던 토큰도 쓸 수 없다.
+        login(member.username(), PASSWORD).andExpect(status().isUnauthorized());
+        me(member.token()).andExpect(status().isUnauthorized());
+
+        // 이미 삭제한 회원은 다시 손댈 수 없다.
+        admin(delete("/api/admin/members/" + member.id()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("MEMBER_WITHDRAWN"));
+
+        // 삭제한 회원은 목록에서도 빠진다.
+        admin(get("/api/admin/members"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.username == '" + member.username() + "')]").isEmpty());
+    }
+
+    @Test
+    void 본인과_관리자_계정은_삭제할_수_없다() throws Exception {
+        String body = me(adminToken).andReturn().getResponse().getContentAsString();
+        Integer adminId = JsonPath.read(body, "$.id");
+
+        admin(delete("/api/admin/members/" + adminId))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("CANNOT_MODIFY_SELF"));
+
+        Member other = signupAndLogin();
+        admin(put("/api/admin/members/" + other.id() + "/role")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"role\":\"ADMIN\"}"))
+                .andExpect(status().isOk());
+        admin(delete("/api/admin/members/" + other.id()))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("ADMIN_CANNOT_WITHDRAW"));
     }
