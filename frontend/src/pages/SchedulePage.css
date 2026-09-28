@@ -16,8 +16,8 @@
   /* 초안의 #8a95a3은 흰 바탕에서 대비가 2.9:1이라 원정·홈 표시가 안 읽힌다. 4.5:1 이상이 되게 진하게 잡았다. */
   --home-faint: #6b7785;
   /* 흰 글자를 올리는 버튼 색. 초안의 #e4572e는 흰 글자와 대비가 3.7:1이라 4.5:1 이상이 되게 살짝 진하게 잡았다. */
-  --home-accent: #cf4620;
-  --home-accent-hover: #b23c19;
+  --home-accent: var(--accent, #cf4620);
+  --home-accent-hover: var(--accent-strong, #b23c19);
   /* 토요일 표시 파랑도 같은 이유로 초안의 #3b7fd1보다 진하게 잡았다. */
   --home-sat: #2f6fbf;
   --home-hero-bg: #12151a;

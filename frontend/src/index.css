@@ -10,6 +10,14 @@
   --red-50: #fdecec;
   --amber-400: #f2b53c;
 
+  /*
+   * 사이트 강조색(로고·주 버튼·선택 표시 등). 기본은 SAFETICKET 브랜드색이고,
+   * 로그인한 회원이 관심 구단을 정하면 TeamThemeApplier가 <html>에서 구단 색으로 덮어쓴다.
+   * 경고·오류 의미의 빨강(--red-*)은 테마와 무관하게 그대로 쓴다.
+   */
+  --accent: var(--red-500);
+  --accent-strong: var(--red-600);
+
   --bg: #f3f5f9;
   --surface: #ffffff;
   --surface-muted: #f7f9fc;
@@ -103,6 +111,12 @@ p {
   backdrop-filter: blur(10px);
 }
 
+/* 관심 구단을 정한 회원에게만 헤더 아래에 구단 색 띠가 붙는다. (구단 미선택이면 기존 모습 그대로) */
+:root[data-team-theme] .site-header {
+  border-bottom-color: var(--accent);
+  box-shadow: inset 0 -3px 0 var(--accent);
+}
+
 .site-header__inner {
   display: flex;
   align-items: center;
@@ -124,7 +138,7 @@ p {
 }
 
 .brand em {
-  color: var(--red-500);
+  color: var(--accent);
   font-style: normal;
 }
 
@@ -397,7 +411,7 @@ p {
 
 .sidebar__item svg {
   flex-shrink: 0;
-  color: var(--red-500);
+  color: var(--accent);
 }
 
 .sidebar__item small {
@@ -432,7 +446,7 @@ p {
   height: 16px;
   padding: 0 4px;
   border-radius: 999px;
-  background: var(--red-500);
+  background: var(--accent);
   color: #fff;
   font-size: 10px;
   font-weight: 700;
@@ -492,7 +506,7 @@ p {
 }
 
 .notification-panel__delete-all:hover {
-  color: var(--red-500);
+  color: var(--accent);
 }
 
 .notification-panel__settings {
@@ -546,7 +560,7 @@ p {
   height: 7px;
   margin-top: 6px;
   border-radius: 999px;
-  background: var(--red-500);
+  background: var(--accent);
 }
 
 .notification-item[data-read='true'] .notification-item__dot {
@@ -610,12 +624,12 @@ p {
 }
 
 .button--primary {
-  background: var(--red-500);
+  background: var(--accent);
   color: #fff;
 }
 
 .button--primary:hover {
-  background: var(--red-600);
+  background: var(--accent-strong);
 }
 
 .button--ghost {
@@ -686,7 +700,7 @@ p {
   width: 28px;
   height: 28px;
   border: 3px solid var(--border);
-  border-top-color: var(--red-500);
+  border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -1051,7 +1065,7 @@ p {
 }
 
 .mypage__team[aria-pressed='true'] {
-  border-color: var(--red-500);
+  border-color: var(--accent);
 }
 
 .mypage__team:disabled {
@@ -1350,7 +1364,7 @@ p {
 }
 
 .summary__total strong {
-  color: var(--red-500);
+  color: var(--accent);
   font-size: 24px;
   letter-spacing: -0.02em;
 }
@@ -1453,7 +1467,7 @@ p {
 }
 
 .auth-card__footer a {
-  color: var(--red-500);
+  color: var(--accent);
   font-weight: 700;
 }
 
@@ -1521,7 +1535,7 @@ p {
 
 .ticket__main {
   padding: 22px 24px;
-  border-left: 6px solid var(--red-500);
+  border-left: 6px solid var(--accent);
 }
 
 .ticket--canceled .ticket__main {
@@ -2663,7 +2677,7 @@ p {
 .check input {
   width: 18px;
   height: 18px;
-  accent-color: var(--red-500);
+  accent-color: var(--accent);
 }
 
 .check small {
@@ -3007,6 +3021,6 @@ p {
 }
 
 .password-input__toggle:focus-visible {
-  outline: 2px solid var(--red-500);
+  outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
