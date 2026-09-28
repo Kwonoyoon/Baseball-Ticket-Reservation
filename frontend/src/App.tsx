@@ -11,9 +11,11 @@ import { LoginPage } from './pages/LoginPage'
 import { MyReservationsPage } from './pages/MyReservationsPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { NotificationSettingsPage } from './pages/NotificationSettingsPage'
+import { PasswordChangePage } from './pages/PasswordChangePage'
 import { ReservationDetailPage } from './pages/ReservationDetailPage'
 import { SchedulePage } from './pages/SchedulePage'
 import { SignupPage } from './pages/SignupPage'
+import { WithdrawPage } from './pages/WithdrawPage'
 
 const router = createBrowserRouter([
   // 메인 화면은 전체 폭 히어로를 쓰므로 공용 Layout(가운데 정렬된 <main>) 밖에 둔다. 헤더는 Header.tsx를 공유한다.
@@ -54,6 +56,22 @@ const router = createBrowserRouter([
         element: (
           <RequireAuth>
             <AccountPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'my/account/password',
+        element: (
+          <RequireAuth>
+            <PasswordChangePage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'my/account/withdraw',
+        element: (
+          <RequireAuth>
+            <WithdrawPage />
           </RequireAuth>
         ),
       },

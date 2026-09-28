@@ -7,6 +7,8 @@ import com.ballpark.ticketing.team.Team;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -39,6 +41,16 @@ public class Game {
     @Column(nullable = false)
     private LocalDateTime startAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private GameStatus status;
+
+    @Column(name = "home_score")
+    private Integer homeScore;
+
+    @Column(name = "away_score")
+    private Integer awayScore;
+
     protected Game() {
     }
 
@@ -47,6 +59,7 @@ public class Game {
         this.awayTeam = awayTeam;
         this.stadium = stadium;
         this.startAt = startAt;
+        this.status = GameStatus.SCHEDULED;
     }
 
     /** 경기 시작 전까지 예매와 취소가 가능하다. */
@@ -76,5 +89,23 @@ public class Game {
 
     public LocalDateTime getStartAt() {
         return startAt;
+    }
+
+    public GameStatus getStatus() {
+        return status;
+    }
+
+    public Integer getHomeScore() {
+        return homeScore;
+    }
+
+    public Integer getAwayScore() {
+        return awayScore;
+    }
+
+    public void recordResult(int homeScore, int awayScore) {
+        this.homeScore = homeScore;
+        this.awayScore = awayScore;
+        this.status = GameStatus.FINISHED;
     }
 }

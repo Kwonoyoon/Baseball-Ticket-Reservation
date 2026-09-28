@@ -1,13 +1,17 @@
-import { useState, type FormEvent } from 'react'
-import { errorMessage } from '../api/client'
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router'
+import { isAbortError } from '../api/client'
 import { api } from '../api/endpoints'
 import { USER_TYPE_LABELS } from '../auth/roles'
 import { useAuth } from '../auth/useAuth'
-import { PasswordInput } from '../components/PasswordInput'
+import { AttendancePanel } from '../components/AttendancePanel'
+import { FavoriteTeamPanel } from '../components/FavoriteTeamPanel'
+import { parseSeoulDateTime } from '../lib/format'
 
-const MIN_PASSWORD_LENGTH = 8
-
-/** 마이페이지: 내 정보, 비밀번호 변경, 회원 탈퇴. RequireAuth 안에서만 렌더링된다. */
+/**
+ * 마이페이지: 내 정보와 메뉴. RequireAuth 안에서만 렌더링된다.
+ * 예매 확인/취소, 비밀번호 변경, 회원 탈퇴는 이 화면에서 바로 입력하지 않고 각자의 화면으로 들어가서 한다.
+ */
 export function AccountPage() {
   const { member, userType } = useAuth()
 
@@ -34,154 +38,80 @@ export function AccountPage() {
         </dl>
       </section>
 
-      <PasswordChangeForm />
-      {member.role !== 'ADMIN' && <WithdrawForm />}
+      <section className="panel" aria-labelledby="account-activity-title">
+        <h2 id="account-activity-title" className="panel__title">
+          내 활동
+        </h2>
+        <ul className="account-menu">
+          <li>
+            <Link to="/my/reservations" className="account-menu__item">
+              <span className="account-menu__text">
+                <strong>예매 확인 / 취소</strong>
+                <small>예매한 티켓을 확인하고, 경기 전이면 취소할 수 있어요</small>
+              </span>
+              <UpcomingCount />
+            </Link>
+          </li>
+        </ul>
+      </section>
+
+      <div className="mypage__grid">
+        <FavoriteTeamPanel />
+        <AttendancePanel />
+      </div>
+
+      <section className="panel" aria-labelledby="account-manage-title">
+        <h2 id="account-manage-title" className="panel__title">
+          계정 관리
+        </h2>
+        <ul className="account-menu">
+          <li>
+            <Link to="/my/account/password" className="account-menu__item">
+              <span className="account-menu__text">
+                <strong>비밀번호 변경</strong>
+                <small>현재 비밀번호를 확인한 뒤 새 비밀번호로 바꿔요</small>
+              </span>
+            </Link>
+          </li>
+          {member.role !== 'ADMIN' && (
+            <li>
+              <Link to="/my/account/withdraw" className="account-menu__item account-menu__item--danger">
+                <span className="account-menu__text">
+                  <strong>회원 탈퇴</strong>
+                  <small>탈퇴하면 이름과 이메일이 삭제돼요</small>
+                </span>
+              </Link>
+            </li>
+          )}
+        </ul>
+      </section>
     </div>
   )
 }
 
-function PasswordChangeForm() {
-  const { applyLoginResult } = useAuth()
-  const [form, setForm] = useState({ currentPassword: '', newPassword: '', newPasswordConfirm: '' })
-  const [error, setError] = useState<string | null>(null)
-  const [done, setDone] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
+/** 아직 시작하지 않은 확정 예매 수. 불러오지 못하면 아무것도 보여 주지 않는다. (메뉴 자체는 계속 쓸 수 있다) */
+function UpcomingCount() {
+  const [count, setCount] = useState<number | null>(null)
 
-  const update = (field: keyof typeof form) => (value: string) => setForm((current) => ({ ...current, [field]: value }))
+  useEffect(() => {
+    const controller = new AbortController()
+    api
+      .getMyReservations(controller.signal)
+      .then((reservations) => {
+        const now = Date.now()
+        setCount(
+          reservations.filter(
+            (reservation) =>
+              reservation.status === 'CONFIRMED' && parseSeoulDateTime(reservation.game.startAt).getTime() > now,
+          ).length,
+        )
+      })
+      .catch((e: unknown) => {
+        if (!isAbortError(e)) setCount(null)
+      })
+    return () => controller.abort()
+  }, [])
 
-  const validate = (): string | null => {
-    if (!form.currentPassword) return '현재 비밀번호를 입력해 주세요.'
-    if (form.newPassword.length < MIN_PASSWORD_LENGTH) return `새 비밀번호는 ${MIN_PASSWORD_LENGTH}자 이상으로 입력해 주세요.`
-    if (form.newPassword !== form.newPasswordConfirm) return '새 비밀번호가 일치하지 않습니다.'
-    return null
-  }
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const validationError = validate()
-    setError(validationError)
-    setDone(false)
-    if (validationError) return
-
-    setSubmitting(true)
-    try {
-      const result = await api.changePassword({ currentPassword: form.currentPassword, newPassword: form.newPassword })
-      applyLoginResult(result)
-      setForm({ currentPassword: '', newPassword: '', newPasswordConfirm: '' })
-      setDone(true)
-    } catch (e) {
-      setError(errorMessage(e, '비밀번호를 바꾸지 못했습니다.'))
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  return (
-    <section className="panel" aria-labelledby="password-title">
-      <div className="panel__header">
-        <h2 id="password-title" className="panel__title">
-          비밀번호 변경
-        </h2>
-      </div>
-      <form className="form" onSubmit={handleSubmit} noValidate>
-        <label className="field">
-          <span className="field__label">현재 비밀번호</span>
-          <PasswordInput
-            autoComplete="current-password"
-            value={form.currentPassword}
-            onChange={(event) => update('currentPassword')(event.target.value)}
-          />
-        </label>
-        <label className="field">
-          <span className="field__label">새 비밀번호</span>
-          <PasswordInput
-            autoComplete="new-password"
-            value={form.newPassword}
-            onChange={(event) => update('newPassword')(event.target.value)}
-          />
-          <span className="field__hint">{MIN_PASSWORD_LENGTH}자 이상 입력해 주세요.</span>
-        </label>
-        <label className="field">
-          <span className="field__label">새 비밀번호 확인</span>
-          <PasswordInput
-            autoComplete="new-password"
-            value={form.newPasswordConfirm}
-            onChange={(event) => update('newPasswordConfirm')(event.target.value)}
-          />
-        </label>
-        {error && (
-          <p className="form__error" role="alert">
-            {error}
-          </p>
-        )}
-        {done && (
-          <p className="notice notice--success" role="status">
-            비밀번호를 바꿨습니다. 다른 기기에서는 모두 로그아웃되었습니다.
-          </p>
-        )}
-        <button type="submit" className="button button--primary" disabled={submitting}>
-          {submitting ? '바꾸는 중…' : '비밀번호 변경'}
-        </button>
-      </form>
-    </section>
-  )
-}
-
-function WithdrawForm() {
-  const { logout } = useAuth()
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [submitting, setSubmitting] = useState(false)
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    if (!password) {
-      setError('비밀번호를 입력해 주세요.')
-      return
-    }
-    const confirmed = window.confirm('정말 탈퇴할까요?\n아이디는 다시 사용할 수 없고, 이름과 이메일은 삭제됩니다.')
-    if (!confirmed) return
-
-    setSubmitting(true)
-    setError(null)
-    try {
-      await api.withdraw(password)
-      // 직접 로그아웃했으므로 RequireAuth가 첫 화면으로 보낸다.
-      await logout()
-    } catch (e) {
-      setError(errorMessage(e, '탈퇴하지 못했습니다.'))
-      setSubmitting(false)
-    }
-  }
-
-  return (
-    <section className="panel" aria-labelledby="withdraw-title">
-      <div className="panel__header">
-        <h2 id="withdraw-title" className="panel__title">
-          회원 탈퇴
-        </h2>
-      </div>
-      <p className="panel__subtitle">
-        관람 예정인 예매가 있으면 먼저 취소해야 합니다. 지난 예매 기록은 남고, 이름과 이메일은 삭제됩니다.
-      </p>
-      <form className="form" onSubmit={handleSubmit} noValidate>
-        <label className="field">
-          <span className="field__label">비밀번호 확인</span>
-          <PasswordInput
-            autoComplete="current-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-        </label>
-        {error && (
-          <p className="form__error" role="alert">
-            {error}
-          </p>
-        )}
-        <button type="submit" className="button button--danger" disabled={submitting}>
-          {submitting ? '탈퇴 처리 중…' : '회원 탈퇴'}
-        </button>
-      </form>
-    </section>
-  )
+  if (!count) return null
+  return <span className="badge badge--confirmed">관람 예정 {count}건</span>
 }

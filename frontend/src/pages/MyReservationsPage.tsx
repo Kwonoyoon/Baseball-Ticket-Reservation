@@ -48,7 +48,7 @@ export function MyReservationsPage() {
 
   return (
     <div className="my-reservations">
-      <h1 className="page-title">예매 내역</h1>
+      <h1 className="page-title">예매 확인 / 취소</h1>
 
       {notice && (
         <p className={`notice${notice.type === 'success' ? ' notice--success' : ''}`} role="status">

@@ -52,6 +52,9 @@ export const api = {
 
   getTeams: (signal?: AbortSignal) => request<Team[]>('/teams', { signal }),
 
+  updateFavoriteTeam: (teamId: number | null) =>
+    request<Member>('/members/me/favorite-team', { method: 'PATCH', body: { teamId } }),
+
   getSchedule: (date: string, teamId: number | null, signal?: AbortSignal) => {
     const params = new URLSearchParams({ date })
     if (teamId !== null) params.set('teamId', String(teamId))

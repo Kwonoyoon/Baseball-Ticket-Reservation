@@ -15,6 +15,8 @@ export type AuthContextValue = {
   logout: () => Promise<void>
   /** 비밀번호 변경처럼 서버가 새 토큰을 준 경우 세션을 바꾼다. */
   applyLoginResult: (result: LoginResult) => void
+  /** 관심 구단처럼 로그인 후 바뀌는 회원 정보를 화면 상태에 반영한다. (서버는 이미 저장한 뒤) */
+  updateMember: (member: Member) => void
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null)

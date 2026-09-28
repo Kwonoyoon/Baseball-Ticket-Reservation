@@ -49,6 +49,7 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health", "/h2-console/**", "/error").permitAll()
                         // 관리자
                         .requestMatchers("/api/admin/**").hasRole(MemberRole.ADMIN.name())
+                        .requestMatchers(HttpMethod.PATCH, "/api/games/*/result").hasRole(MemberRole.ADMIN.name())
                         // 그 밖의 API는 회원(관리자 포함)
                         .anyRequest().authenticated())
                 .exceptionHandling(exceptions -> exceptions

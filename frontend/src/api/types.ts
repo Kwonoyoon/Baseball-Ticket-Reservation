@@ -11,6 +11,7 @@ export type Member = {
   email: string
   name: string
   role: MemberRole
+  favoriteTeamId: number | null
 }
 
 /** 관리자 회원 관리 화면의 회원 한 명 */
@@ -47,12 +48,17 @@ export type Stadium = {
   city: string
 }
 
+export type GameStatus = 'SCHEDULED' | 'FINISHED' | 'CANCELED'
+
 export type GameSummary = {
   id: number
   startAt: string
   homeTeam: Team
   awayTeam: Team
   stadium: Stadium
+  status: GameStatus
+  homeScore: number | null
+  awayScore: number | null
 }
 
 export type SeatGrade =

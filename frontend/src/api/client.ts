@@ -122,7 +122,7 @@ export function errorMessage(error: unknown, fallback = '요청을 처리하지 
 }
 
 type RequestOptions = {
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   body?: unknown
   signal?: AbortSignal
 }

@@ -6,7 +6,7 @@ export function jsonResponse(status: number, body: unknown) {
 }
 
 export function testMember(role: MemberRole = 'MEMBER', overrides: Partial<Member> = {}): Member {
-  return { id: 1, username: 'fan01', email: 'fan@ballpark.com', name: '야구팬', role, ...overrides }
+  return { id: 1, username: 'fan01', email: 'fan@ballpark.com', name: '야구팬', role, favoriteTeamId: null, ...overrides }
 }
 
 export function loginResult(member: Member, accessToken = 'access-token'): LoginResult {

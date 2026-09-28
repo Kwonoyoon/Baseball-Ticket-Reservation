@@ -25,6 +25,9 @@ function game(id: number, date: string, home: Team, away: Team): GameSummary {
     homeTeam: home,
     awayTeam: away,
     stadium: { id: id, name: `${home.shortName}구장`, city: '서울' },
+    status: 'SCHEDULED',
+    homeScore: null,
+    awayScore: null,
   }
 }
 

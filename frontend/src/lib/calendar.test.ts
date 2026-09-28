@@ -20,6 +20,9 @@ function reservation(id: number, startAt: string, status: ReservationStatus = 'C
       homeTeam: team(1, 'LG'),
       awayTeam: team(2, '두산'),
       stadium: { id: 1, name: '잠실야구장', city: '서울' },
+      status: 'SCHEDULED',
+      homeScore: null,
+      awayScore: null,
     },
     seats: [],
   }

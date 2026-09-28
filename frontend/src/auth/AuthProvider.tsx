@@ -49,6 +49,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const applyLoginResult = useCallback((result: LoginResult) => startSession(result), [])
 
+  // 관심 구단처럼 로그인 이후 바뀌는 회원 정보를 화면에 반영한다. 새로고침하면 서버가 최신 회원 정보를 다시 내려 준다.
+  const updateMember = useCallback((next: Member) => setMember(next), [])
+
   const value = useMemo<AuthContextValue>(
     () => ({
       member,
@@ -60,8 +63,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       logout,
       applyLoginResult,
+      updateMember,
     }),
-    [member, loading, loggedOut, login, logout, applyLoginResult],
+    [member, loading, loggedOut, login, logout, applyLoginResult, updateMember],
   )
 
   return <AuthContext value={value}>{children}</AuthContext>

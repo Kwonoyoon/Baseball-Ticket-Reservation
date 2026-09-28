@@ -16,16 +16,19 @@ import com.ballpark.ticketing.global.security.AuthProperties;
 import com.ballpark.ticketing.global.security.JwtTokenProvider;
 import com.ballpark.ticketing.member.RefreshTokenService.IssuedRefreshToken;
 import com.ballpark.ticketing.member.RefreshTokenService.Rotation;
+import com.ballpark.ticketing.member.dto.FavoriteTeamRequest;
 import com.ballpark.ticketing.member.dto.LoginRequest;
 import com.ballpark.ticketing.member.dto.LoginResponse;
 import com.ballpark.ticketing.member.dto.MemberResponse;
 import com.ballpark.ticketing.member.dto.SignupRequest;
+import com.ballpark.ticketing.team.TeamRepository;
 
 @Service
 @Transactional(readOnly = true)
 public class AuthService {
 
     private final MemberRepository memberRepository;
+    private final TeamRepository teamRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
     private final RefreshTokenService refreshTokenService;
@@ -34,10 +37,11 @@ public class AuthService {
     /** 없는 아이디로 로그인할 때도 비밀번호 비교 시간을 들여, 응답 시간으로 아이디 존재 여부를 알 수 없게 한다. */
     private final String dummyPasswordHash;
 
-    public AuthService(MemberRepository memberRepository, PasswordEncoder passwordEncoder,
-            JwtTokenProvider tokenProvider, RefreshTokenService refreshTokenService, AuthProperties authProperties,
-            Clock clock) {
+    public AuthService(MemberRepository memberRepository, TeamRepository teamRepository,
+            PasswordEncoder passwordEncoder, JwtTokenProvider tokenProvider, RefreshTokenService refreshTokenService,
+            AuthProperties authProperties, Clock clock) {
         this.memberRepository = memberRepository;
+        this.teamRepository = teamRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
         this.refreshTokenService = refreshTokenService;
@@ -116,6 +120,17 @@ public class AuthService {
         return memberRepository.findById(memberId)
                 .map(MemberResponse::from)
                 .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
+    }
+
+    @Transactional
+    public MemberResponse updateFavoriteTeam(Long memberId, FavoriteTeamRequest request) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
+        if (request.teamId() != null && !teamRepository.existsById(request.teamId())) {
+            throw new BusinessException(ErrorCode.TEAM_NOT_FOUND);
+        }
+        member.setFavoriteTeamId(request.teamId());
+        return MemberResponse.from(member);
     }
 
     /** 새 로그인(토큰 묶음)을 시작한다. 비밀번호 변경 뒤 현재 기기를 다시 로그인시킬 때도 쓴다. */
