@@ -21,6 +21,8 @@ import com.ballpark.ticketing.global.error.BusinessException;
 import com.ballpark.ticketing.global.error.ErrorCode;
 import com.ballpark.ticketing.member.Member;
 import com.ballpark.ticketing.member.MemberRepository;
+import com.ballpark.ticketing.notification.NotificationService;
+import com.ballpark.ticketing.notification.NotificationType;
 import com.ballpark.ticketing.reservation.dto.ReservationRequest;
 import com.ballpark.ticketing.reservation.dto.ReservationResponse;
 import com.ballpark.ticketing.reservation.payment.PaymentGateway;
@@ -47,12 +49,14 @@ public class ReservationService {
     private final SeatHoldStore seatHoldStore;
     private final ReservationQuota reservationQuota;
     private final PaymentGateway paymentGateway;
+    private final NotificationService notificationService;
     private final Clock clock;
     private final SecureRandom random = new SecureRandom();
 
     public ReservationService(ReservationRepository reservationRepository, SoldSeatRepository soldSeatRepository,
             MemberRepository memberRepository, SeatService seatService, SeatHoldStore seatHoldStore,
-            ReservationQuota reservationQuota, PaymentGateway paymentGateway, Clock clock) {
+            ReservationQuota reservationQuota, PaymentGateway paymentGateway,
+            NotificationService notificationService, Clock clock) {
         this.reservationRepository = reservationRepository;
         this.soldSeatRepository = soldSeatRepository;
         this.memberRepository = memberRepository;
@@ -60,6 +64,7 @@ public class ReservationService {
         this.seatHoldStore = seatHoldStore;
         this.reservationQuota = reservationQuota;
         this.paymentGateway = paymentGateway;
+        this.notificationService = notificationService;
         this.clock = clock;
     }
 
@@ -109,6 +114,8 @@ public class ReservationService {
         }
         reservation.confirm(payment.transactionId());
 
+        notificationService.create(memberId, NotificationType.RESERVATION_CONFIRMED, "예매가 완료되었습니다",
+                reservation.getReservationNumber() + " 예매가 정상적으로 완료되었습니다.");
         releaseHoldsAfterCommit(game.getId(), memberId, seats.keySet());
         return ReservationResponse.from(reservation, now);
     }
@@ -131,6 +138,8 @@ public class ReservationService {
         reservation.cancel(now);
         soldSeatRepository.deleteByReservationId(reservation.getId());
         paymentGateway.cancel(reservation.getPaymentTransactionId(), reservation.getTotalPrice());
+        notificationService.create(memberId, NotificationType.RESERVATION_CANCELED, "예매가 취소되었습니다",
+                reservation.getReservationNumber() + " 예매가 취소되었습니다.");
         return ReservationResponse.from(reservation, now);
     }
 
