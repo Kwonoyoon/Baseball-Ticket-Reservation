@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { errorMessage, isAbortError } from '../api/client'
 import { api } from '../api/endpoints'
 import type { GameSummary, Team } from '../api/types'
 import { useAuth } from '../auth/useAuth'
+import { ChevronRightIcon } from '../components/icons'
 import { Header } from '../components/Header'
 import { EmptyState, ErrorMessage, Loading } from '../components/StatusView'
 import { TeamMark } from '../components/TeamMark'
@@ -82,6 +83,10 @@ export function SchedulePage() {
       <TodayHero />
 
       <main className="home-main" id="schedule">
+        {teams.length > 0 && (
+          <TeamFilterRail teams={teams} selectedTeamId={selectedTeamId} onSelect={(team) => updateParams({ team })} />
+        )}
+
         <div className="home-dates" aria-label="경기 날짜 선택">
           {dates.map((date) => {
             const weekday = weekdayLabel(date)
@@ -100,32 +105,6 @@ export function SchedulePage() {
             )
           })}
         </div>
-
-        {teams.length > 0 && (
-          <div className="home-teams" role="group" aria-label="구단 필터">
-            <button
-              type="button"
-              className="home-team"
-              aria-pressed={selectedTeamId === null}
-              onClick={() => updateParams({ team: null })}
-            >
-              전체
-            </button>
-            {teams.map((team) => (
-              <button
-                key={team.id}
-                type="button"
-                className="home-team"
-                style={{ '--team-color': team.primaryColor } as CSSProperties}
-                aria-pressed={selectedTeamId === team.id}
-                onClick={() => updateParams({ team: team.id })}
-              >
-                <span className="home-team__dot" aria-hidden="true" />
-                {team.shortName}
-              </button>
-            ))}
-          </div>
-        )}
 
         <div className="home-section-head">
           <h2 className="home-section-title">{selectedDateLabel} 경기</h2>
@@ -159,6 +138,72 @@ export function SchedulePage() {
       <footer className="home-footer">
         SAFETICKET은 학습용 사이드 프로젝트입니다. 실제 결제가 이루어지지 않으며 경기 일정은 샘플 데이터입니다.
       </footer>
+    </div>
+  )
+}
+
+type TeamFilterRailProps = {
+  teams: Team[]
+  selectedTeamId: number | null
+  onSelect: (teamId: number | null) => void
+}
+
+/** 구단 필터를 원형 로고 캐러셀로 보여준다. 넘칠 때만 오른쪽에 화살표 버튼을 띄운다. */
+function TeamFilterRail({ teams, selectedTeamId, onSelect }: TeamFilterRailProps) {
+  const trackRef = useRef<HTMLDivElement>(null)
+  const [canScroll, setCanScroll] = useState(false)
+
+  useEffect(() => {
+    const track = trackRef.current
+    if (!track) return undefined
+    const update = () => setCanScroll(track.scrollWidth > track.clientWidth + 1)
+    update()
+    window.addEventListener('resize', update)
+    return () => window.removeEventListener('resize', update)
+  }, [teams])
+
+  return (
+    <div className="home-team-rail">
+      <div
+        className={`home-team-rail__track${canScroll ? ' is-scrollable' : ''}`}
+        ref={trackRef}
+        role="group"
+        aria-label="구단 필터"
+      >
+        <button
+          type="button"
+          className="home-team-card"
+          aria-pressed={selectedTeamId === null}
+          onClick={() => onSelect(null)}
+        >
+          <span className="home-team-card__all">전체</span>
+          <span className="home-team-card__label">전체</span>
+        </button>
+        {teams.map((team) => (
+          <button
+            key={team.id}
+            type="button"
+            className="home-team-card"
+            style={{ '--team-color': team.primaryColor } as CSSProperties}
+            aria-pressed={selectedTeamId === team.id}
+            onClick={() => onSelect(team.id)}
+          >
+            <TeamMark team={team} size="lg" />
+            <span className="home-team-card__label">{team.shortName}</span>
+          </button>
+        ))}
+      </div>
+
+      {canScroll && (
+        <button
+          type="button"
+          className="home-team-rail__next"
+          aria-label="다음 구단 보기"
+          onClick={() => trackRef.current?.scrollBy({ left: 280, behavior: 'smooth' })}
+        >
+          <ChevronRightIcon />
+        </button>
+      )}
     </div>
   )
 }

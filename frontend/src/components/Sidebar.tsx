@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { useAuth } from '../auth/useAuth'
 import { openCalendarWindow } from '../lib/calendarWindow'
-import { CalendarIcon, CloseIcon, MessageIcon, TicketIcon, UserIcon, UsersIcon } from './icons'
+import { CalendarIcon, CloseIcon, LogoutIcon, MessageIcon, TicketIcon, UserIcon, UsersIcon } from './icons'
 
 type SidebarProps = {
   open: boolean
@@ -22,7 +22,8 @@ const ANIMATION_MS = 280
  */
 export function Sidebar({ open, onClose }: SidebarProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null)
-  const { isAdmin } = useAuth()
+  const { isAdmin, logout } = useAuth()
+  const navigate = useNavigate()
   // 닫는 동안에도 잠깐 화면에 남겨야 빠져나가는 모습이 보인다.
   // (들어오는 애니메이션은 CSS가 알아서 재생하므로 상태가 필요 없다)
   const [closing, setClosing] = useState(false)
@@ -49,6 +50,12 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   }, [open, onClose])
 
   if (!open && !closing) return null
+
+  const handleLogout = () => {
+    onClose()
+    void logout()
+    navigate('/')
+  }
 
   return createPortal(
     <div className={`sidebar-layer${closing ? ' is-closing' : ''}`}>
@@ -99,6 +106,19 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               </span>
             </Link>
           )}
+          {isAdmin && (
+            <Link to="/admin/community/reports" className="sidebar__item" onClick={onClose}>
+              <MessageIcon />
+              <span>
+                신고 관리
+                <small>커뮤니티</small>
+              </span>
+            </Link>
+          )}
+          <button type="button" className="sidebar__item sidebar__item--logout" onClick={handleLogout}>
+            <LogoutIcon />
+            <span>로그아웃</span>
+          </button>
         </nav>
       </aside>
     </div>,

@@ -92,6 +92,24 @@ export function EyeIcon() {
   )
 }
 
+export function ChevronRightIcon() {
+  return (
+    <svg {...commonProps}>
+      <path d="M9 6l6 6-6 6" />
+    </svg>
+  )
+}
+
+export function LogoutIcon() {
+  return (
+    <svg {...commonProps}>
+      <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3" />
+      <path d="M10 8l-4 4 4 4" />
+      <path d="M14 12H3" />
+    </svg>
+  )
+}
+
 export function EyeOffIcon() {
   return (
     <svg {...commonProps}>
