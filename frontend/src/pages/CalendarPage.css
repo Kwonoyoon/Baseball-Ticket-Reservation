@@ -38,7 +38,7 @@
 }
 
 .calendar__summary strong {
-  color: var(--red-500);
+  color: var(--accent);
 }
 
 .calendar__grid {
@@ -90,20 +90,20 @@
 
 /* 직관한 날: 색을 채워서 한눈에 보이게 한다. */
 .calendar__day.is-attended {
-  border-color: var(--red-500);
-  background: var(--red-500);
+  border-color: var(--accent);
+  background: var(--accent);
   color: #ffffff;
   font-weight: 800;
   cursor: pointer;
 }
 
 .calendar__day.is-attended:hover {
-  background: var(--red-600);
-  border-color: var(--red-600);
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
 }
 
 .calendar__day.is-attended[aria-pressed='true'] {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--red-500) 30%, white);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, white);
 }
 
 /* 같은 날 두 경기 이상이면 오른쪽 위에 개수를 적는다. */
@@ -167,7 +167,7 @@
 .calendar-detail__item a {
   justify-self: start;
   margin-top: 4px;
-  color: var(--red-500);
+  color: var(--accent);
   font-size: 13px;
   font-weight: 700;
 }

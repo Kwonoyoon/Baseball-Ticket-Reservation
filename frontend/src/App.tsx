@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate, RouterProvider } from 'react-router'
 import { AuthProvider } from './auth/AuthProvider'
 import { RequireAdmin, RequireAuth } from './auth/RequireAuth'
 import { Layout } from './components/Layout'
+import { TeamThemeApplier } from './components/TeamThemeApplier'
 import { AccountPage } from './pages/AccountPage'
 import { AdminMembersPage } from './pages/AdminMembersPage'
 import { CalendarPage } from './pages/CalendarPage'
@@ -101,6 +102,7 @@ const router = createBrowserRouter([
 export default function App() {
   return (
     <AuthProvider>
+      <TeamThemeApplier />
       <NotificationProvider>
         <RouterProvider router={router} />
       </NotificationProvider>
