@@ -33,4 +33,14 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     /** 아직 시작하지 않은 경기의 예매가 남아 있는지 (회원 탈퇴 전 확인) */
     boolean existsByMemberIdAndStatusAndGameStartAtAfter(Long memberId, ReservationStatus status, LocalDateTime now);
+
+    /** 경기 취소 시 자동으로 취소·환불하고 알림을 보낼 예매자 전원을 찾는다. */
+    @Query("""
+            select distinct r from Reservation r
+            join fetch r.member
+            join fetch r.seats s
+            join fetch s.section
+            where r.game.id = :gameId and r.status = :status
+            """)
+    List<Reservation> findAllByGameIdAndStatus(@Param("gameId") Long gameId, @Param("status") ReservationStatus status);
 }

@@ -54,16 +54,29 @@ public class NotificationEmailSender {
     }
 
     private String subject(NotificationType type, ReservationEmailContent content) {
-        String verb = type == NotificationType.RESERVATION_CANCELED ? "취소" : "완료";
-        return "[볼파크 티켓] %s vs %s 예매 %s 안내".formatted(content.awayTeamName(), content.homeTeamName(), verb);
+        String verb = switch (type) {
+            case RESERVATION_CANCELED -> "취소";
+            case GAME_CANCELED -> "경기 취소로 인한 자동 취소";
+            default -> "완료";
+        };
+        return "[SAFE TICKET] %s vs %s 예매 %s 안내".formatted(content.awayTeamName(), content.homeTeamName(), verb);
     }
 
     private String body(NotificationType type, ReservationEmailContent content) throws MessagingException {
-        boolean canceled = type == NotificationType.RESERVATION_CANCELED;
         String seatRows = content.seatLabels().stream()
                 .map(label -> "<li>" + label + "</li>")
                 .collect(Collectors.joining());
         String detailUrl = mailProperties.appBaseUrl() + "/reservations/" + content.reservationId();
+        String headline = switch (type) {
+            case RESERVATION_CANCELED -> "예매가 취소되었습니다";
+            case GAME_CANCELED -> "경기 취소로 예매가 자동 취소되었습니다";
+            default -> "예매가 완료되었습니다";
+        };
+        String footer = type == NotificationType.GAME_CANCELED
+                ? "경기가 우천 등의 사유로 취소되어 결제하신 금액은 결제했던 수단으로 환불 처리가 될 예정입니다"
+                : """
+                        경기 당일 예매번호를 매표소 또는 입장 게이트에서 확인해 주세요.<br>
+                        경기 시작 전까지 예매내역에서 예매를 취소할 수 있습니다.""";
 
         return """
                 <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; color: #1f2937;">
@@ -84,19 +97,19 @@ public class NotificationEmailSender {
                   <p><a href="%s" style="display: inline-block; padding: 10px 16px; background: #16a34a; color: #ffffff; text-decoration: none; border-radius: 6px;">예매 내역 보기</a></p>
                   <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
                   <p style="font-size: 13px; color: #6b7280; line-height: 1.6;">
-                    경기 당일 예매번호를 매표소 또는 입장 게이트에서 확인해 주세요.<br>
-                    경기 시작 전까지 예매내역에서 예매를 취소할 수 있습니다.
+                    %s
                   </p>
                 </div>
                 """.formatted(
-                canceled ? "예매가 취소되었습니다" : "예매가 완료되었습니다",
+                headline,
                 content.reservationNumber(),
                 content.awayTeamName(), content.homeTeamName(),
                 content.gameStartAt().format(GAME_DATE_TIME),
                 content.stadiumName(),
                 seatRows,
                 formatPrice(content.totalPrice()),
-                detailUrl);
+                detailUrl,
+                footer);
     }
 
     private static String formatPrice(int price) {

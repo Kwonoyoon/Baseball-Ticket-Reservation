@@ -63,6 +63,9 @@ export const api = {
 
   getGame: (gameId: number, signal?: AbortSignal) => request<GameDetail>(`/games/${gameId}`, { signal }),
 
+  /** 경기 취소(관리자 전용, 우천취소 등). 예매자 전원에게 알림·이메일이 자동 발송되고 예매는 취소·환불된다. */
+  cancelGame: (gameId: number) => request<GameDetail>(`/games/${gameId}/cancel`, { method: 'PATCH' }),
+
   /** 좌석 목록은 구역 단위로만 조회한다. (구장 전체 좌석은 너무 많다) */
   getSeatStatus: (gameId: number, sectionId: number, signal?: AbortSignal) =>
     request<SeatStatus>(`/games/${gameId}/seats?sectionId=${sectionId}`, { signal }),

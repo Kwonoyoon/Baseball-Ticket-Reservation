@@ -145,6 +145,25 @@ public class ReservationService {
     }
 
     /**
+     * 경기가 취소되면(우천취소 등) 그 경기의 확정 예매를 전부 취소·환불하고, 예매자 전원에게 알림·이메일을 보낸다.
+     * 게임 취소 트랜잭션(GameService.cancelGame)에 합류해 같이 커밋·롤백된다.
+     */
+    @Transactional
+    public void cancelAllForGame(Game game) {
+        LocalDateTime now = LocalDateTime.now(clock);
+        List<Reservation> reservations = reservationRepository.findAllByGameIdAndStatus(game.getId(),
+                ReservationStatus.CONFIRMED);
+        for (Reservation reservation : reservations) {
+            reservation.cancelDueToGameCancellation(now);
+            soldSeatRepository.deleteByReservationId(reservation.getId());
+            paymentGateway.cancel(reservation.getPaymentTransactionId(), reservation.getTotalPrice());
+            notifyAfterCommit(reservation.getMember().getId(), NotificationType.GAME_CANCELED, "경기가 취소되었습니다",
+                    reservation.getReservationNumber() + " 경기가 취소되어 예매가 자동으로 취소되고 결제가 환불되었습니다.",
+                    buildEmailContent(reservation));
+        }
+    }
+
+    /**
      * 알림 메일에 쓸 경기·좌석·결제 정보를 미리 뽑아 둔다. afterCommit 콜백은 트랜잭션이 끝난 뒤 실행되어
      * 지연 로딩된 엔티티 필드에 접근할 수 없으므로, 값이 살아 있는 지금(커밋 전)에 문자열/숫자로 옮겨 둔다.
      */

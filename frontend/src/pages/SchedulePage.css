@@ -536,6 +536,18 @@
   cursor: not-allowed;
 }
 
+/* 취소된 경기를 관리자만 클릭해 들어갈 수 있을 때. 회원용 비활성 버튼과 색은 같지만 테두리로 눌러볼 수 있음을 표시한다. */
+.home-button--admin-canceled {
+  background: var(--home-sunk);
+  color: var(--home-faint);
+  border: 1px solid var(--home-line-strong);
+}
+
+.home-button--admin-canceled:hover {
+  background: var(--home-line);
+  color: var(--home-ink-soft);
+}
+
 .home-footer {
   max-width: 1120px;
   margin-inline: auto;

@@ -43,4 +43,10 @@ public class GameController {
     public GameDetailResponse recordResult(@PathVariable Long gameId, @Valid @RequestBody GameResultRequest request) {
         return gameService.recordResult(gameId, request);
     }
+
+    /** 경기 취소(관리자 전용, 우천취소 등). 접근 제어는 SecurityConfig에서 ROLE_ADMIN으로 막는다. */
+    @PatchMapping("/api/games/{gameId}/cancel")
+    public GameDetailResponse cancelGame(@PathVariable Long gameId) {
+        return gameService.cancelGame(gameId);
+    }
 }

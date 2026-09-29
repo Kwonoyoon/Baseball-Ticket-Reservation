@@ -4,6 +4,8 @@ public enum NotificationType {
 
     RESERVATION_CONFIRMED("예매 완료 알림", true),
     RESERVATION_CANCELED("예매 취소 알림", true),
+    /** 우천취소 등 경기 자체가 취소되어 예매가 자동으로 취소될 때 보낸다. */
+    GAME_CANCELED("경기 취소 알림", true),
     /** 운영자가 보내는 공지성 알림. 회원이 끌 수 없다. */
     GENERAL("공지 알림", false);
 

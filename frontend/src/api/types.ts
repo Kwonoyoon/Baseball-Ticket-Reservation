@@ -144,7 +144,7 @@ export type ReservedSeat = {
   price: number
 }
 
-export type NotificationType = 'RESERVATION_CONFIRMED' | 'RESERVATION_CANCELED' | 'GENERAL'
+export type NotificationType = 'RESERVATION_CONFIRMED' | 'RESERVATION_CANCELED' | 'GAME_CANCELED' | 'GENERAL'
 
 export type Notification = {
   id: number

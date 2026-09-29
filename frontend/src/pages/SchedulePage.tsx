@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router'
 import { errorMessage, isAbortError } from '../api/client'
 import { api } from '../api/endpoints'
 import type { GameSummary, Team } from '../api/types'
+import { useAuth } from '../auth/useAuth'
 import { Header } from '../components/Header'
 import { EmptyState, ErrorMessage, Loading } from '../components/StatusView'
 import { TeamMark } from '../components/TeamMark'
@@ -163,7 +164,11 @@ export function SchedulePage() {
 }
 
 function GameCard({ game }: { game: GameSummary }) {
-  const bookable = isBookable(game.startAt)
+  const { isAdmin } = useAuth()
+  const bookable = game.status === 'SCHEDULED' && isBookable(game.startAt)
+  const canceled = game.status === 'CANCELED'
+  // 취소된 경기는 회원에게는 눌러도 소용없어 비활성으로 두지만, 관리자는 취소 처리 확인차 들어가 볼 수 있어야 한다.
+  const adminCanOpenCanceled = canceled && isAdmin
 
   return (
     <article className="home-game">
@@ -194,9 +199,13 @@ function GameCard({ game }: { game: GameSummary }) {
         <Link className="home-button home-button--primary" to={`/games/${game.id}`}>
           예매하기
         </Link>
+      ) : adminCanOpenCanceled ? (
+        <Link className="home-button home-button--admin-canceled" to={`/games/${game.id}`}>
+          경기취소
+        </Link>
       ) : (
         <span className="home-button home-button--disabled" aria-disabled="true">
-          예매 마감
+          {canceled ? '경기취소' : '예매 마감'}
         </span>
       )}
     </article>
