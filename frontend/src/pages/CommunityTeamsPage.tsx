@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { Link } from 'react-router'
 import { errorMessage, isAbortError } from '../api/client'
 import { api } from '../api/endpoints'
@@ -41,9 +41,18 @@ export function CommunityTeamsPage() {
       ) : (
         <div className="community-teams__grid">
           {teams.map((team) => (
-            <Link key={team.id} to={`/community/${team.id}`} className="community-teams__item">
-              <TeamMark team={team} size="lg" />
-              <span>{team.name}</span>
+            <Link
+              key={team.id}
+              to={`/community/${team.id}`}
+              className="community-teams__item"
+              style={{ '--team-color': team.primaryColor } as CSSProperties}
+            >
+              <span className="community-teams__glow" aria-hidden="true" />
+              <span className="community-teams__logo">
+                <TeamMark team={team} size="lg" />
+              </span>
+              <span className="community-teams__name">{team.name}</span>
+              <span className="community-teams__cta">게시판 보기 →</span>
             </Link>
           ))}
         </div>
