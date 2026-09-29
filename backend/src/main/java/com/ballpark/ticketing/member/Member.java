@@ -118,6 +118,11 @@ public class Member {
         passwordChangedAt = now.truncatedTo(ChronoUnit.MILLIS);
     }
 
+    public void updateProfile(String name, String email) {
+        this.name = name;
+        this.email = email;
+    }
+
     public void changeRole(MemberRole role) {
         this.role = role;
     }

@@ -1574,6 +1574,17 @@ p {
   font-size: 12px;
 }
 
+/* 바꿀 수 없는 값(예: 아이디)을 입력칸 모양이 아니라 글자로 보여 준다. */
+.field__static {
+  display: flex;
+  align-items: center;
+  min-height: 46px;
+  padding: 0 14px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+  color: var(--text-muted);
+}
+
 .field input {
   height: 46px;
   padding: 0 14px;
