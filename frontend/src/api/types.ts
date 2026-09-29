@@ -175,3 +175,67 @@ export type Reservation = {
   game: GameSummary
   seats: ReservedSeat[]
 }
+
+export type TeamPostCount = {
+  teamId: number
+  postCount: number
+}
+
+export type PostSummary = {
+  id: number
+  authorName: string
+  title: string
+  viewCount: number
+  likeCount: number
+  commentCount: number
+  createdAt: string
+}
+
+export type PostPage = {
+  items: PostSummary[]
+  hasMore: boolean
+}
+
+export type PostDetail = {
+  id: number
+  teamId: number
+  authorId: number
+  authorName: string
+  title: string
+  content: string
+  viewCount: number
+  likeCount: number
+  commentCount: number
+  liked: boolean
+  mine: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export type Comment = {
+  id: number
+  authorId: number
+  authorName: string
+  content: string
+  mine: boolean
+  createdAt: string
+}
+
+export type LikeResult = {
+  liked: boolean
+  likeCount: number
+}
+
+export type ReportTargetType = 'POST' | 'COMMENT'
+
+export type Report = {
+  id: number
+  targetType: ReportTargetType
+  targetId: number
+  /** 신고 대상이 이미 지워졌으면 null */
+  targetPreview: string | null
+  targetAuthorName: string | null
+  reporterName: string
+  reason: string
+  createdAt: string
+}

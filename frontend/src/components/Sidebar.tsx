@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { Link } from 'react-router'
 import { useAuth } from '../auth/useAuth'
 import { openCalendarWindow } from '../lib/calendarWindow'
-import { CalendarIcon, CloseIcon, TicketIcon, UserIcon, UsersIcon } from './icons'
+import { CalendarIcon, CloseIcon, MessageIcon, TicketIcon, UserIcon, UsersIcon } from './icons'
 
 type SidebarProps = {
   open: boolean
@@ -62,7 +62,11 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         </div>
 
         <nav className="sidebar__nav" aria-label="사이드바 메뉴">
-          {/* 좁은 화면에서는 헤더의 메뉴 링크를 접기 때문에, 예매내역도 여기서 갈 수 있어야 한다. */}
+          {/* 좁은 화면에서는 헤더의 메뉴 링크를 접기 때문에, 예매내역·커뮤니티도 여기서 갈 수 있어야 한다. */}
+          <Link to="/community" className="sidebar__item" onClick={onClose}>
+            <MessageIcon />
+            <span>커뮤니티</span>
+          </Link>
           <Link to="/my/reservations" className="sidebar__item" onClick={onClose}>
             <TicketIcon />
             <span>예매내역</span>

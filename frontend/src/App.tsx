@@ -4,8 +4,13 @@ import { RequireAdmin, RequireAuth } from './auth/RequireAuth'
 import { Layout } from './components/Layout'
 import { TeamThemeApplier } from './components/TeamThemeApplier'
 import { AccountPage } from './pages/AccountPage'
+import { AdminCommunityReportsPage } from './pages/AdminCommunityReportsPage'
 import { AdminMembersPage } from './pages/AdminMembersPage'
 import { CalendarPage } from './pages/CalendarPage'
+import { CommunityBoardPage } from './pages/CommunityBoardPage'
+import { CommunityPostFormPage } from './pages/CommunityPostFormPage'
+import { CommunityPostPage } from './pages/CommunityPostPage'
+import { CommunityTeamsPage } from './pages/CommunityTeamsPage'
 import { NotificationProvider } from './notifications/NotificationProvider'
 import { GamePage } from './pages/GamePage'
 import { LoginPage } from './pages/LoginPage'
@@ -37,6 +42,25 @@ const router = createBrowserRouter([
       { path: 'games/:gameId', element: <GamePage /> },
       { path: 'login', element: <LoginPage /> },
       { path: 'signup', element: <SignupPage /> },
+      { path: 'community', element: <CommunityTeamsPage /> },
+      { path: 'community/:teamId', element: <CommunityBoardPage /> },
+      {
+        path: 'community/:teamId/write',
+        element: (
+          <RequireAuth>
+            <CommunityPostFormPage />
+          </RequireAuth>
+        ),
+      },
+      { path: 'community/:teamId/posts/:postId', element: <CommunityPostPage /> },
+      {
+        path: 'community/:teamId/posts/:postId/edit',
+        element: (
+          <RequireAuth>
+            <CommunityPostFormPage />
+          </RequireAuth>
+        ),
+      },
       {
         path: 'my/reservations',
         element: (
@@ -92,6 +116,14 @@ const router = createBrowserRouter([
         element: (
           <RequireAdmin>
             <AdminMembersPage />
+          </RequireAdmin>
+        ),
+      },
+      {
+        path: 'admin/community/reports',
+        element: (
+          <RequireAdmin>
+            <AdminCommunityReportsPage />
           </RequireAdmin>
         ),
       },

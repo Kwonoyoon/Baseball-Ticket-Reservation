@@ -40,8 +40,10 @@ export function Header() {
           <NavLink to="/" end>
             경기 일정
           </NavLink>
+          <NavLink to="/community">커뮤니티</NavLink>
           {member && <NavLink to="/my/reservations">예매내역</NavLink>}
           {isAdmin && <NavLink to="/admin/members">회원 관리</NavLink>}
+          {isAdmin && <NavLink to="/admin/community/reports">신고 관리</NavLink>}
         </nav>
 
         <div className="site-header__auth">
