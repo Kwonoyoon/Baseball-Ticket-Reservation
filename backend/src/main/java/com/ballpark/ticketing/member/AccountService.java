@@ -3,6 +3,7 @@ package com.ballpark.ticketing.member;
 import java.time.Clock;
 import java.time.LocalDateTime;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,7 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ballpark.ticketing.global.error.BusinessException;
 import com.ballpark.ticketing.global.error.ErrorCode;
 import com.ballpark.ticketing.member.AuthService.AuthResult;
+import com.ballpark.ticketing.member.dto.MemberResponse;
 import com.ballpark.ticketing.member.dto.PasswordChangeRequest;
+import com.ballpark.ticketing.member.dto.ProfileUpdateRequest;
 import com.ballpark.ticketing.reservation.ReservationRepository;
 import com.ballpark.ticketing.reservation.ReservationStatus;
 
@@ -57,6 +60,30 @@ public class AccountService {
         member.changePassword(passwordEncoder.encode(request.newPassword()), LocalDateTime.now(clock));
         refreshTokenService.revokeAll(memberId);
         return authService.issueTokens(member, persistent);
+    }
+
+    /**
+     * 이름과 이메일을 바꾼다. 로그인 아이디는 바꿀 수 없다.
+     * 이메일은 대소문자를 구분하지 않고 소문자로 저장하며, 다른 회원이 쓰는 이메일로는 바꿀 수 없다.
+     * 토큰에는 이름·이메일이 들어 있지 않아서 다른 기기의 로그인은 유지된다.
+     */
+    @Transactional
+    public MemberResponse updateProfile(Long memberId, ProfileUpdateRequest request) {
+        Member member = getActiveMember(memberId);
+        verifyPassword(member, request.currentPassword());
+
+        String email = AuthService.normalize(request.email());
+        if (!email.equals(member.getEmail()) && memberRepository.existsByEmail(email)) {
+            throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
+        }
+        member.updateProfile(request.name().trim(), email);
+        try {
+            memberRepository.flush();
+        } catch (DataIntegrityViolationException e) {
+            // 동시에 같은 이메일로 바꾼 경우 유니크 제약에서 걸러진다.
+            throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
+        }
+        return MemberResponse.from(member);
     }
 
     /**

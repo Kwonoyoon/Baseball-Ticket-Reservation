@@ -36,6 +36,9 @@ export const api = {
   changePassword: (body: { currentPassword: string; newPassword: string }) =>
     request<LoginResult>('/auth/password', { method: 'PUT', body }),
 
+  updateProfile: (body: { name: string; email: string; currentPassword: string }) =>
+    request<Member>('/members/me/profile', { method: 'PUT', body }),
+
   withdraw: (password: string) => request<void>('/members/me/withdraw', { method: 'POST', body: { password } }),
 
   getAdminMembers: (keyword: string, signal?: AbortSignal) => {

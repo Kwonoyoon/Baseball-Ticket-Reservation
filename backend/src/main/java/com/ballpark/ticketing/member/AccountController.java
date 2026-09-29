@@ -12,7 +12,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ballpark.ticketing.global.security.AuthMember;
 import com.ballpark.ticketing.member.AuthService.AuthResult;
 import com.ballpark.ticketing.member.dto.LoginResponse;
+import com.ballpark.ticketing.member.dto.MemberResponse;
 import com.ballpark.ticketing.member.dto.PasswordChangeRequest;
+import com.ballpark.ticketing.member.dto.ProfileUpdateRequest;
 import com.ballpark.ticketing.member.dto.WithdrawRequest;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -41,6 +43,13 @@ public class AccountController {
         AuthResult result = accountService.changePassword(authMember.id(), request, refreshToken);
         refreshTokenCookie.write(response, result.refreshToken());
         return result.body();
+    }
+
+    /** 이름·이메일 수정. 바꿀 때 현재 비밀번호를 확인한다. 로그인 상태는 그대로 유지된다. */
+    @PutMapping("/api/members/me/profile")
+    public MemberResponse updateProfile(@AuthenticationPrincipal AuthMember authMember,
+            @Valid @RequestBody ProfileUpdateRequest request) {
+        return accountService.updateProfile(authMember.id(), request);
     }
 
     @PostMapping("/api/members/me/withdraw")

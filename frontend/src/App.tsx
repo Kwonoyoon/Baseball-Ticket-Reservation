@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate, RouterProvider } from 'react-router'
 import { AuthProvider } from './auth/AuthProvider'
 import { RequireAdmin, RequireAuth } from './auth/RequireAuth'
 import { Layout } from './components/Layout'
+import { TeamThemeApplier } from './components/TeamThemeApplier'
 import { AccountPage } from './pages/AccountPage'
 import { AdminCommunityReportsPage } from './pages/AdminCommunityReportsPage'
 import { AdminMembersPage } from './pages/AdminMembersPage'
@@ -17,6 +18,7 @@ import { MyReservationsPage } from './pages/MyReservationsPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { NotificationSettingsPage } from './pages/NotificationSettingsPage'
 import { PasswordChangePage } from './pages/PasswordChangePage'
+import { ProfileEditPage } from './pages/ProfileEditPage'
 import { ReservationDetailPage } from './pages/ReservationDetailPage'
 import { SchedulePage } from './pages/SchedulePage'
 import { SignupPage } from './pages/SignupPage'
@@ -92,6 +94,14 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: 'my/account/profile',
+        element: (
+          <RequireAuth>
+            <ProfileEditPage />
+          </RequireAuth>
+        ),
+      },
+      {
         path: 'my/account/withdraw',
         element: (
           <RequireAuth>
@@ -133,6 +143,7 @@ const router = createBrowserRouter([
 export default function App() {
   return (
     <AuthProvider>
+      <TeamThemeApplier />
       <NotificationProvider>
         <RouterProvider router={router} />
       </NotificationProvider>
