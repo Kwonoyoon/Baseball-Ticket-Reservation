@@ -1,5 +1,6 @@
 package com.ballpark.ticketing.community;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -43,6 +44,17 @@ class CommunityIntegrationTest {
     void loginAsBootstrapAdmin() throws Exception {
         adminToken = login("rootadmin", "root-admin-password").andReturn().getResponse().getContentAsString();
         adminToken = JsonPath.read(adminToken, "$.accessToken");
+    }
+
+    @Test
+    void 구단별_게시글_수를_집계한다() throws Exception {
+        String token = signup();
+        long before = teamPostCount(TEAM_ID);
+
+        createPost(token, "집계용 글 1", "내용1");
+        createPost(token, "집계용 글 2", "내용2");
+
+        assertThat(teamPostCount(TEAM_ID)).isEqualTo(before + 2);
     }
 
     @Test
@@ -186,6 +198,15 @@ class CommunityIntegrationTest {
                         .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
                 .andExpect(status().isNoContent());
         mockMvc.perform(get("/api/posts/" + postId)).andExpect(status().isNotFound());
+    }
+
+    private long teamPostCount(long teamId) throws Exception {
+        String body = mockMvc.perform(get("/api/community/team-post-counts"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        Object matched = JsonPath.read(body, "$[?(@.teamId == " + teamId + ")].postCount");
+        java.util.List<?> list = (java.util.List<?>) matched;
+        return list.isEmpty() ? 0L : ((Number) list.get(0)).longValue();
     }
 
     private Long createPost(String token, String title, String content) throws Exception {

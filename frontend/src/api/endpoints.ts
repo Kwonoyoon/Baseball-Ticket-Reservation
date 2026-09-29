@@ -21,6 +21,7 @@ import type {
   SeatStatus,
   SeatSummary,
   Team,
+  TeamPostCount,
 } from './types'
 
 export const api = {
@@ -62,6 +63,9 @@ export const api = {
 
   updateFavoriteTeam: (teamId: number | null) =>
     request<Member>('/members/me/favorite-team', { method: 'PATCH', body: { teamId } }),
+
+  getTeamPostCounts: (signal?: AbortSignal) =>
+    request<TeamPostCount[]>('/community/team-post-counts', { signal }),
 
   getPosts: (teamId: number, page: number, signal?: AbortSignal) =>
     request<PostPage>(`/teams/${teamId}/posts?page=${page}&size=20`, { signal }),

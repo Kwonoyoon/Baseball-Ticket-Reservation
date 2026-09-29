@@ -26,4 +26,15 @@ public interface CommunityPostRepository extends JpaRepository<CommunityPost, Lo
             where p.id = :id
             """)
     Optional<CommunityPost> findWithTeamAndMemberById(@Param("id") Long id);
+
+    /** 커뮤니티 입구 화면에서 구단별 글 수를 보여 주려고 쓴다. 글이 없는 구단은 결과에 아예 안 나온다. */
+    @Query("select p.team.id as teamId, count(p) as postCount from CommunityPost p group by p.team.id")
+    List<TeamPostCount> countAllByTeam();
+
+    interface TeamPostCount {
+
+        Long getTeamId();
+
+        long getPostCount();
+    }
 }

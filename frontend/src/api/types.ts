@@ -176,6 +176,11 @@ export type Reservation = {
   seats: ReservedSeat[]
 }
 
+export type TeamPostCount = {
+  teamId: number
+  postCount: number
+}
+
 export type PostSummary = {
   id: number
   authorName: string

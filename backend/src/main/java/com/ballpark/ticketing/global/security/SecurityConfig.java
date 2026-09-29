@@ -48,7 +48,7 @@ public class SecurityConfig {
                         .permitAll()
                         // 커뮤니티 글·댓글은 비회원도 읽을 수 있다. 쓰기(글 작성·좋아요·신고 등)는 그 밖의 API로 걸린다.
                         .requestMatchers(HttpMethod.GET, "/api/teams/*/posts", "/api/posts/*",
-                                "/api/posts/*/comments")
+                                "/api/posts/*/comments", "/api/community/team-post-counts")
                         .permitAll()
                         .requestMatchers("/actuator/health", "/h2-console/**", "/error").permitAll()
                         // 관리자

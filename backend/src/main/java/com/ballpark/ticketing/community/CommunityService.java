@@ -16,6 +16,7 @@ import com.ballpark.ticketing.community.dto.PostDetailResponse;
 import com.ballpark.ticketing.community.dto.PostPageResponse;
 import com.ballpark.ticketing.community.dto.PostSummaryResponse;
 import com.ballpark.ticketing.community.dto.ReportRequest;
+import com.ballpark.ticketing.community.dto.TeamPostCountResponse;
 import com.ballpark.ticketing.global.error.BusinessException;
 import com.ballpark.ticketing.global.error.ErrorCode;
 import com.ballpark.ticketing.member.Member;
@@ -49,6 +50,13 @@ public class CommunityService {
         this.teamRepository = teamRepository;
         this.memberRepository = memberRepository;
         this.clock = clock;
+    }
+
+    /** 커뮤니티 입구 화면에서 구단마다 "게시글 N개"를 보여 주려고 쓴다. */
+    public List<TeamPostCountResponse> getTeamPostCounts() {
+        return postRepository.countAllByTeam().stream()
+                .map(row -> new TeamPostCountResponse(row.getTeamId(), row.getPostCount()))
+                .toList();
     }
 
     public PostPageResponse listPosts(Long teamId, int page, int size) {

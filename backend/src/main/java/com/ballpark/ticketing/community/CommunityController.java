@@ -21,6 +21,7 @@ import com.ballpark.ticketing.community.dto.PostCreateRequest;
 import com.ballpark.ticketing.community.dto.PostDetailResponse;
 import com.ballpark.ticketing.community.dto.PostPageResponse;
 import com.ballpark.ticketing.community.dto.ReportRequest;
+import com.ballpark.ticketing.community.dto.TeamPostCountResponse;
 import com.ballpark.ticketing.global.security.AuthMember;
 
 import jakarta.validation.Valid;
@@ -36,6 +37,12 @@ public class CommunityController {
 
     public CommunityController(CommunityService communityService) {
         this.communityService = communityService;
+    }
+
+    /** 커뮤니티 입구 화면(구단 고르기)에서 카드마다 게시글 수를 보여 주려고 쓴다. */
+    @GetMapping("/api/community/team-post-counts")
+    public List<TeamPostCountResponse> getTeamPostCounts() {
+        return communityService.getTeamPostCounts();
     }
 
     @GetMapping("/api/teams/{teamId}/posts")

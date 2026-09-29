@@ -1245,19 +1245,30 @@ p {
   text-wrap: balance;
 }
 
-.community-teams__cta {
-  color: var(--team-color);
+/* 글 수 배지. 평소에도 보여야 "구단 소개"가 아니라 "게시판"으로 읽힌다. */
+.community-teams__count {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--team-color) 14%, var(--surface));
+  color: color-mix(in srgb, var(--team-color) 70%, var(--text));
   font-size: 12px;
   font-weight: 700;
-  opacity: 0;
-  transform: translateY(-2px);
-  transition: opacity 0.16s ease, transform 0.16s ease;
+  transition: background-color 0.16s ease, transform 0.16s ease;
 }
 
-.community-teams__item:hover .community-teams__cta,
-.community-teams__item:focus-visible .community-teams__cta {
-  opacity: 1;
-  transform: translateY(0);
+.community-teams__count svg {
+  width: 13px;
+  height: 13px;
+}
+
+.community-teams__item:hover .community-teams__count,
+.community-teams__item:focus-visible .community-teams__count {
+  background: var(--team-color);
+  color: #fff;
+  transform: translateY(-1px);
 }
 
 .community-board__head {
