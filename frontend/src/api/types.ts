@@ -160,6 +160,7 @@ export type NotificationPreference = {
   type: NotificationType
   label: string
   enabled: boolean
+  emailEnabled: boolean
 }
 
 export type Reservation = {

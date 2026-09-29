@@ -103,4 +103,7 @@ export const api = {
 
   updateNotificationPreference: (type: NotificationType, enabled: boolean) =>
     request<void>(`/notifications/preferences/${type}`, { method: 'POST', body: { enabled } }),
+
+  updateNotificationEmailPreference: (type: NotificationType, enabled: boolean) =>
+    request<void>(`/notifications/preferences/${type}/email`, { method: 'POST', body: { enabled } }),
 }
