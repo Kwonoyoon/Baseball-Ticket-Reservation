@@ -46,6 +46,14 @@ export function TicketIcon() {
   )
 }
 
+export function MessageIcon() {
+  return (
+    <svg {...commonProps}>
+      <path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-4 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
+    </svg>
+  )
+}
+
 export function CalendarIcon() {
   return (
     <svg {...commonProps}>

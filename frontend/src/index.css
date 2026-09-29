@@ -1059,6 +1059,248 @@ p {
   opacity: 0.6;
 }
 
+/* ---------- 커뮤니티 ---------- */
+
+.page-subtitle {
+  margin-top: -12px;
+  margin-bottom: 20px;
+  color: var(--text-muted);
+}
+
+.community-teams__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 12px;
+}
+
+.community-teams__item {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 16px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+}
+
+.community-teams__item:hover {
+  border-color: var(--accent, var(--red-500));
+}
+
+.community-board__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.community-board__head .page-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 0;
+}
+
+.community-board__more {
+  display: block;
+  margin: 16px auto 0;
+}
+
+.community-post-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.community-post-list > li + li {
+  border-top: 1px solid var(--border);
+}
+
+.community-post-list__item {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.community-post-list__item:hover {
+  background: var(--surface-muted);
+}
+
+.community-post-list__title {
+  font-weight: 700;
+}
+
+.community-post-list__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.community-post-form__content {
+  min-height: 220px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font: inherit;
+  resize: vertical;
+}
+
+.community-post__article {
+  display: grid;
+  gap: 12px;
+}
+
+.community-post__title {
+  font-size: 26px;
+  letter-spacing: -0.02em;
+}
+
+.community-post__meta,
+.community-post__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.community-post__content {
+  white-space: pre-wrap;
+  line-height: 1.7;
+}
+
+.community-comments {
+  margin-top: 20px;
+  display: grid;
+  gap: 16px;
+}
+
+.community-comments__empty {
+  color: var(--text-muted);
+}
+
+.community-comments__list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.community-comments__item-wrap {
+  display: grid;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.community-comments__item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.community-report-form {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+}
+
+.community-report-form textarea {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font: inherit;
+  resize: vertical;
+}
+
+.community-report-form__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.community-comments__meta {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 4px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.community-comments__form {
+  display: grid;
+  gap: 10px;
+}
+
+.community-comments__form textarea {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font: inherit;
+  resize: vertical;
+}
+
+.admin-report-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-report-list__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-report-list__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.admin-report-list__preview {
+  margin-bottom: 6px;
+}
+
+.admin-report-list__deleted {
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.admin-report-list__reason {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
 .grade--premium {
   --grade-color: var(--grade-premium);
 }

@@ -1,9 +1,11 @@
 import { request } from './client'
 import type {
   AdminMember,
+  Comment,
   GameDetail,
   GameSummary,
   HoldResult,
+  LikeResult,
   LoginResult,
   Member,
   MemberRole,
@@ -11,6 +13,9 @@ import type {
   NotificationPreference,
   NotificationType,
   PaymentMethod,
+  PostDetail,
+  PostPage,
+  Report,
   Reservation,
   SeatPosition,
   SeatStatus,
@@ -54,6 +59,43 @@ export const api = {
 
   updateFavoriteTeam: (teamId: number | null) =>
     request<Member>('/members/me/favorite-team', { method: 'PATCH', body: { teamId } }),
+
+  getPosts: (teamId: number, page: number, signal?: AbortSignal) =>
+    request<PostPage>(`/teams/${teamId}/posts?page=${page}&size=20`, { signal }),
+
+  createPost: (teamId: number, body: { title: string; content: string }) =>
+    request<PostDetail>(`/teams/${teamId}/posts`, { method: 'POST', body }),
+
+  getPost: (postId: number, signal?: AbortSignal) => request<PostDetail>(`/posts/${postId}`, { signal }),
+
+  updatePost: (postId: number, body: { title: string; content: string }) =>
+    request<PostDetail>(`/posts/${postId}`, { method: 'PUT', body }),
+
+  deletePost: (postId: number) => request<void>(`/posts/${postId}`, { method: 'DELETE' }),
+
+  togglePostLike: (postId: number) => request<LikeResult>(`/posts/${postId}/like`, { method: 'POST' }),
+
+  reportPost: (postId: number, reason: string) =>
+    request<void>(`/posts/${postId}/report`, { method: 'POST', body: { reason } }),
+
+  getComments: (postId: number, signal?: AbortSignal) =>
+    request<Comment[]>(`/posts/${postId}/comments`, { signal }),
+
+  createComment: (postId: number, content: string) =>
+    request<Comment>(`/posts/${postId}/comments`, { method: 'POST', body: { content } }),
+
+  deleteComment: (commentId: number) => request<void>(`/comments/${commentId}`, { method: 'DELETE' }),
+
+  reportComment: (commentId: number, reason: string) =>
+    request<void>(`/comments/${commentId}/report`, { method: 'POST', body: { reason } }),
+
+  getCommunityReports: (signal?: AbortSignal) =>
+    request<Report[]>('/admin/community/reports', { signal }),
+
+  deletePostAsAdmin: (postId: number) => request<void>(`/admin/community/posts/${postId}`, { method: 'DELETE' }),
+
+  deleteCommentAsAdmin: (commentId: number) =>
+    request<void>(`/admin/community/comments/${commentId}`, { method: 'DELETE' }),
 
   getSchedule: (date: string, teamId: number | null, signal?: AbortSignal) => {
     const params = new URLSearchParams({ date })
