@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from 'react-router'
 import { useAuth } from '../auth/useAuth'
 import { NotificationBell } from './NotificationBell'
 import { Sidebar } from './Sidebar'
+import brandLogo from '../../image/safeticket_full.png'
 
 /**
  * 모든 화면이 함께 쓰는 헤더. 메인 화면(SchedulePage)도 다른 화면(Layout)도 이 파일 하나만 가져다 쓴다.
@@ -33,7 +34,7 @@ export function Header() {
       <div className="container site-header__inner">
 
         <Link to="/" className="brand">
-          SAFE<em>TICKET</em>
+          <img src={brandLogo} alt="SAFETICKET" className="brand__logo" />
         </Link>
 
         <nav className="site-nav" aria-label="주요 메뉴">
