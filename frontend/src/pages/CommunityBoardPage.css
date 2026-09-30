@@ -113,7 +113,7 @@
   object-fit: contain;
 }
 
-/* 가운데 관심 구단. 흐르는 로고가 그 뒤로 지나가도록 두꺼운 구단 색 테를 둘러 앞에 둔다. */
+/* 가운데 관심 구단. 구단 색 테를 두르고, 그 바깥은 바탕색 여백으로 흐르는 로고가 원에 붙어 보이지 않게 한다. */
 .team-strip__center {
   position: absolute;
   top: 50%;
@@ -129,7 +129,9 @@
   border-radius: 50%;
   background: var(--surface);
   /* 다른 구단 게시판을 보는 동안에는 테를 옅게 해서, 지금 고른 구단이 아님을 보여 준다. */
-  box-shadow: 0 0 0 20px color-mix(in srgb, var(--team-color) 45%, var(--bg));
+  box-shadow:
+    0 0 0 6px color-mix(in srgb, var(--team-color) 45%, var(--bg)),
+    0 0 0 18px var(--bg);
   color: var(--text);
   font-size: 13px;
   font-weight: 700;
@@ -139,7 +141,9 @@
 }
 
 .team-strip__center.is-selected {
-  box-shadow: 0 0 0 20px var(--team-color);
+  box-shadow:
+    0 0 0 6px var(--team-color),
+    0 0 0 18px var(--bg);
 }
 
 .team-strip__center-label {
