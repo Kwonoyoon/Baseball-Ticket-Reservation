@@ -183,6 +183,10 @@ export function TeamStrip({ teams, favoriteTeam, selectedTeamId, onSelect, favor
                   onClick={() => onSelect(team.id)}
                 >
                   <Logo team={team} />
+                  {/* 커서를 올리면 로고 아래에 나타난다. 이름은 aria-label로 이미 읽히므로 화면에만 보인다. */}
+                  <span className="team-strip__name" aria-hidden="true">
+                    {team.name}
+                  </span>
                 </button>
               )
             }),

@@ -8,7 +8,7 @@
 /* 구단 줄: 가운데 관심 구단 고정, 뒤로 나머지 구단 로고가 흐른다. (components/TeamStrip.tsx) */
 .team-strip {
   position: relative;
-  height: 170px;
+  height: 184px; /* 커서를 올려 커진 로고와 그 아래 구단명까지 들어가는 높이 */
 }
 
 /* 로고가 흐르는 창. 따로 바탕 없이 페이지 위에 바로 놓고, 양 끝은 흐려지며 사라지게 한다.
@@ -38,6 +38,7 @@
 
 /* 로고 한 칸: 80px 원 + 18px 간격 = TeamStrip의 STEP_PX(98) */
 .team-strip__item {
+  position: relative;
   display: grid;
   place-items: center;
   flex: 0 0 auto;
@@ -57,13 +58,41 @@
   opacity: 0.75;
   transition:
     opacity 0.15s,
-    box-shadow 0.15s;
+    box-shadow 0.15s,
+    transform 0.2s ease;
 }
 
+/* 커서를 올리면 로고가 커지고 아래에 구단명이 나온다. (줄은 커서를 올리는 동안 멈춰 있다) */
 .team-strip__item:hover,
 .team-strip__item:focus-visible {
+  z-index: 1;
   opacity: 1;
-  box-shadow: inset 0 0 0 2px var(--team-color);
+  box-shadow:
+    inset 0 0 0 2px var(--team-color),
+    0 6px 16px rgb(15 23 42 / 14%);
+  transform: scale(1.2);
+}
+
+.team-strip__name {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -4px);
+  transition:
+    opacity 0.15s,
+    transform 0.2s ease;
+}
+
+.team-strip__item:hover .team-strip__name,
+.team-strip__item:focus-visible .team-strip__name {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 
 .team-strip__item.is-selected {
@@ -369,7 +398,7 @@ a.post-card:focus-visible {
 
 @media (max-width: 640px) {
   .team-strip {
-    height: 150px;
+    height: 170px;
   }
 
   .team-strip__center {
@@ -394,6 +423,11 @@ a.post-card:focus-visible {
 
 @media (prefers-reduced-motion: reduce) {
   .team-strip__track.is-nudging {
+    transition: none;
+  }
+
+  .team-strip__item,
+  .team-strip__name {
     transition: none;
   }
 }
