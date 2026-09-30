@@ -209,7 +209,7 @@
   right: 0;
 }
 
-/* 들어올 때 연출(띠 펼침·야구공·배경 칠하기)이 함께 쓰는 가속 곡선. 셋이 같아야 끝이 맞는다. (lib/communityIntro.ts) */
+/* 들어올 때 연출(띠 펼침·야구공·배경 칠하기)이 함께 쓰는 가속 곡선. 띠와 야구공은 같아야 공이 띠 끝에 붙어 간다. (lib/communityIntro.ts) */
 .community,
 .community-wash {
   --intro-ease: cubic-bezier(0.25, 0.8, 0.3, 1);
@@ -235,7 +235,7 @@
 
 .team-banner {
   overflow: hidden;
-  animation: intro-reveal-from-right var(--intro-ms) var(--intro-ease) both;
+  animation: intro-reveal-from-right var(--reveal-ms) var(--intro-ease) both;
   background: var(--team-color);
   color: #ffffff;
   transition: background-color 0.3s;
@@ -289,7 +289,7 @@
   margin: -15px 0 0 -15px;
   filter: drop-shadow(0 2px 3px rgb(15 23 42 / 30%));
   pointer-events: none;
-  animation: intro-ball var(--intro-ms) var(--intro-ease) both;
+  animation: intro-ball var(--reveal-ms) var(--intro-ease) both;
 }
 
 @keyframes intro-ball {
@@ -306,17 +306,17 @@
   to {
     left: 0;
     opacity: 0;
-    transform: rotate(-900deg);
+    transform: rotate(-540deg);
   }
 }
 
-/* 페이지 바탕을 새 구단 색으로 칠하는 층 (components/BackgroundWash.tsx). 본문 뒤에서 띠와 같이 펼쳐진다. */
+/* 페이지 바탕을 새 구단 색으로 칠하는 층 (components/BackgroundWash.tsx). 띠가 다 나온 뒤 본문 뒤에서 펼쳐진다. */
 .community-wash {
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  animation: intro-reveal-from-right var(--intro-ms) var(--intro-ease) both;
+  animation: intro-reveal-from-right var(--wash-ms) var(--intro-ease) var(--wash-delay) both;
 }
 
 /* 게시판 (components/TeamBoard.tsx) */

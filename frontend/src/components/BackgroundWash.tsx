@@ -1,6 +1,6 @@
 import { useEffect, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
-import { COMMUNITY_INTRO_MS, prefersReducedMotion } from '../lib/communityIntro'
+import { BACKGROUND_WASH_MS, BANNER_REVEAL_MS, COMMUNITY_INTRO_MS, prefersReducedMotion } from '../lib/communityIntro'
 
 type BackgroundWashProps = {
   /** 칠할 배경색 */
@@ -10,7 +10,7 @@ type BackgroundWashProps = {
 }
 
 /**
- * 페이지 바탕을 오른쪽에서 왼쪽으로 새 색으로 칠하는 층. 구단 띠가 펼쳐지는 속도와 같다.
+ * 페이지 바탕을 오른쪽에서 왼쪽으로 새 색으로 칠하는 층. 구단 띠가 다 펼쳐진 뒤에 칠하기 시작한다.
  * 본문 뒤(z-index -1)에서 화면 전체를 덮고, 다 칠하면 부모가 바탕색을 바꾼 뒤 걷어 낸다.
  */
 export function BackgroundWash({ color, onDone }: BackgroundWashProps) {
@@ -27,7 +27,13 @@ export function BackgroundWash({ color, onDone }: BackgroundWashProps) {
   return createPortal(
     <div
       className="community-wash"
-      style={{ background: color, '--intro-ms': `${COMMUNITY_INTRO_MS}ms` } as CSSProperties}
+      style={
+        {
+          background: color,
+          '--wash-ms': `${BACKGROUND_WASH_MS}ms`,
+          '--wash-delay': `${BANNER_REVEAL_MS}ms`,
+        } as CSSProperties
+      }
       aria-hidden="true"
     />,
     document.body,

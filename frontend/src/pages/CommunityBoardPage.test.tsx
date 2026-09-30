@@ -238,19 +238,19 @@ describe('CommunityBoardPage', () => {
     const rootBg = () => document.documentElement.style.getPropertyValue('--bg')
 
     await screen.findByText('LG 트윈스 게시판', { selector: 'h1' })
-    // 처음엔 흰 바탕에서, 띠가 펼쳐지는 동안(약 1.1초) 구단 색으로 칠해진다.
+    // 처음엔 흰 바탕. 띠가 다 나온 뒤 구단 색으로 칠해진다. (연출 전체 약 2.7초)
     expect(rootBg()).toBe('#ffffff')
-    await waitFor(() => expect(rootBg()).toContain('#C30452'), { timeout: 3000 })
+    await waitFor(() => expect(rootBg()).toContain('#C30452'), { timeout: 5000 })
 
     // 다른 구단을 고르면 이전 구단 색 위로 새 색을 칠한다.
     await userEvent.click(screen.getByRole('button', { name: 'KIA 타이거즈 게시판' }))
     await screen.findByText('KIA 타이거즈 게시판', { selector: 'h1' })
     expect(rootBg()).toContain('#C30452')
-    await waitFor(() => expect(rootBg()).toContain('#EA0029'), { timeout: 3000 })
+    await waitFor(() => expect(rootBg()).toContain('#EA0029'), { timeout: 5000 })
 
     unmount()
     expect(rootBg()).toBe('')
-  })
+  }, 15000)
 
   it('구단 줄 아래 띠에 보고 있는 구단 영어 이름이 그 구단 색 바탕으로 흐른다', async () => {
     vi.stubGlobal(

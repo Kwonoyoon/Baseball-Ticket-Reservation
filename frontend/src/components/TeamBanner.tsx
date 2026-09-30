@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import type { Team } from '../api/types'
-import { COMMUNITY_INTRO_MS } from '../lib/communityIntro'
+import { BANNER_REVEAL_MS } from '../lib/communityIntro'
 import { teamEnglishName } from '../lib/teamEnglishNames'
 
 /** 한 벌에 이름을 이만큼 되풀이한다. 가장 짧은 이름(KT WIZ)도 한 벌이 띠 최대 폭보다 넓도록. */
@@ -29,7 +29,7 @@ export function TeamBanner({ team }: { team: Team }) {
         {
           '--team-color': team.primaryColor,
           '--banner-duration': `${(name.length + 4) * REPEAT * SEC_PER_CHAR}s`,
-          '--intro-ms': `${COMMUNITY_INTRO_MS}ms`,
+          '--reveal-ms': `${BANNER_REVEAL_MS}ms`,
         } as CSSProperties
       }
       aria-hidden="true"
