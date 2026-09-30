@@ -87,4 +87,23 @@ describe('TeamStrip', () => {
     step()
     expect(trackX()).toBeGreaterThan(before)
   })
+
+  it('띠가 넓으면 로고를 키워, 같은 구단 로고가 동시에 두 번 보이지 않게 한다', () => {
+    // 로고가 보이는 폭을 1052px로 잰 것처럼 만든다. (jsdom은 레이아웃을 계산하지 않는다)
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(1052)
+    renderStrip()
+
+    const strip = screen.getByRole('navigation', { name: '구단 선택' })
+    const item = parseFloat(strip.style.getPropertyValue('--strip-item'))
+    const step = item + 18
+    // 흐르는 로고 3개 한 벌이 "보이는 폭 + 로고 하나"를 덮어야, 한 로고가 빠져나간 뒤에야 같은 로고가 들어온다.
+    expect(3 * step).toBeGreaterThanOrEqual(1052 + item)
+  })
+
+  it('좁은 띠에서는 로고를 기본 크기(80px)로 둔다', () => {
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(200)
+    renderStrip()
+
+    expect(screen.getByRole('navigation', { name: '구단 선택' }).style.getPropertyValue('--strip-item')).toBe('80px')
+  })
 })

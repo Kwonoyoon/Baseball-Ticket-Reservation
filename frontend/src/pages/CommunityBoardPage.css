@@ -6,9 +6,13 @@
 }
 
 /* 구단 줄: 가운데 관심 구단 고정, 뒤로 나머지 구단 로고가 흐른다. (components/TeamStrip.tsx) */
+/* --strip-item: 흐르는 로고 원 지름. TeamStrip이 띠 폭에 맞춰 정한다. (좁은 화면 80px, 넓으면 더 크게) */
 .team-strip {
+  --strip-item: 80px;
+
   position: relative;
-  height: 184px; /* 커서를 올려 커진 로고와 그 아래 구단명까지 들어가는 높이 */
+  /* 커서를 올려 커진 로고(1.2배)와 그 아래 구단명까지 들어가는 높이 */
+  height: calc(var(--strip-item) * 1.2 + 88px);
 }
 
 /* 로고가 흐르는 창. 따로 바탕 없이 페이지 위에 바로 놓고, 양 끝은 흐려지며 사라지게 한다.
@@ -26,7 +30,7 @@
   left: 0;
   display: flex;
   gap: 18px;
-  margin-top: -40px; /* 로고 높이의 절반. transform은 흐름에 쓰므로 세로 가운데는 여백으로 맞춘다. */
+  margin-top: calc(var(--strip-item) / -2); /* 로고 높이의 절반. transform은 흐름에 쓰므로 세로 가운데는 여백으로 맞춘다. */
   will-change: transform;
 }
 
@@ -36,15 +40,15 @@
   transition: transform 0.4s ease;
 }
 
-/* 로고 한 칸: 80px 원 + 18px 간격 = TeamStrip의 STEP_PX(98) */
+/* 로고 한 칸: 원(--strip-item) + 18px 간격. 간격은 TeamStrip의 GAP_PX와 맞춘다. */
 .team-strip__item {
   position: relative;
   display: grid;
   place-items: center;
   flex: 0 0 auto;
-  width: 80px;
-  height: 80px;
-  padding: 12px;
+  width: var(--strip-item);
+  height: var(--strip-item);
+  padding: calc(var(--strip-item) * 0.15);
   border: 0;
   border-radius: 50%;
   background: var(--surface);
@@ -117,8 +121,9 @@
   z-index: 2;
   display: grid;
   place-items: center;
-  width: 136px;
-  height: 136px;
+  /* 흐르는 로고보다 늘 한 뼘 크게 */
+  width: max(136px, calc(var(--strip-item) + 40px));
+  height: max(136px, calc(var(--strip-item) + 40px));
   padding: 18px 18px 26px;
   border: 0;
   border-radius: 50%;
@@ -397,10 +402,6 @@ a.post-card:focus-visible {
 }
 
 @media (max-width: 640px) {
-  .team-strip {
-    height: 170px;
-  }
-
   .team-strip__center {
     width: 112px;
     height: 112px;

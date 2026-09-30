@@ -3,8 +3,10 @@ import { Link } from 'react-router'
 import type { Team } from '../api/types'
 import { teamLogo } from '../lib/teamLogos'
 
-/** 로고 한 칸의 너비(원 + 간격). CSS의 .team-strip__item 크기와 맞춘다. */
-const STEP_PX = 98
+/** 로고 사이 간격. CSS의 .team-strip__track gap과 맞춘다. */
+const GAP_PX = 18
+/** 로고 한 칸(원 + 간격)의 최소 너비. 좁은 화면에서는 이 크기(원 80px)로 둔다. */
+const MIN_STEP_PX = 98
 /** 흐르는 속도. 1초에 이만큼 간다. */
 const SPEED_PX_PER_SEC = 22
 /** 양 끝 버튼으로 한 칸 옮기는 시간. CSS의 .team-strip__track.is-nudging 전환 시간과 맞춘다. */
@@ -51,7 +53,10 @@ function Chevron({ direction }: { direction: 'left' | 'right' }) {
  */
 export function TeamStrip({ teams, favoriteTeam, selectedTeamId, onSelect, favoriteSettingPath }: TeamStripProps) {
   const others = teams.filter((team) => team.id !== favoriteTeam?.id)
-  const setWidth = others.length * STEP_PX
+  const viewportRef = useRef<HTMLDivElement>(null)
+  const [step, setStep] = useState(MIN_STEP_PX)
+  const stepRef = useRef(MIN_STEP_PX)
+  const setWidth = others.length * step
   // 이음매 없이 돌리려고 목록을 여러 벌 이어 붙인다. 한 벌 반만큼 왼쪽에서 시작해도 오른쪽 끝까지 덮을 만큼.
   const copies = setWidth === 0 ? 0 : Math.max(3, Math.ceil(COVER_WIDTH_PX / setWidth) + 2)
 
@@ -103,6 +108,30 @@ export function TeamStrip({ teams, favoriteTeam, selectedTeamId, onSelect, favor
 
   useEffect(() => () => clearTimeout(nudgeTimerRef.current), [])
 
+  // 띠가 넓으면 로고를 키워, 한 바퀴 안에서 같은 구단 로고가 동시에 두 번 보이지 않게 한다.
+  // 같은 로고끼리는 한 벌(setWidth)만큼 떨어져 있으므로, 한 벌이 "보이는 폭 + 로고 하나"보다 넓으면
+  // 한 로고가 다 빠져나간 뒤에야 같은 로고가 반대쪽에서 들어온다.
+  //   count × step ≥ 보이는 폭 + (step − 간격)  →  step ≥ (보이는 폭 − 간격) / (count − 1)
+  const count = others.length
+  useEffect(() => {
+    const viewport = viewportRef.current
+    if (!viewport || count < 2) return undefined
+    const fit = (visibleWidth: number) => {
+      const next = Math.max(MIN_STEP_PX, Math.ceil((visibleWidth - GAP_PX) / (count - 1)))
+      if (next === stepRef.current) return
+      // 크기가 바뀌어도 줄이 튀지 않게 흐른 거리도 같은 비율로 맞춘다.
+      offsetRef.current = (offsetRef.current * next) / stepRef.current
+      stepRef.current = next
+      setStep(next)
+    }
+    // 처음 한 번은 바로 잰다. (탭이 가려져 있으면 크기 알림이 늦게 온다)
+    fit(viewport.clientWidth)
+    if (typeof ResizeObserver !== 'function') return undefined
+    const observer = new ResizeObserver(([entry]) => fit(entry.contentRect.width))
+    observer.observe(viewport)
+    return () => observer.disconnect()
+  }, [count])
+
   /** 양 끝 버튼: 흐르는 방향을 그쪽으로 바꾸고 한 칸 부드럽게 옮긴다. 옮기는 동안은 감지 않고, 다 옮긴 뒤 제자리로 감는다. */
   const nudge = (direction: -1 | 1) => {
     const track = trackRef.current
@@ -110,11 +139,11 @@ export function TeamStrip({ teams, favoriteTeam, selectedTeamId, onSelect, favor
     directionRef.current = direction
     // 움직임 줄이기 설정이면 전환 없이 바로 옮긴다. (전환 끝 이벤트도 오지 않으므로 여기서 감는다)
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
-      offsetRef.current = wrap(offsetRef.current + direction * STEP_PX)
+      offsetRef.current = wrap(offsetRef.current + direction * step)
       paint(offsetRef.current)
       return
     }
-    offsetRef.current += direction * STEP_PX
+    offsetRef.current += direction * step
     pausedRef.current = true
     nudgingRef.current = true
     setNudging(true)
@@ -154,6 +183,7 @@ export function TeamStrip({ teams, favoriteTeam, selectedTeamId, onSelect, favor
   return (
     <nav
       className="team-strip"
+      style={{ '--strip-item': `${step - GAP_PX}px` } as CSSProperties}
       aria-label="구단 선택"
       onMouseEnter={() => pause(true)}
       onMouseLeave={() => pause(false)}
@@ -161,7 +191,7 @@ export function TeamStrip({ teams, favoriteTeam, selectedTeamId, onSelect, favor
       onBlur={() => pause(false)}
     >
       {/* 흐르는 로고가 양 끝에서 흐려지며 사라지도록 창을 하나 두고 그 안에서 움직인다. */}
-      <div className="team-strip__viewport">
+      <div ref={viewportRef} className="team-strip__viewport">
         <div
           ref={trackRef}
           className={`team-strip__track${nudging ? ' is-nudging' : ''}`}
