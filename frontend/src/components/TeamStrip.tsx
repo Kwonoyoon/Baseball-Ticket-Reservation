@@ -28,6 +28,22 @@ function Logo({ team }: { team: Team }) {
   return logo ? <img src={logo} alt="" /> : <span>{team.shortName}</span>
 }
 
+/** 양 끝 버튼의 화살표. 글자(‹ ›)는 가늘어서 잘 안 보이므로 굵은 선으로 그린다. */
+function Chevron({ direction }: { direction: 'left' | 'right' }) {
+  return (
+    <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true">
+      <path
+        d={direction === 'left' ? 'M15 4 7 12l8 8' : 'M9 4l8 8-8 8'}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 /**
  * 커뮤니티 위쪽 구단 줄.
  * 가운데에는 관심 구단이 고정되고, 그 뒤로 나머지 구단 로고가 천천히 흐른다. (처음에는 왼쪽에서 오른쪽으로)
@@ -196,10 +212,10 @@ export function TeamStrip({ teams, favoriteTeam, selectedTeamId, onSelect, favor
       )}
 
       <button type="button" className="team-strip__nav team-strip__nav--prev" aria-label="이전 구단" onClick={() => nudge(-1)}>
-        ‹
+        <Chevron direction="left" />
       </button>
       <button type="button" className="team-strip__nav team-strip__nav--next" aria-label="다음 구단" onClick={() => nudge(1)}>
-        ›
+        <Chevron direction="right" />
       </button>
     </nav>
   )
