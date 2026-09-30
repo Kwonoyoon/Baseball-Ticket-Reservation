@@ -4,7 +4,7 @@ import type { Team } from '../api/types'
 import { teamLogo } from '../lib/teamLogos'
 
 /** 로고 한 칸의 너비(원 + 간격). CSS의 .team-strip__item 크기와 맞춘다. */
-const STEP_PX = 76
+const STEP_PX = 98
 /** 흐르는 속도. 1초에 이만큼 오른쪽으로 간다. */
 const SPEED_PX_PER_SEC = 22
 /** 이 너비까지는 줄이 끊겨 보이지 않게 복사본을 이어 붙인다. (콘텐츠 최대 폭보다 넉넉하게) */
@@ -122,31 +122,34 @@ export function TeamStrip({ teams, favoriteTeam, selectedTeamId, onSelect, favor
       onFocus={() => pause(true)}
       onBlur={() => pause(false)}
     >
-      <div
-        ref={trackRef}
-        className={`team-strip__track${nudging ? ' is-nudging' : ''}`}
-        onTransitionEnd={finishNudge}
-      >
-        {Array.from({ length: copies }, (_, copy) =>
-          others.map((team) => {
-            const hidden = copy !== ACCESSIBLE_COPY
-            return (
-              <button
-                key={`${copy}-${team.id}`}
-                type="button"
-                className={`team-strip__item${team.id === selectedTeamId ? ' is-selected' : ''}`}
-                style={{ '--team-color': team.primaryColor } as CSSProperties}
-                aria-label={hidden ? undefined : `${team.name} 게시판`}
-                aria-pressed={hidden ? undefined : team.id === selectedTeamId}
-                aria-hidden={hidden || undefined}
-                tabIndex={hidden ? -1 : undefined}
-                onClick={() => onSelect(team.id)}
-              >
-                <Logo team={team} />
-              </button>
-            )
-          }),
-        )}
+      {/* 흐르는 로고가 양 끝에서 흐려지며 사라지도록 창을 하나 두고 그 안에서 움직인다. */}
+      <div className="team-strip__viewport">
+        <div
+          ref={trackRef}
+          className={`team-strip__track${nudging ? ' is-nudging' : ''}`}
+          onTransitionEnd={finishNudge}
+        >
+          {Array.from({ length: copies }, (_, copy) =>
+            others.map((team) => {
+              const hidden = copy !== ACCESSIBLE_COPY
+              return (
+                <button
+                  key={`${copy}-${team.id}`}
+                  type="button"
+                  className={`team-strip__item${team.id === selectedTeamId ? ' is-selected' : ''}`}
+                  style={{ '--team-color': team.primaryColor } as CSSProperties}
+                  aria-label={hidden ? undefined : `${team.name} 게시판`}
+                  aria-pressed={hidden ? undefined : team.id === selectedTeamId}
+                  aria-hidden={hidden || undefined}
+                  tabIndex={hidden ? -1 : undefined}
+                  onClick={() => onSelect(team.id)}
+                >
+                  <Logo team={team} />
+                </button>
+              )
+            }),
+          )}
+        </div>
       </div>
 
       {favoriteTeam ? (
