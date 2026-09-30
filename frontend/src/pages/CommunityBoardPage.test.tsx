@@ -238,11 +238,15 @@ describe('CommunityBoardPage', () => {
     const rootBg = () => document.documentElement.style.getPropertyValue('--bg')
 
     await screen.findByText('LG 트윈스 게시판', { selector: 'h1' })
-    expect(rootBg()).toContain('#C30452')
+    // 처음엔 흰 바탕에서, 띠가 펼쳐지는 동안(약 1.1초) 구단 색으로 칠해진다.
+    expect(rootBg()).toBe('#ffffff')
+    await waitFor(() => expect(rootBg()).toContain('#C30452'), { timeout: 3000 })
 
+    // 다른 구단을 고르면 이전 구단 색 위로 새 색을 칠한다.
     await userEvent.click(screen.getByRole('button', { name: 'KIA 타이거즈 게시판' }))
     await screen.findByText('KIA 타이거즈 게시판', { selector: 'h1' })
-    expect(rootBg()).toContain('#EA0029')
+    expect(rootBg()).toContain('#C30452')
+    await waitFor(() => expect(rootBg()).toContain('#EA0029'), { timeout: 3000 })
 
     unmount()
     expect(rootBg()).toBe('')
@@ -262,7 +266,7 @@ describe('CommunityBoardPage', () => {
 
     const names = await screen.findAllByText('LG TWINS')
     expect(names.length).toBeGreaterThan(1)
-    expect(document.querySelector<HTMLElement>('.team-banner')!.style.getPropertyValue('--team-color')).toBe('#C30452')
+    expect(document.querySelector<HTMLElement>('.team-banner-wrap')!.style.getPropertyValue('--team-color')).toBe('#C30452')
 
     await userEvent.click(screen.getByRole('button', { name: 'KIA 타이거즈 게시판' }))
     // 테스트 자료의 KIA 코드(HT)는 영어 이름 목록에 없어 코드를 그대로 쓴다.

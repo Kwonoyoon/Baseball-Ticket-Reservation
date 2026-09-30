@@ -2,6 +2,8 @@
 
 .community {
   display: grid;
+  /* 칸 폭을 본문 폭으로 묶는다. (auto면 흐르는 띠 글자 전체 폭만큼 칸이 넓어져 구단 줄까지 커진다) */
+  grid-template-columns: minmax(0, 1fr);
   gap: 28px;
 }
 
@@ -207,11 +209,33 @@
   right: 0;
 }
 
+/* 들어올 때 연출(띠 펼침·야구공·배경 칠하기)이 함께 쓰는 가속 곡선. 셋이 같아야 끝이 맞는다. (lib/communityIntro.ts) */
+.community,
+.community-wash {
+  --intro-ease: cubic-bezier(0.25, 0.8, 0.3, 1);
+}
+
+/* 오른쪽에서 왼쪽으로 펼쳐진다. 띠와 배경 칠하기가 같이 쓴다. */
+@keyframes intro-reveal-from-right {
+  from {
+    clip-path: inset(0 0 0 100%);
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
 /* 구단 줄 아래 띠: 보고 있는 구단 색 바탕에 영어 이름이 오른쪽에서 왼쪽으로 흐른다. (components/TeamBanner.tsx) */
-.team-banner {
-  overflow: hidden;
+.team-banner-wrap {
+  position: relative;
   /* 위: 구단 줄과 붙여 한 덩어리로 보이게. 양옆: 본문 폭을 벗어나 화면 양끝까지 (넘친 부분은 .site-main이 잘라 낸다) */
   margin: -12px calc(50% - 50vw) 0;
+}
+
+.team-banner {
+  overflow: hidden;
+  animation: intro-reveal-from-right var(--intro-ms) var(--intro-ease) both;
   background: var(--team-color);
   color: #ffffff;
   transition: background-color 0.3s;
@@ -253,6 +277,46 @@
   to {
     transform: translateX(-50%);
   }
+}
+
+/* 띠가 펼쳐지는 앞쪽(왼쪽) 끝을 굴러가는 야구공. 띠와 같은 시간·곡선으로 오른쪽 끝에서 왼쪽 끝까지 간다. */
+.team-banner__ball {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px;
+  filter: drop-shadow(0 2px 3px rgb(15 23 42 / 30%));
+  pointer-events: none;
+  animation: intro-ball var(--intro-ms) var(--intro-ease) both;
+}
+
+@keyframes intro-ball {
+  from {
+    left: 100%;
+    opacity: 1;
+    transform: rotate(0deg);
+  }
+
+  85% {
+    opacity: 1;
+  }
+
+  to {
+    left: 0;
+    opacity: 0;
+    transform: rotate(-900deg);
+  }
+}
+
+/* 페이지 바탕을 새 구단 색으로 칠하는 층 (components/BackgroundWash.tsx). 본문 뒤에서 띠와 같이 펼쳐진다. */
+.community-wash {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  animation: intro-reveal-from-right var(--intro-ms) var(--intro-ease) both;
 }
 
 /* 게시판 (components/TeamBoard.tsx) */
@@ -321,6 +385,23 @@
   transition:
     border-color 0.15s,
     box-shadow 0.15s;
+}
+
+/* 글 카드가 하나씩 아래에서 올라온다. 순서별 지연은 TeamBoard가 준다. */
+.post-card-list > li.is-rising {
+  animation: post-rise 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+@keyframes post-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 a.post-card:hover,
@@ -459,8 +540,15 @@ a.post-card:focus-visible {
     transition: none;
   }
 
-  .team-banner__track {
+  .team-banner__track,
+  .team-banner,
+  .community-wash,
+  .post-card-list > li.is-rising {
     animation: none;
+  }
+
+  .team-banner__ball {
+    display: none;
   }
 
   .team-strip__item,

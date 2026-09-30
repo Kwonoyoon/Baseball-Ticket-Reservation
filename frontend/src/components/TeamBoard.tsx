@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { Link } from 'react-router'
 import { errorMessage, isAbortError } from '../api/client'
 import { api } from '../api/endpoints'
@@ -14,11 +14,19 @@ type TeamBoardProps = {
   onCategoryChange: (category: PostCategory) => void
   /** 로그인한 회원만 글쓰기 버튼을 본다. (서버도 막는다) */
   canWrite: boolean
+  /** 들어올 때 연출(띠·배경)이 끝나기까지 남은 시간. 글 카드는 그 뒤에 하나씩 올라온다. */
+  introMs?: number
 }
 
+/** 글 카드가 하나씩 올라오는 간격 */
+const RISE_STEP_MS = 80
+
 /** 한 구단의 게시판: 분류 탭과 가로 폭 전체를 쓰는 글 카드. 구단·분류마다 key를 달리 줘서 쓴다. */
-export function TeamBoard({ teamId, team, category, onCategoryChange, canWrite }: TeamBoardProps) {
+export function TeamBoard({ teamId, team, category, onCategoryChange, canWrite, introMs = 0 }: TeamBoardProps) {
   const [posts, setPosts] = useState<PostSummary[] | null>(null)
+  // 첫 쪽 글만 하나씩 올라온다(더 보기로 붙는 글은 바로 보인다). 들어올 때 연출이 끝나는 시각에 맞춰 시작한다.
+  const [introEndsAt] = useState(() => Date.now() + introMs)
+  const [rise, setRise] = useState({ count: 0, startMs: 0 })
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -33,12 +41,13 @@ export function TeamBoard({ teamId, team, category, onCategoryChange, canWrite }
       .then((result) => {
         setPosts(result.items)
         setHasMore(result.hasMore)
+        setRise({ count: result.items.length, startMs: Math.max(0, introEndsAt - Date.now()) })
       })
       .catch((e: unknown) => {
         if (!isAbortError(e)) setError(errorMessage(e, '게시글을 불러오지 못했습니다.'))
       })
     return () => controller.abort()
-  }, [teamId, category, reloadKey])
+  }, [teamId, category, reloadKey, introEndsAt])
 
   const loadMore = async () => {
     setLoadingMore(true)
@@ -107,8 +116,16 @@ export function TeamBoard({ teamId, team, category, onCategoryChange, canWrite }
         ) : (
           <>
             <ul className="post-card-list">
-              {posts.map((post) => (
-                <li key={post.id}>
+              {posts.map((post, index) => (
+                <li
+                  key={post.id}
+                  className={index < rise.count ? 'is-rising' : undefined}
+                  style={
+                    index < rise.count
+                      ? ({ animationDelay: `${rise.startMs + index * RISE_STEP_MS}ms` } as CSSProperties)
+                      : undefined
+                  }
+                >
                   <Link to={`/community/${teamId}/posts/${post.id}`} className="post-card">
                     <span className="post-card__badge">{postCategoryLabel(post.category)}</span>
                     <span className="post-card__title">{post.title}</span>

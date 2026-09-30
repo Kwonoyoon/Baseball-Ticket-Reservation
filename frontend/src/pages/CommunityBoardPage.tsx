@@ -1,18 +1,23 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { errorMessage, isAbortError } from '../api/client'
 import { api } from '../api/endpoints'
 import type { PostCategory, Team } from '../api/types'
 import { useAuth } from '../auth/useAuth'
+import { BackgroundWash } from '../components/BackgroundWash'
 import { ErrorMessage, Loading } from '../components/StatusView'
 import { TeamBanner } from '../components/TeamBanner'
 import { TeamBoard } from '../components/TeamBoard'
 import { TeamStrip } from '../components/TeamStrip'
+import { COMMUNITY_INTRO_MS } from '../lib/communityIntro'
 import { DEFAULT_POST_CATEGORY, parsePostCategory } from '../lib/postCategory'
 import './CommunityBoardPage.css'
 
 /** 게시판 바탕에 섞는 구단 색 비율(%). 관심 구단 테마(7%)보다 조금 진하게. */
 const TEAM_BG_MIX_PERCENT = 10
+
+/** 구단 색을 섞은 게시판 바탕색 */
+const teamBackground = (color: string) => `color-mix(in srgb, ${color} ${TEAM_BG_MIX_PERCENT}%, #f6f7fa)`
 
 /** 관심 구단을 정하는 곳. 비회원은 로그인한 뒤 그리로 간다. */
 const FAVORITE_SETTING_PATH = '/my/account'
@@ -37,16 +42,22 @@ export function CommunityBoardPage() {
   const selectedTeam = teams?.find((team) => team.id === selectedId) ?? null
   const teamColor = selectedTeam?.primaryColor ?? null
 
-  // 보고 있는 구단 게시판에 들어가면 페이지 바탕을 그 구단 색으로 옅게 물들인다. 게시판을 떠나면 원래대로.
-  // (관심 구단 테마의 바탕보다 앞선다. 글자·카드가 읽히도록 구단 색은 조금만 섞는다)
+  // 페이지 바탕: 처음엔 흰색. 구단 띠가 펼쳐지는 동안 BackgroundWash가 그 구단 색으로 칠하고,
+  // 다 칠하면 paintedColor가 바뀌어 바탕(--bg) 자체가 그 색이 된다. 다른 구단을 고르면 이전 색 위로 새로 칠한다.
+  // (관심 구단 테마의 바탕보다 앞선다. 글자·카드가 읽히도록 구단 색은 조금만 섞는다. 게시판을 떠나면 원래대로)
+  const [paintedColor, setPaintedColor] = useState<string | null>(null)
+  const introPending = teamColor !== null && teamColor !== paintedColor
+  const finishWash = useCallback(() => setPaintedColor(teamColor), [teamColor])
+
   useEffect(() => {
-    if (!teamColor) return undefined
-    const root = document.documentElement
-    root.style.setProperty('--bg', `color-mix(in srgb, ${teamColor} ${TEAM_BG_MIX_PERCENT}%, #f6f7fa)`)
-    return () => {
-      root.style.removeProperty('--bg')
-    }
-  }, [teamColor])
+    document.documentElement.style.setProperty('--bg', paintedColor ? teamBackground(paintedColor) : '#ffffff')
+  }, [paintedColor])
+  useEffect(
+    () => () => {
+      document.documentElement.style.removeProperty('--bg')
+    },
+    [],
+  )
 
   useEffect(() => {
     const controller = new AbortController()
@@ -98,7 +109,11 @@ export function CommunityBoardPage() {
         favoriteSettingPath={settingPath}
       />
 
-      {selectedTeam && <TeamBanner team={selectedTeam} />}
+      {/* 구단이 바뀔 때마다 띠를 새로 그려 펼쳐지는 연출을 다시 보여 준다. */}
+      {selectedTeam && <TeamBanner key={selectedTeam.id} team={selectedTeam} />}
+      {introPending && teamColor && (
+        <BackgroundWash key={teamColor} color={teamBackground(teamColor)} onDone={finishWash} />
+      )}
 
       {selectedId !== null && (
         <TeamBoard
@@ -108,6 +123,7 @@ export function CommunityBoardPage() {
           category={category}
           onCategoryChange={changeCategory}
           canWrite={member !== null}
+          introMs={introPending ? COMMUNITY_INTRO_MS : 0}
         />
       )}
     </div>
