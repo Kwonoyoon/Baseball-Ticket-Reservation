@@ -830,10 +830,15 @@ a.post-card:focus-visible {
   background: color-mix(in srgb, var(--team-color) 55%, #ffffff);
 }
 
+/* 날아가기 전(대기 시간)에는 숨겨 둔다. 첫 장면이 보이는 상태면 관중 위에 한 줄로 멈춰 선 것처럼 보인다. */
 @keyframes cheer-confetti {
   0% {
-    opacity: 1;
+    opacity: 0;
     transform: translate(0, 0) rotate(0deg);
+  }
+
+  6% {
+    opacity: 1;
   }
 
   45% {
