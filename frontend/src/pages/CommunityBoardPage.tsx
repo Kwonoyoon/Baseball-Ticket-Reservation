@@ -5,6 +5,7 @@ import { api } from '../api/endpoints'
 import type { PostCategory, Team } from '../api/types'
 import { useAuth } from '../auth/useAuth'
 import { ErrorMessage, Loading } from '../components/StatusView'
+import { TeamBanner } from '../components/TeamBanner'
 import { TeamBoard } from '../components/TeamBoard'
 import { TeamStrip } from '../components/TeamStrip'
 import { DEFAULT_POST_CATEGORY, parsePostCategory } from '../lib/postCategory'
@@ -96,6 +97,8 @@ export function CommunityBoardPage() {
         onSelect={selectTeam}
         favoriteSettingPath={settingPath}
       />
+
+      {selectedTeam && <TeamBanner team={selectedTeam} />}
 
       {selectedId !== null && (
         <TeamBoard

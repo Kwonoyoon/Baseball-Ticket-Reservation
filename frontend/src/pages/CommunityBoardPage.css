@@ -207,29 +207,73 @@
   right: 0;
 }
 
-/* 게시판 (components/TeamBoard.tsx) */
-.team-board__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
+/* 구단 줄 아래 띠: 보고 있는 구단 색 바탕에 영어 이름이 오른쪽에서 왼쪽으로 흐른다. (components/TeamBanner.tsx) */
+.team-banner {
+  overflow: hidden;
+  /* 위: 구단 줄과 붙여 한 덩어리로 보이게. 양옆: 본문 폭을 벗어나 화면 양끝까지 (넘친 부분은 .site-main이 잘라 낸다) */
+  margin: -12px calc(50% - 50vw) 0;
+  background: var(--team-color);
+  color: #ffffff;
+  transition: background-color 0.3s;
 }
 
-.team-board__head .page-title {
+.team-banner__track {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0;
+  width: max-content;
+  animation: team-banner-flow var(--banner-duration, 40s) linear infinite;
+}
+
+.team-banner__half {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.team-banner__item {
+  padding: 12px 0;
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* 이름 사이 구분점 */
+.team-banner__item::after {
+  margin: 0 22px;
+  content: '•';
+  opacity: 0.6;
+}
+
+/* 한 벌(전체의 절반)만큼 왼쪽으로 옮기면 처음 모습과 같아져 이음매 없이 되풀이된다. */
+@keyframes team-banner-flow {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* 게시판 (components/TeamBoard.tsx) */
+/* 분류 탭 줄. 오른쪽 끝에 글쓰기 버튼을 둔다. */
+.team-board__bar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.team-board__bar .button {
+  margin-bottom: 8px;
 }
 
 /* 분류 탭: 밑줄로 고른 탭을 보여 준다. */
 .team-board__tabs {
   display: flex;
   gap: 4px;
-  margin-bottom: 20px;
-  border-bottom: 1px solid var(--border);
 }
 
 .team-board__tab {
@@ -401,18 +445,6 @@ a.post-card:focus-visible {
     font-size: 13px;
   }
 
-  /* 게시판 제목은 한 줄로. 가장 긴 "키움 히어로즈 게시판"도 320px 화면에 들어가게 화면 폭 따라 줄인다. */
-  .team-board__head .page-title {
-    gap: 8px;
-    font-size: clamp(22px, 7vw, 28px);
-    white-space: nowrap;
-  }
-
-  .team-board__head .team-mark {
-    width: 32px;
-    height: 32px;
-  }
-
   .team-board__tab {
     padding: 10px 14px;
   }
@@ -425,6 +457,10 @@ a.post-card:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .team-strip__track.is-nudging {
     transition: none;
+  }
+
+  .team-banner__track {
+    animation: none;
   }
 
   .team-strip__item,

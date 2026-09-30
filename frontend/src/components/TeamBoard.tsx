@@ -6,7 +6,6 @@ import type { PostCategory, PostSummary, Team } from '../api/types'
 import { formatDateTime } from '../lib/format'
 import { POST_CATEGORIES, postCategoryLabel } from '../lib/postCategory'
 import { ErrorMessage, Loading } from './StatusView'
-import { TeamMark } from './TeamMark'
 
 type TeamBoardProps = {
   teamId: number
@@ -60,32 +59,32 @@ export function TeamBoard({ teamId, team, category, onCategoryChange, canWrite }
 
   return (
     <section className="team-board" aria-labelledby="team-board-title">
-      <div className="team-board__head">
-        <h1 id="team-board-title" className="page-title">
-          {team && <TeamMark team={team} />}
-          {team ? `${team.name} 게시판` : '게시판'}
-        </h1>
+      {/* 구단 이름은 위쪽 구단 띠가 보여 주므로, 제목은 화면 낭독기에만 읽히게 둔다. */}
+      <h1 id="team-board-title" className="sr-only">
+        {team ? `${team.name} 게시판` : '게시판'}
+      </h1>
+
+      <div className="team-board__bar">
+        <div className="team-board__tabs" role="tablist" aria-label="게시글 분류">
+          {POST_CATEGORIES.map((c) => (
+            <button
+              key={c.value}
+              type="button"
+              role="tab"
+              aria-selected={c.value === category}
+              className={`team-board__tab${c.value === category ? ' is-active' : ''}`}
+              onClick={() => onCategoryChange(c.value)}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
         {canWrite && (
           // 지금 보는 탭을 글쓰기 화면의 기본 분류로 넘긴다.
           <Link to={`/community/${teamId}/write`} state={{ category }} className="button button--primary">
             글쓰기
           </Link>
         )}
-      </div>
-
-      <div className="team-board__tabs" role="tablist" aria-label="게시글 분류">
-        {POST_CATEGORIES.map((c) => (
-          <button
-            key={c.value}
-            type="button"
-            role="tab"
-            aria-selected={c.value === category}
-            className={`team-board__tab${c.value === category ? ' is-active' : ''}`}
-            onClick={() => onCategoryChange(c.value)}
-          >
-            {c.label}
-          </button>
-        ))}
       </div>
 
       <div role="tabpanel" aria-label={`${label} 게시글`}>

@@ -670,6 +670,9 @@ p {
 .site-main {
   flex: 1;
   padding-block: 28px 56px;
+  /* 화면 양끝까지 닿는 요소(커뮤니티 구단 띠 등)가 스크롤바 폭만큼 넘쳐도 가로 스크롤이 생기지 않게 잘라 낸다.
+     clip은 스크롤 영역을 만들지 않아 안쪽 sticky 요소에 영향이 없다. */
+  overflow-x: clip;
 }
 
 .site-footer {

@@ -247,4 +247,26 @@ describe('CommunityBoardPage', () => {
     unmount()
     expect(rootBg()).toBe('')
   })
+
+  it('구단 줄 아래 띠에 보고 있는 구단 영어 이름이 그 구단 색 바탕으로 흐른다', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url === '/api/teams') return jsonResponse(200, teams)
+        if (url.startsWith('/api/teams/')) return jsonResponse(200, { items: [], hasMore: false })
+        return jsonResponse(404, { code: 'NOT_FOUND', message: '없음' })
+      }),
+    )
+    renderBoard()
+
+    const names = await screen.findAllByText('LG TWINS')
+    expect(names.length).toBeGreaterThan(1)
+    expect(document.querySelector<HTMLElement>('.team-banner')!.style.getPropertyValue('--team-color')).toBe('#C30452')
+
+    await userEvent.click(screen.getByRole('button', { name: 'KIA 타이거즈 게시판' }))
+    // 테스트 자료의 KIA 코드(HT)는 영어 이름 목록에 없어 코드를 그대로 쓴다.
+    expect((await screen.findAllByText('HT')).length).toBeGreaterThan(1)
+    expect(screen.queryByText('LG TWINS')).not.toBeInTheDocument()
+  })
 })
