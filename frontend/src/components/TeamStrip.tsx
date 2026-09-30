@@ -234,7 +234,6 @@ export function TeamStrip({ teams, favoriteTeam, selectedTeamId, onSelect, favor
           onClick={() => onSelect(favoriteTeam.id)}
         >
           <Logo team={favoriteTeam} />
-          <span className="team-strip__center-label">관심 구단</span>
         </button>
       ) : (
         <Link to={favoriteSettingPath} className="team-strip__center team-strip__center--empty">

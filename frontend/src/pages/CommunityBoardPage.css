@@ -99,14 +99,10 @@
   transform: translate(-50%, 0);
 }
 
-/* 고른 구단: 가운데 관심 구단 원처럼 그 구단 색 이중 테두리(원에 붙은 가는 선 + 배경색 틈 + 맨 바깥 굵은 테).
-   사이트 강조색은 관심 구단 색이라 쓰지 않는다. */
+/* 고른 구단: 그 구단 색 테두리 한 줄. (사이트 강조색은 관심 구단 색이라 쓰지 않는다) */
 .team-strip__item.is-selected {
   opacity: 1;
-  box-shadow:
-    0 0 0 2px var(--team-color),
-    0 0 0 5px var(--bg),
-    0 0 0 9px var(--team-color);
+  box-shadow: 0 0 0 4px var(--team-color);
 }
 
 .team-strip__item img,
@@ -128,7 +124,7 @@
   /* 흐르는 로고보다 늘 한 뼘 크게 */
   width: max(136px, calc(var(--strip-item) + 40px));
   height: max(136px, calc(var(--strip-item) + 40px));
-  padding: 18px 18px 26px;
+  padding: 20px;
   border: 0;
   border-radius: 50%;
   background: var(--surface);
@@ -149,19 +145,6 @@
 
 .team-strip__center.is-selected {
   --ring: var(--team-color);
-}
-
-.team-strip__center-label {
-  position: absolute;
-  bottom: 14px;
-  left: 50%;
-  padding: 2px 9px;
-  border-radius: 999px;
-  background: var(--team-color);
-  color: #ffffff;
-  font-size: 11px;
-  white-space: nowrap;
-  transform: translateX(-50%);
 }
 
 /* 관심 구단이 없을 때: 빈 원에 설정 버튼 */
@@ -410,7 +393,7 @@ a.post-card:focus-visible {
   .team-strip__center {
     width: 112px;
     height: 112px;
-    padding: 14px 14px 22px;
+    padding: 16px;
   }
 
   .team-strip__center--empty {
