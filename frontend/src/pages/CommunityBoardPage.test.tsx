@@ -47,7 +47,7 @@ function renderBoard(initialEntry = '/community/1') {
     ],
     { initialEntries: [initialEntry] },
   )
-  render(
+  return render(
     <AuthProvider>
       <RouterProvider router={router} />
     </AuthProvider>,
@@ -222,5 +222,29 @@ describe('CommunityBoardPage', () => {
 
     expect(await screen.findByText('아직 응원 글이 없어요.')).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: '응원' })).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('보고 있는 구단 색으로 페이지 바탕을 물들이고, 게시판을 떠나면 되돌린다', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url === '/api/teams') return jsonResponse(200, teams)
+        if (url.startsWith('/api/teams/')) return jsonResponse(200, { items: [], hasMore: false })
+        return jsonResponse(404, { code: 'NOT_FOUND', message: '없음' })
+      }),
+    )
+    const { unmount } = renderBoard()
+    const rootBg = () => document.documentElement.style.getPropertyValue('--bg')
+
+    await screen.findByText('LG 트윈스 게시판', { selector: 'h1' })
+    expect(rootBg()).toContain('#C30452')
+
+    await userEvent.click(screen.getByRole('button', { name: 'KIA 타이거즈 게시판' }))
+    await screen.findByText('KIA 타이거즈 게시판', { selector: 'h1' })
+    expect(rootBg()).toContain('#EA0029')
+
+    unmount()
+    expect(rootBg()).toBe('')
   })
 })

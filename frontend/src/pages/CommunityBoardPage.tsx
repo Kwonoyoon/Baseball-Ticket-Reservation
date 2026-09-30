@@ -10,6 +10,9 @@ import { TeamStrip } from '../components/TeamStrip'
 import { DEFAULT_POST_CATEGORY, parsePostCategory } from '../lib/postCategory'
 import './CommunityBoardPage.css'
 
+/** 게시판 바탕에 섞는 구단 색 비율(%). 관심 구단 테마(7%)보다 조금 진하게. */
+const TEAM_BG_MIX_PERCENT = 10
+
 /** 관심 구단을 정하는 곳. 비회원은 로그인한 뒤 그리로 간다. */
 const FAVORITE_SETTING_PATH = '/my/account'
 
@@ -27,6 +30,22 @@ export function CommunityBoardPage() {
   const [teams, setTeams] = useState<Team[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
+
+  const favoriteTeam = teams?.find((team) => team.id === member?.favoriteTeamId) ?? null
+  const selectedId = teamId !== undefined ? Number(teamId) : (favoriteTeam?.id ?? teams?.[0]?.id ?? null)
+  const selectedTeam = teams?.find((team) => team.id === selectedId) ?? null
+  const teamColor = selectedTeam?.primaryColor ?? null
+
+  // 보고 있는 구단 게시판에 들어가면 페이지 바탕을 그 구단 색으로 옅게 물들인다. 게시판을 떠나면 원래대로.
+  // (관심 구단 테마의 바탕보다 앞선다. 글자·카드가 읽히도록 구단 색은 조금만 섞는다)
+  useEffect(() => {
+    if (!teamColor) return undefined
+    const root = document.documentElement
+    root.style.setProperty('--bg', `color-mix(in srgb, ${teamColor} ${TEAM_BG_MIX_PERCENT}%, #f6f7fa)`)
+    return () => {
+      root.style.removeProperty('--bg')
+    }
+  }, [teamColor])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -52,9 +71,6 @@ export function CommunityBoardPage() {
   }
   if (teams === null) return <Loading />
 
-  const favoriteTeam = teams.find((team) => team.id === member?.favoriteTeamId) ?? null
-  const selectedId = teamId !== undefined ? Number(teamId) : (favoriteTeam?.id ?? teams[0]?.id ?? null)
-  const selectedTeam = teams.find((team) => team.id === selectedId) ?? null
   const category = parsePostCategory(searchParams.get('category'))
 
   const selectTeam = (id: number) => {
