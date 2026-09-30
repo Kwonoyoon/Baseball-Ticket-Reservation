@@ -979,6 +979,12 @@ p {
   color: var(--text);
 }
 
+.game-admin-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
 .game-banner {
   margin-bottom: 20px;
   padding: 28px;

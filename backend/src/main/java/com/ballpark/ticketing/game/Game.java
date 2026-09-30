@@ -2,6 +2,8 @@ package com.ballpark.ticketing.game;
 
 import java.time.LocalDateTime;
 
+import com.ballpark.ticketing.global.error.BusinessException;
+import com.ballpark.ticketing.global.error.ErrorCode;
 import com.ballpark.ticketing.stadium.Stadium;
 import com.ballpark.ticketing.team.Team;
 
@@ -62,9 +64,9 @@ public class Game {
         this.status = GameStatus.SCHEDULED;
     }
 
-    /** 경기 시작 전까지 예매와 취소가 가능하다. */
+    /** 경기가 예정 상태이고 시작 전까지만 예매와 취소가 가능하다. */
     public boolean isBookable(LocalDateTime now) {
-        return now.isBefore(startAt);
+        return status == GameStatus.SCHEDULED && now.isBefore(startAt);
     }
 
     public boolean involves(Long teamId) {
@@ -107,5 +109,13 @@ public class Game {
         this.homeScore = homeScore;
         this.awayScore = awayScore;
         this.status = GameStatus.FINISHED;
+    }
+
+    /** 우천 등의 사유로 경기 자체를 취소한다. 이미 끝났거나 취소된 경기는 다시 취소할 수 없다. */
+    public void cancel() {
+        if (status != GameStatus.SCHEDULED) {
+            throw new BusinessException(ErrorCode.GAME_NOT_CANCELABLE);
+        }
+        this.status = GameStatus.CANCELED;
     }
 }

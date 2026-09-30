@@ -17,6 +17,7 @@ import com.ballpark.ticketing.game.dto.GameSummaryResponse;
 import com.ballpark.ticketing.global.config.CacheNames;
 import com.ballpark.ticketing.global.error.BusinessException;
 import com.ballpark.ticketing.global.error.ErrorCode;
+import com.ballpark.ticketing.reservation.ReservationService;
 import com.ballpark.ticketing.stadium.SeatSectionRepository;
 import com.ballpark.ticketing.stadium.dto.SeatSectionResponse;
 
@@ -31,12 +32,14 @@ public class GameService {
     private final GameRepository gameRepository;
     private final SeatSectionRepository seatSectionRepository;
     private final CacheManager cacheManager;
+    private final ReservationService reservationService;
 
     public GameService(GameRepository gameRepository, SeatSectionRepository seatSectionRepository,
-            CacheManager cacheManager) {
+            CacheManager cacheManager, ReservationService reservationService) {
         this.gameRepository = gameRepository;
         this.seatSectionRepository = seatSectionRepository;
         this.cacheManager = cacheManager;
+        this.reservationService = reservationService;
     }
 
     @Cacheable(cacheNames = CacheNames.GAME_SCHEDULE,
@@ -66,6 +69,25 @@ public class GameService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.GAME_NOT_FOUND));
         game.recordResult(request.homeScore(), request.awayScore());
         Optional.ofNullable(cacheManager.getCache(CacheNames.GAME_SCHEDULE)).ifPresent(Cache::clear);
+        List<SeatSectionResponse> sections = seatSectionRepository
+                .findByStadiumIdAndActiveTrueOrderByDisplayOrder(game.getStadium().getId()).stream()
+                .map(SeatSectionResponse::from)
+                .toList();
+        return GameDetailResponse.of(game, sections);
+    }
+
+    /**
+     * 경기 취소(우천취소 등, 관리자 전용). 경기 상태를 바꾸고, 그 경기의 확정 예매를 전부 취소·환불하며
+     * 예매자 전원에게 알림·이메일을 보낸다.
+     */
+    @Transactional
+    @CacheEvict(cacheNames = CacheNames.GAME_DETAIL, key = "#gameId")
+    public GameDetailResponse cancelGame(Long gameId) {
+        Game game = gameRepository.findWithTeamsById(gameId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.GAME_NOT_FOUND));
+        game.cancel();
+        Optional.ofNullable(cacheManager.getCache(CacheNames.GAME_SCHEDULE)).ifPresent(Cache::clear);
+        reservationService.cancelAllForGame(game);
         List<SeatSectionResponse> sections = seatSectionRepository
                 .findByStadiumIdAndActiveTrueOrderByDisplayOrder(game.getStadium().getId()).stream()
                 .map(SeatSectionResponse::from)

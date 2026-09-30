@@ -104,6 +104,12 @@ public class Reservation {
         this.canceledAt = now;
     }
 
+    /** 경기 자체가 취소되어 예매가 자동으로 취소될 때 쓴다. 회원이 직접 취소할 때와 달리 경기 시작 여부는 따지지 않는다. */
+    public void cancelDueToGameCancellation(LocalDateTime now) {
+        this.status = ReservationStatus.CANCELED;
+        this.canceledAt = now;
+    }
+
     public boolean isOwnedBy(Long memberId) {
         return member.getId().equals(memberId);
     }
