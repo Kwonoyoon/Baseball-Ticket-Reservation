@@ -1,6 +1,7 @@
 package com.ballpark.ticketing.community;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -55,6 +56,46 @@ class CommunityIntegrationTest {
         createPost(token, "집계용 글 2", "내용2");
 
         assertThat(teamPostCount(TEAM_ID)).isEqualTo(before + 2);
+    }
+
+    @Test
+    void 분류별로_나눠_보고_목록에는_본문_미리보기가_온다() throws Exception {
+        String token = signup();
+        String tag = UUID.randomUUID().toString().substring(0, 8);
+        // JSON 안의 줄바꿈이라 \\n으로 쓴다.
+        createPost(token, "경기-" + tag, "GAME", "어제 경기\\n정말\\n\\n  좋았다");
+        createPost(token, "응원-" + tag, "CHEER", "가자");
+        createPost(token, "분류없음-" + tag, null, "분류가 생기기 전 화면에서 쓴 글");
+
+        // 경기 탭에는 경기 글만 나오고, 미리보기는 줄바꿈·공백을 한 칸으로 합친다.
+        mockMvc.perform(get("/api/teams/" + TEAM_ID + "/posts").param("category", "GAME"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[?(@.category != 'GAME')]").isEmpty())
+                .andExpect(jsonPath("$.items[?(@.title == '경기-" + tag + "')].preview")
+                        .value(hasItem("어제 경기 정말 좋았다")));
+
+        // 분류 없이 쓴 글은 자유로 들어간다.
+        mockMvc.perform(get("/api/teams/" + TEAM_ID + "/posts").param("category", "FREE"))
+                .andExpect(jsonPath("$.items[?(@.title == '분류없음-" + tag + "')]").isNotEmpty())
+                .andExpect(jsonPath("$.items[?(@.category != 'FREE')]").isEmpty());
+
+        // 분류를 주지 않으면 모두 보여 준다.
+        mockMvc.perform(get("/api/teams/" + TEAM_ID + "/posts"))
+                .andExpect(jsonPath("$.items[?(@.title == '응원-" + tag + "')]").isNotEmpty())
+                .andExpect(jsonPath("$.items[?(@.title == '경기-" + tag + "')]").isNotEmpty());
+    }
+
+    @Test
+    void 글을_고치면_분류도_바뀐다() throws Exception {
+        String token = signup();
+        Long postId = createPost(token, "분류 바꿀 글", "FREE", "내용");
+
+        mockMvc.perform(put("/api/posts/" + postId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"category\":\"CHEER\",\"title\":\"분류 바꿀 글\",\"content\":\"내용\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.category").value("CHEER"));
     }
 
     @Test
@@ -210,10 +251,16 @@ class CommunityIntegrationTest {
     }
 
     private Long createPost(String token, String title, String content) throws Exception {
+        return createPost(token, title, null, content);
+    }
+
+    /** category가 null이면 요청에서 아예 뺀다. (분류가 생기기 전 화면이 보내던 모양) */
+    private Long createPost(String token, String title, String category, String content) throws Exception {
+        String categoryJson = category == null ? "" : "\"category\":\"" + category + "\",";
         String body = mockMvc.perform(post("/api/teams/" + TEAM_ID + "/posts")
                         .header(HttpHeaders.AUTHORIZATION, bearer(token))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"title\":\"" + title + "\",\"content\":\"" + content + "\"}"))
+                        .content("{" + categoryJson + "\"title\":\"" + title + "\",\"content\":\"" + content + "\"}"))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         return ((Number) JsonPath.read(body, "$.id")).longValue();

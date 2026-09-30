@@ -46,9 +46,11 @@ public class CommunityController {
     }
 
     @GetMapping("/api/teams/{teamId}/posts")
-    public PostPageResponse listPosts(@PathVariable Long teamId, @RequestParam(defaultValue = "0") int page,
+    public PostPageResponse listPosts(@PathVariable Long teamId,
+            @RequestParam(required = false) PostCategory category,
+            @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return communityService.listPosts(teamId, page, size);
+        return communityService.listPosts(teamId, category, page, size);
     }
 
     @PostMapping("/api/teams/{teamId}/posts")

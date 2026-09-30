@@ -7,6 +7,8 @@ import com.ballpark.ticketing.team.Team;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -30,6 +32,10 @@ public class CommunityPost {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "member_id")
     private Member member;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private PostCategory category;
 
     @Column(nullable = false, length = 100)
     private String title;
@@ -55,9 +61,11 @@ public class CommunityPost {
     protected CommunityPost() {
     }
 
-    public CommunityPost(Team team, Member member, String title, String content, LocalDateTime now) {
+    public CommunityPost(Team team, Member member, PostCategory category, String title, String content,
+            LocalDateTime now) {
         this.team = team;
         this.member = member;
+        this.category = category;
         this.title = title;
         this.content = content;
         this.viewCount = 0;
@@ -71,7 +79,8 @@ public class CommunityPost {
         return member.getId().equals(memberId);
     }
 
-    public void edit(String title, String content, LocalDateTime now) {
+    public void edit(PostCategory category, String title, String content, LocalDateTime now) {
+        this.category = category;
         this.title = title;
         this.content = content;
         this.updatedAt = now;
@@ -107,6 +116,10 @@ public class CommunityPost {
 
     public Member getMember() {
         return member;
+    }
+
+    public PostCategory getCategory() {
+        return category;
     }
 
     public String getTitle() {

@@ -6,6 +6,8 @@ import type { Comment, PostDetail } from '../api/types'
 import { useAuth } from '../auth/useAuth'
 import { ErrorMessage, Loading } from '../components/StatusView'
 import { formatDateTime } from '../lib/format'
+import { postCategoryLabel } from '../lib/postCategory'
+import './CommunityBoardPage.css'
 
 const MAX_COMMENT_LENGTH = 1000
 const MAX_REPORT_REASON_LENGTH = 500
@@ -149,11 +151,15 @@ export function CommunityPostPage() {
 
   return (
     <div className="community-post">
-      <Link to={`/community/${teamId}`} className="account__back">
+      <Link
+        to={`/community/${teamId}${post.category && post.category !== 'FREE' ? `?category=${post.category}` : ''}`}
+        className="account__back"
+      >
         ← 목록으로
       </Link>
 
       <article className="panel community-post__article">
+        {post.category && <span className="post-card__badge">{postCategoryLabel(post.category)}</span>}
         <h1 className="community-post__title">{post.title}</h1>
         <p className="community-post__meta">
           <span>{post.authorName}</span>

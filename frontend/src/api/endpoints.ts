@@ -13,6 +13,7 @@ import type {
   NotificationPreference,
   NotificationType,
   PaymentMethod,
+  PostCategory,
   PostDetail,
   PostPage,
   Report,
@@ -67,15 +68,19 @@ export const api = {
   getTeamPostCounts: (signal?: AbortSignal) =>
     request<TeamPostCount[]>('/community/team-post-counts', { signal }),
 
-  getPosts: (teamId: number, page: number, signal?: AbortSignal) =>
-    request<PostPage>(`/teams/${teamId}/posts?page=${page}&size=20`, { signal }),
+  /** category를 주면 그 분류만, 안 주면 모든 분류를 섞어 준다. */
+  getPosts: (teamId: number, page: number, signal?: AbortSignal, category?: PostCategory) =>
+    request<PostPage>(
+      `/teams/${teamId}/posts?page=${page}&size=20${category ? `&category=${category}` : ''}`,
+      { signal },
+    ),
 
-  createPost: (teamId: number, body: { title: string; content: string }) =>
+  createPost: (teamId: number, body: { category: PostCategory; title: string; content: string }) =>
     request<PostDetail>(`/teams/${teamId}/posts`, { method: 'POST', body }),
 
   getPost: (postId: number, signal?: AbortSignal) => request<PostDetail>(`/posts/${postId}`, { signal }),
 
-  updatePost: (postId: number, body: { title: string; content: string }) =>
+  updatePost: (postId: number, body: { category: PostCategory; title: string; content: string }) =>
     request<PostDetail>(`/posts/${postId}`, { method: 'PUT', body }),
 
   deletePost: (postId: number) => request<void>(`/posts/${postId}`, { method: 'DELETE' }),
