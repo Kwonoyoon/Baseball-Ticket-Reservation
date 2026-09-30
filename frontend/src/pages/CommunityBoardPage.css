@@ -113,7 +113,7 @@
   object-fit: contain;
 }
 
-/* 가운데 관심 구단. 흐르는 로고가 그 뒤로 지나가도록 페이지 바탕색 테를 둘러 앞에 둔다. */
+/* 가운데 관심 구단. 흐르는 로고가 그 뒤로 지나가도록 두꺼운 구단 색 테를 둘러 앞에 둔다. */
 .team-strip__center {
   position: absolute;
   top: 50%;
@@ -128,9 +128,8 @@
   border: 0;
   border-radius: 50%;
   background: var(--surface);
-  box-shadow:
-    0 0 0 18px var(--bg),
-    inset 0 0 0 3px var(--team-color, var(--border));
+  /* 다른 구단 게시판을 보는 동안에는 테를 옅게 해서, 지금 고른 구단이 아님을 보여 준다. */
+  box-shadow: 0 0 0 20px color-mix(in srgb, var(--team-color) 45%, var(--bg));
   color: var(--text);
   font-size: 13px;
   font-weight: 700;
@@ -140,10 +139,7 @@
 }
 
 .team-strip__center.is-selected {
-  box-shadow:
-    0 0 0 18px var(--bg),
-    inset 0 0 0 3px var(--team-color),
-    0 0 0 21px var(--accent);
+  box-shadow: 0 0 0 20px var(--team-color);
 }
 
 .team-strip__center-label {
