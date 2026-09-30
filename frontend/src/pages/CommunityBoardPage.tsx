@@ -5,6 +5,7 @@ import { api } from '../api/endpoints'
 import type { PostCategory, Team } from '../api/types'
 import { useAuth } from '../auth/useAuth'
 import { BackgroundWash } from '../components/BackgroundWash'
+import { CheerCrowd } from '../components/CheerCrowd'
 import { ErrorMessage, Loading } from '../components/StatusView'
 import { TeamBanner } from '../components/TeamBanner'
 import { TeamBoard } from '../components/TeamBoard'
@@ -119,6 +120,8 @@ export function CommunityBoardPage() {
 
       {/* 구단이 바뀔 때마다 띠를 새로 그려 펼쳐지는 연출을 다시 보여 준다. */}
       {selectedTeam && <TeamBanner key={selectedTeam.id} ref={bannerRef} team={selectedTeam} />}
+      {/* 글이 올라오기 전까지 화면 아래 응원 장면. 구단이 바뀔 때마다 한 번씩 나온다. */}
+      {teamColor && <CheerCrowd key={teamColor} color={teamColor} />}
       {introPending && teamColor && (
         <BackgroundWash
           key={teamColor}
