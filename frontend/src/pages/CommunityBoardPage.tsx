@@ -6,7 +6,7 @@ import type { PostCategory, Team } from '../api/types'
 import { useAuth } from '../auth/useAuth'
 import { BackgroundWash } from '../components/BackgroundWash'
 import { CheerCrowd } from '../components/CheerCrowd'
-import { ErrorMessage, Loading } from '../components/StatusView'
+import { ErrorMessage } from '../components/StatusView'
 import { TeamBanner } from '../components/TeamBanner'
 import { TeamBoard } from '../components/TeamBoard'
 import { TeamStrip } from '../components/TeamStrip'
@@ -84,7 +84,8 @@ export function CommunityBoardPage() {
       />
     )
   }
-  if (teams === null) return <Loading />
+  // 구단 목록은 금방 오므로 "불러오는 중" 표시 없이 비워 둔다.
+  if (teams === null) return null
 
   const category = parsePostCategory(searchParams.get('category'))
 

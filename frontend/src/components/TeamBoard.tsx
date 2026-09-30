@@ -5,7 +5,7 @@ import { api } from '../api/endpoints'
 import type { PostCategory, PostSummary, Team } from '../api/types'
 import { formatDateTime } from '../lib/format'
 import { POST_CATEGORIES, postCategoryLabel } from '../lib/postCategory'
-import { ErrorMessage, Loading } from './StatusView'
+import { ErrorMessage } from './StatusView'
 
 type TeamBoardProps = {
   teamId: number
@@ -110,7 +110,8 @@ export function TeamBoard({ teamId, team, category, onCategoryChange, canWrite, 
             }}
           />
         ) : posts === null ? (
-          <Loading />
+          // 불러오는 동안은 "불러오는 중" 표시 없이 비워 둔다. 다 오면 글이 하나씩 올라온다.
+          null
         ) : posts.length === 0 ? (
           // 글이 없어도 자리가 비어 보이지 않게 빈 카드를 둔다.
           <div className="post-card post-card--empty">
