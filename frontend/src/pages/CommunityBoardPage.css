@@ -413,6 +413,18 @@ a.post-card:focus-visible {
     font-size: 13px;
   }
 
+  /* 게시판 제목은 한 줄로. 가장 긴 "키움 히어로즈 게시판"도 320px 화면에 들어가게 화면 폭 따라 줄인다. */
+  .team-board__head .page-title {
+    gap: 8px;
+    font-size: clamp(22px, 7vw, 28px);
+    white-space: nowrap;
+  }
+
+  .team-board__head .team-mark {
+    width: 32px;
+    height: 32px;
+  }
+
   .team-board__tab {
     padding: 10px 14px;
   }
