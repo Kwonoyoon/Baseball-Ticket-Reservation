@@ -29,7 +29,8 @@
   will-change: transform;
 }
 
-/* 양 끝 버튼으로 한 칸 옮길 때만 부드럽게 움직인다. (평소 흐름은 매 프레임 조금씩 옮긴다) */
+/* 양 끝 버튼으로 한 칸 옮길 때만 부드럽게 움직인다. (평소 흐름은 매 프레임 조금씩 옮긴다)
+   시간은 TeamStrip의 NUDGE_MS와 맞춘다. */
 .team-strip__track.is-nudging {
   transition: transform 0.4s ease;
 }

@@ -5,8 +5,10 @@ import { teamLogo } from '../lib/teamLogos'
 
 /** 로고 한 칸의 너비(원 + 간격). CSS의 .team-strip__item 크기와 맞춘다. */
 const STEP_PX = 98
-/** 흐르는 속도. 1초에 이만큼 오른쪽으로 간다. */
+/** 흐르는 속도. 1초에 이만큼 간다. */
 const SPEED_PX_PER_SEC = 22
+/** 양 끝 버튼으로 한 칸 옮기는 시간. CSS의 .team-strip__track.is-nudging 전환 시간과 맞춘다. */
+const NUDGE_MS = 400
 /** 이 너비까지는 줄이 끊겨 보이지 않게 복사본을 이어 붙인다. (콘텐츠 최대 폭보다 넉넉하게) */
 const COVER_WIDTH_PX = 1600
 /** 복사본 가운데 화면 낭독기·키보드에 보여 줄 한 벌 */
@@ -28,8 +30,8 @@ function Logo({ team }: { team: Team }) {
 
 /**
  * 커뮤니티 위쪽 구단 줄.
- * 가운데에는 관심 구단이 고정되고, 그 뒤로 나머지 구단 로고가 천천히 왼쪽에서 오른쪽으로 흐른다.
- * 양 끝 버튼으로 한 칸씩 옮길 수 있고, 커서를 올리거나 키보드로 들어오면 멈춘다.
+ * 가운데에는 관심 구단이 고정되고, 그 뒤로 나머지 구단 로고가 천천히 흐른다. (처음에는 왼쪽에서 오른쪽으로)
+ * 양 끝 버튼은 한 칸 옮기면서 흐르는 방향도 그쪽으로 바꾼다. 커서를 올리거나 키보드로 들어오면 멈춘다.
  */
 export function TeamStrip({ teams, favoriteTeam, selectedTeamId, onSelect, favoriteSettingPath }: TeamStripProps) {
   const others = teams.filter((team) => team.id !== favoriteTeam?.id)
@@ -42,6 +44,11 @@ export function TeamStrip({ teams, favoriteTeam, selectedTeamId, onSelect, favor
   const pausedRef = useRef(false)
   // 커서를 올리거나 키보드로 들어오면 멈춘다. 버튼으로 옮기는 동안에도 멈춘다.
   const hoveredRef = useRef(false)
+  // 흐르는 방향. 1이면 오른쪽, -1이면 왼쪽. 양 끝 버튼을 누르면 그쪽으로 바뀐다.
+  // (방향을 그대로 두면 ‹ 로 옮겨도 곧 오른쪽 흐름에 밀려 제자리로 되돌아온다)
+  const directionRef = useRef<-1 | 1>(1)
+  const nudgingRef = useRef(false)
+  const nudgeTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const [nudging, setNudging] = useState(false)
 
   /** 한 벌 너비 안으로 감는다. 한 벌만큼 옮겨도 모양이 같아서 감아도 화면이 튀지 않는다. */
@@ -69,7 +76,7 @@ export function TeamStrip({ teams, favoriteTeam, selectedTeamId, onSelect, favor
       const elapsed = Math.min(now - last, 100) // 탭을 오래 비웠다 돌아와도 한 번에 튀지 않게
       last = now
       if (!pausedRef.current) {
-        offsetRef.current = wrap(offsetRef.current + (SPEED_PX_PER_SEC * elapsed) / 1000)
+        offsetRef.current = wrap(offsetRef.current + (directionRef.current * SPEED_PX_PER_SEC * elapsed) / 1000)
         paint(offsetRef.current)
       }
       frame = requestAnimationFrame(tick)
@@ -78,10 +85,13 @@ export function TeamStrip({ teams, favoriteTeam, selectedTeamId, onSelect, favor
     return () => cancelAnimationFrame(frame)
   }, [setWidth, paint, wrap])
 
-  /** 양 끝 버튼: 한 칸 부드럽게 옮긴다. 옮기는 동안은 감지 않고, 다 옮긴 뒤 제자리로 감는다. */
+  useEffect(() => () => clearTimeout(nudgeTimerRef.current), [])
+
+  /** 양 끝 버튼: 흐르는 방향을 그쪽으로 바꾸고 한 칸 부드럽게 옮긴다. 옮기는 동안은 감지 않고, 다 옮긴 뒤 제자리로 감는다. */
   const nudge = (direction: -1 | 1) => {
     const track = trackRef.current
     if (!track) return
+    directionRef.current = direction
     // 움직임 줄이기 설정이면 전환 없이 바로 옮긴다. (전환 끝 이벤트도 오지 않으므로 여기서 감는다)
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
       offsetRef.current = wrap(offsetRef.current + direction * STEP_PX)
@@ -90,13 +100,25 @@ export function TeamStrip({ teams, favoriteTeam, selectedTeamId, onSelect, favor
     }
     offsetRef.current += direction * STEP_PX
     pausedRef.current = true
+    nudgingRef.current = true
     setNudging(true)
     paint(offsetRef.current)
+    // 탭이 가려져 있으면 전환 끝 이벤트가 오지 않을 수 있다. 그래도 멈춘 채로 남지 않게 시간이 지나면 마무리한다.
+    clearTimeout(nudgeTimerRef.current)
+    nudgeTimerRef.current = setTimeout(settleNudge, NUDGE_MS + 100)
   }
 
   const finishNudge = (event: TransitionEvent<HTMLDivElement>) => {
     // 로고 버튼의 hover 전환도 여기까지 올라오므로, 줄 자체가 옮겨진 경우만 받는다.
     if (event.target !== event.currentTarget || event.propertyName !== 'transform') return
+    settleNudge()
+  }
+
+  /** 다 옮긴 뒤 제자리로 감고 흐름을 다시 잇는다. 전환 끝 이벤트와 시간 초과 중 먼저 오는 쪽이 한 번만 한다. */
+  const settleNudge = () => {
+    if (!nudgingRef.current) return
+    nudgingRef.current = false
+    clearTimeout(nudgeTimerRef.current)
     setNudging(false)
     offsetRef.current = wrap(offsetRef.current)
     // 전환 효과를 먼저 끄고 감아야 이음매에서 한 바퀴 도는 모습이 보이지 않는다.
@@ -110,7 +132,7 @@ export function TeamStrip({ teams, favoriteTeam, selectedTeamId, onSelect, favor
 
   const pause = (paused: boolean) => {
     hoveredRef.current = paused
-    if (!nudging) pausedRef.current = paused
+    if (!nudgingRef.current) pausedRef.current = paused
   }
 
   return (
