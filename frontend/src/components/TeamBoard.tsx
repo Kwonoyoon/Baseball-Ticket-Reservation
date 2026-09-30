@@ -73,7 +73,11 @@ export function TeamBoard({ teamId, team, category, onCategoryChange, canWrite, 
         {team ? `${team.name} 게시판` : '게시판'}
       </h1>
 
-      <div className="team-board__bar">
+      {/* 들어올 때 연출이 있으면 분류 탭·글쓰기 버튼도 연출이 끝난 뒤 올라온다. (글 카드보다 먼저) */}
+      <div
+        className={`team-board__bar${introMs > 0 ? ' is-rising' : ''}`}
+        style={introMs > 0 ? { animationDelay: `${introMs}ms` } : undefined}
+      >
         <div className="team-board__tabs" role="tablist" aria-label="게시글 분류">
           {POST_CATEGORIES.map((c) => (
             <button
@@ -122,7 +126,7 @@ export function TeamBoard({ teamId, team, category, onCategoryChange, canWrite, 
                   className={index < rise.count ? 'is-rising' : undefined}
                   style={
                     index < rise.count
-                      ? ({ animationDelay: `${rise.startMs + index * RISE_STEP_MS}ms` } as CSSProperties)
+                      ? ({ animationDelay: `${rise.startMs + (index + 1) * RISE_STEP_MS}ms` } as CSSProperties)
                       : undefined
                   }
                 >

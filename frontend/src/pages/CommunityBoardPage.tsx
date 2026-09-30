@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { errorMessage, isAbortError } from '../api/client'
 import { api } from '../api/endpoints'
@@ -11,6 +11,7 @@ import { TeamBoard } from '../components/TeamBoard'
 import { TeamStrip } from '../components/TeamStrip'
 import { COMMUNITY_INTRO_MS } from '../lib/communityIntro'
 import { DEFAULT_POST_CATEGORY, parsePostCategory } from '../lib/postCategory'
+import { buildTeamTheme } from '../lib/teamTheme'
 import './CommunityBoardPage.css'
 
 /** 게시판 바탕에 섞는 구단 색 비율(%). 관심 구단 테마(7%)보다 조금 진하게. */
@@ -42,10 +43,11 @@ export function CommunityBoardPage() {
   const selectedTeam = teams?.find((team) => team.id === selectedId) ?? null
   const teamColor = selectedTeam?.primaryColor ?? null
 
-  // 페이지 바탕: 처음엔 흰색. 구단 띠가 펼쳐지는 동안 BackgroundWash가 그 구단 색으로 칠하고,
+  // 페이지 바탕: 처음엔 흰색. 구단 띠가 다 펼쳐지면 BackgroundWash가 띠 한가운데서부터 그 구단 색으로 칠하고,
   // 다 칠하면 paintedColor가 바뀌어 바탕(--bg) 자체가 그 색이 된다. 다른 구단을 고르면 이전 색 위로 새로 칠한다.
   // (관심 구단 테마의 바탕보다 앞선다. 글자·카드가 읽히도록 구단 색은 조금만 섞는다. 게시판을 떠나면 원래대로)
   const [paintedColor, setPaintedColor] = useState<string | null>(null)
+  const bannerRef = useRef<HTMLDivElement>(null)
   const introPending = teamColor !== null && teamColor !== paintedColor
   const finishWash = useCallback(() => setPaintedColor(teamColor), [teamColor])
 
@@ -99,8 +101,14 @@ export function CommunityBoardPage() {
     ? FAVORITE_SETTING_PATH
     : `/login?redirect=${encodeURIComponent(FAVORITE_SETTING_PATH)}`
 
+  // 글쓰기 버튼·분류 탭·배지 같은 강조색도 보고 있는 구단 색으로. (흰 글자가 읽히게 보정된 색)
+  const teamTheme = buildTeamTheme(teamColor)
+  const accentStyle = teamTheme
+    ? ({ '--accent': teamTheme.accent, '--accent-strong': teamTheme.accentStrong } as CSSProperties)
+    : undefined
+
   return (
-    <div className="community">
+    <div className="community" style={accentStyle}>
       <TeamStrip
         teams={teams}
         favoriteTeam={favoriteTeam}
@@ -110,9 +118,14 @@ export function CommunityBoardPage() {
       />
 
       {/* 구단이 바뀔 때마다 띠를 새로 그려 펼쳐지는 연출을 다시 보여 준다. */}
-      {selectedTeam && <TeamBanner key={selectedTeam.id} team={selectedTeam} />}
+      {selectedTeam && <TeamBanner key={selectedTeam.id} ref={bannerRef} team={selectedTeam} />}
       {introPending && teamColor && (
-        <BackgroundWash key={teamColor} color={teamBackground(teamColor)} onDone={finishWash} />
+        <BackgroundWash
+          key={teamColor}
+          color={teamBackground(teamColor)}
+          originRef={bannerRef}
+          onDone={finishWash}
+        />
       )}
 
       {selectedId !== null && (

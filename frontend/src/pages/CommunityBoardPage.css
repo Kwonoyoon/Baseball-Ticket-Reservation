@@ -234,6 +234,7 @@
 }
 
 .team-banner {
+  position: relative; /* 뒤쪽 빛(.team-banner__glow) 위에 그린다 */
   overflow: hidden;
   animation: intro-reveal-from-right var(--reveal-ms) var(--intro-ease) both;
   background: var(--team-color);
@@ -279,24 +280,82 @@
   }
 }
 
-/* 띠가 펼쳐지는 앞쪽(왼쪽) 끝을 굴러가는 야구공. 띠와 같은 시간·곡선으로 오른쪽 끝에서 왼쪽 끝까지 간다. */
-.team-banner__ball {
+/* 띠가 펼쳐지는 동안 띠 위아래로 번지는 구단 색 빛. 띠와 같이 펼쳐지고, 배경이 칠해지는 동안 사라진다.
+   잘라 내며(clip-path) 펼치면 흐리게 번진 가장자리까지 네모나게 잘리므로, 오른쪽을 축으로 가로로 늘여 펼친다. */
+.team-banner__glow {
   position: absolute;
-  top: 50%;
-  left: 0;
-  width: 30px;
-  height: 30px;
-  margin: -15px 0 0 -15px;
-  filter: drop-shadow(0 2px 3px rgb(15 23 42 / 30%));
+  inset: -34px 0;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--team-color) 45%, transparent) 50%,
+    transparent
+  );
+  filter: blur(10px);
   pointer-events: none;
-  animation: intro-ball var(--reveal-ms) var(--intro-ease) both;
+  transform-origin: right center;
+  animation:
+    intro-grow-from-right var(--reveal-ms) var(--intro-ease) both,
+    intro-fade-out var(--wash-ms) ease var(--reveal-ms) forwards;
 }
 
-@keyframes intro-ball {
+@keyframes intro-grow-from-right {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes intro-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* 띠가 펼쳐지는 앞쪽(왼쪽) 끝을 굴러가는 야구공. 띠와 같은 시간·곡선으로 오른쪽 끝에서 왼쪽 끝까지 간다.
+   바깥(span)은 움직이고, 안쪽(svg)은 구른다. 뒤로는 구단 색 꼬리가 따라온다.
+   지름은 띠 높이와 같다. (띠 높이를 그대로 따라가고, 가운데가 띠 앞쪽 끝에 오게 절반만큼 당긴다) */
+.team-banner__ball {
+  position: absolute;
+  top: 0;
+  left: 0;
+  isolation: isolate; /* 꼬리를 공 뒤에 그리려고 */
+  height: 100%;
+  aspect-ratio: 1;
+  pointer-events: none;
+  transform: translateX(-50%);
+  animation: intro-ball-move var(--reveal-ms) var(--intro-ease) both;
+}
+
+.team-banner__ball::before {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  z-index: -1;
+  width: 160px;
+  height: 40%;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--team-color), transparent);
+  filter: blur(4px);
+  content: '';
+  opacity: 0.85;
+}
+
+.team-banner__ball-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 8px var(--team-color)) drop-shadow(0 2px 3px rgb(15 23 42 / 30%));
+  animation: intro-ball-spin var(--reveal-ms) var(--intro-ease) both;
+}
+
+@keyframes intro-ball-move {
   from {
     left: 100%;
     opacity: 1;
-    transform: rotate(0deg);
   }
 
   85% {
@@ -306,17 +365,33 @@
   to {
     left: 0;
     opacity: 0;
+  }
+}
+
+@keyframes intro-ball-spin {
+  to {
     transform: rotate(-540deg);
   }
 }
 
-/* 페이지 바탕을 새 구단 색으로 칠하는 층 (components/BackgroundWash.tsx). 띠가 다 나온 뒤 본문 뒤에서 펼쳐진다. */
+/* 페이지 바탕을 새 구단 색으로 칠하는 층 (components/BackgroundWash.tsx).
+   띠가 다 나온 뒤, 띠 한가운데(--origin-x, --origin-y)서부터 원이 커지듯 본문 뒤로 퍼진다. */
 .community-wash {
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  animation: intro-reveal-from-right var(--wash-ms) var(--intro-ease) var(--wash-delay) both;
+  animation: intro-spread var(--wash-ms) cubic-bezier(0.4, 0, 0.2, 1) var(--wash-delay) both;
+}
+
+@keyframes intro-spread {
+  from {
+    clip-path: circle(0 at var(--origin-x, 50%) var(--origin-y, 50%));
+  }
+
+  to {
+    clip-path: circle(150vmax at var(--origin-x, 50%) var(--origin-y, 50%));
+  }
 }
 
 /* 게시판 (components/TeamBoard.tsx) */
@@ -387,7 +462,8 @@
     box-shadow 0.15s;
 }
 
-/* 글 카드가 하나씩 아래에서 올라온다. 순서별 지연은 TeamBoard가 준다. */
+/* 분류 탭 줄과 글 카드가 하나씩 아래에서 올라온다. 순서별 지연은 TeamBoard가 준다. */
+.team-board__bar.is-rising,
 .post-card-list > li.is-rising {
   animation: post-rise 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both;
 }
@@ -543,11 +619,13 @@ a.post-card:focus-visible {
   .team-banner__track,
   .team-banner,
   .community-wash,
+  .team-board__bar.is-rising,
   .post-card-list > li.is-rising {
     animation: none;
   }
 
-  .team-banner__ball {
+  .team-banner__ball,
+  .team-banner__glow {
     display: none;
   }
 
