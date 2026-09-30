@@ -1,24 +1,30 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { errorMessage, isAbortError } from '../api/client'
 import { api } from '../api/endpoints'
-import type { PostSummary, Team } from '../api/types'
+import type { PostCategory, Team } from '../api/types'
 import { useAuth } from '../auth/useAuth'
-import { TeamMark } from '../components/TeamMark'
-import { EmptyState, ErrorMessage, Loading } from '../components/StatusView'
-import { formatDateTime } from '../lib/format'
+import { ErrorMessage, Loading } from '../components/StatusView'
+import { TeamBoard } from '../components/TeamBoard'
+import { TeamStrip } from '../components/TeamStrip'
+import { DEFAULT_POST_CATEGORY, parsePostCategory } from '../lib/postCategory'
+import './CommunityBoardPage.css'
 
-/** 구단별 게시판 목록. 글쓰기는 로그인해야 보인다(서버도 막는다). */
+/** 관심 구단을 정하는 곳. 비회원은 로그인한 뒤 그리로 간다. */
+const FAVORITE_SETTING_PATH = '/my/account'
+
+/**
+ * 커뮤니티. 위에는 구단 줄(가운데 관심 구단 고정), 아래에는 고른 구단의 게시판.
+ * /community 로 들어오면 관심 구단(없으면 첫 구단), /community/:teamId 로 들어오면 그 구단을 보여 준다.
+ * 고른 구단과 분류는 주소에 남겨, 글을 보다가 목록으로 돌아와도 그대로다.
+ */
 export function CommunityBoardPage() {
-  const { teamId } = useParams<{ teamId: string }>()
-  const id = Number(teamId)
+  const { teamId } = useParams<{ teamId?: string }>()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
   const { member } = useAuth()
 
-  const [team, setTeam] = useState<Team | null>(null)
-  const [posts, setPosts] = useState<PostSummary[] | null>(null)
-  const [page, setPage] = useState(0)
-  const [hasMore, setHasMore] = useState(false)
-  const [loadingMore, setLoadingMore] = useState(false)
+  const [teams, setTeams] = useState<Team[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
 
@@ -26,93 +32,64 @@ export function CommunityBoardPage() {
     const controller = new AbortController()
     api
       .getTeams(controller.signal)
-      .then((teams) => setTeam(teams.find((t) => t.id === id) ?? null))
-      .catch(() => undefined)
-    return () => controller.abort()
-  }, [id])
-
-  useEffect(() => {
-    const controller = new AbortController()
-    setPosts(null)
-    setPage(0)
-    api
-      .getPosts(id, 0, controller.signal)
-      .then((result) => {
-        setPosts(result.items)
-        setHasMore(result.hasMore)
-      })
+      .then(setTeams)
       .catch((e: unknown) => {
-        if (!isAbortError(e)) setError(errorMessage(e, '게시글을 불러오지 못했습니다.'))
+        if (!isAbortError(e)) setError(errorMessage(e, '구단 목록을 불러오지 못했습니다.'))
       })
     return () => controller.abort()
-  }, [id, reloadKey])
+  }, [reloadKey])
 
-  const loadMore = async () => {
-    setLoadingMore(true)
-    try {
-      const nextPage = page + 1
-      const result = await api.getPosts(id, nextPage)
-      setPosts((current) => [...(current ?? []), ...result.items])
-      setHasMore(result.hasMore)
-      setPage(nextPage)
-    } catch (e) {
-      setError(errorMessage(e, '게시글을 더 불러오지 못했습니다.'))
-    } finally {
-      setLoadingMore(false)
-    }
+  if (error) {
+    return (
+      <ErrorMessage
+        message={error}
+        onRetry={() => {
+          setError(null)
+          setReloadKey((key) => key + 1)
+        }}
+      />
+    )
+  }
+  if (teams === null) return <Loading />
+
+  const favoriteTeam = teams.find((team) => team.id === member?.favoriteTeamId) ?? null
+  const selectedId = teamId !== undefined ? Number(teamId) : (favoriteTeam?.id ?? teams[0]?.id ?? null)
+  const selectedTeam = teams.find((team) => team.id === selectedId) ?? null
+  const category = parsePostCategory(searchParams.get('category'))
+
+  const selectTeam = (id: number) => {
+    // 구단을 바꿔도 보던 분류는 유지한다. 줄에서 이리저리 눌러 본 것은 방문 기록에 쌓지 않는다.
+    const query = category === DEFAULT_POST_CATEGORY ? '' : `?category=${category}`
+    navigate(`/community/${id}${query}`, { replace: true })
   }
 
-  return (
-    <div className="community-board">
-      <div className="community-board__head">
-        <h1 className="page-title">
-          {team && <TeamMark team={team} />}
-          {team ? `${team.name} 게시판` : '게시판'}
-        </h1>
-        {member && (
-          <Link to={`/community/${id}/write`} className="button button--primary">
-            글쓰기
-          </Link>
-        )}
-      </div>
+  const changeCategory = (next: PostCategory) => {
+    setSearchParams(next === DEFAULT_POST_CATEGORY ? {} : { category: next }, { replace: true })
+  }
 
-      {error ? (
-        <ErrorMessage
-          message={error}
-          onRetry={() => {
-            setError(null)
-            setReloadKey((key) => key + 1)
-          }}
+  const settingPath = member
+    ? FAVORITE_SETTING_PATH
+    : `/login?redirect=${encodeURIComponent(FAVORITE_SETTING_PATH)}`
+
+  return (
+    <div className="community">
+      <TeamStrip
+        teams={teams}
+        favoriteTeam={favoriteTeam}
+        selectedTeamId={selectedId}
+        onSelect={selectTeam}
+        favoriteSettingPath={settingPath}
+      />
+
+      {selectedId !== null && (
+        <TeamBoard
+          key={`${selectedId}:${category}`}
+          teamId={selectedId}
+          team={selectedTeam}
+          category={category}
+          onCategoryChange={changeCategory}
+          canWrite={member !== null}
         />
-      ) : posts === null ? (
-        <Loading />
-      ) : posts.length === 0 ? (
-        <EmptyState title="아직 올라온 글이 없습니다." description="첫 글을 남겨 보세요." />
-      ) : (
-        <>
-          <ul className="community-post-list">
-            {posts.map((post) => (
-              <li key={post.id}>
-                <Link to={`/community/${id}/posts/${post.id}`} className="community-post-list__item">
-                  <span className="community-post-list__title">{post.title}</span>
-                  <span className="community-post-list__meta">
-                    <span>{post.authorName}</span>
-                    <span>{formatDateTime(post.createdAt)}</span>
-                    <span>조회 {post.viewCount}</span>
-                    <span>좋아요 {post.likeCount}</span>
-                    <span>댓글 {post.commentCount}</span>
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-          {hasMore && (
-            <button type="button" className="button button--ghost community-board__more" disabled={loadingMore}
-              onClick={() => void loadMore()}>
-              {loadingMore ? '불러오는 중…' : '더 보기'}
-            </button>
-          )}
-        </>
       )}
     </div>
   )

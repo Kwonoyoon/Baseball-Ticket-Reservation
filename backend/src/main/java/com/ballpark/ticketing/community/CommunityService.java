@@ -59,9 +59,10 @@ public class CommunityService {
                 .toList();
     }
 
-    public PostPageResponse listPosts(Long teamId, int page, int size) {
+    /** category가 null이면 모든 분류를 섞어서 보여 준다. */
+    public PostPageResponse listPosts(Long teamId, PostCategory category, int page, int size) {
         // hasMore 판단을 위해 한 개 더 가져와서 잘라낸다.
-        List<CommunityPost> posts = postRepository.findByTeamId(teamId, PageRequest.of(page, size + 1));
+        List<CommunityPost> posts = postRepository.findByTeamId(teamId, category, PageRequest.of(page, size + 1));
         boolean hasMore = posts.size() > size;
         List<PostSummaryResponse> items = posts.stream().limit(size).map(PostSummaryResponse::from).toList();
         return new PostPageResponse(items, hasMore);
@@ -78,8 +79,8 @@ public class CommunityService {
     public PostDetailResponse createPost(Long teamId, Long memberId, PostCreateRequest request) {
         Team team = teamRepository.findById(teamId).orElseThrow(() -> new BusinessException(ErrorCode.TEAM_NOT_FOUND));
         Member member = getMemberOrThrow(memberId);
-        CommunityPost post = new CommunityPost(team, member, request.title().trim(), request.content().trim(),
-                LocalDateTime.now(clock));
+        CommunityPost post = new CommunityPost(team, member, request.categoryOrDefault(), request.title().trim(),
+                request.content().trim(), LocalDateTime.now(clock));
         postRepository.save(post);
         return toDetail(post, memberId);
     }
@@ -88,7 +89,7 @@ public class CommunityService {
     public PostDetailResponse updatePost(Long postId, Long memberId, PostCreateRequest request) {
         CommunityPost post = getPostOrThrow(postId);
         requireAuthor(post, memberId);
-        post.edit(request.title().trim(), request.content().trim(), LocalDateTime.now(clock));
+        post.edit(request.categoryOrDefault(), request.title().trim(), request.content().trim(), LocalDateTime.now(clock));
         return toDetail(post, memberId);
     }
 

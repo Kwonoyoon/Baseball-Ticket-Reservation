@@ -181,10 +181,16 @@ export type TeamPostCount = {
   postCount: number
 }
 
+/** 게시판 안의 글 분류 (자유·경기·응원) */
+export type PostCategory = 'FREE' | 'GAME' | 'CHEER'
+
 export type PostSummary = {
   id: number
+  category: PostCategory
   authorName: string
   title: string
+  /** 본문 앞부분을 한 줄로 합쳐 자른 것 */
+  preview: string
   viewCount: number
   likeCount: number
   commentCount: number
@@ -199,6 +205,7 @@ export type PostPage = {
 export type PostDetail = {
   id: number
   teamId: number
+  category: PostCategory
   authorId: number
   authorName: string
   title: string

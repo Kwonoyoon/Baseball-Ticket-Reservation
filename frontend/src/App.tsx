@@ -10,7 +10,6 @@ import { CalendarPage } from './pages/CalendarPage'
 import { CommunityBoardPage } from './pages/CommunityBoardPage'
 import { CommunityPostFormPage } from './pages/CommunityPostFormPage'
 import { CommunityPostPage } from './pages/CommunityPostPage'
-import { CommunityTeamsPage } from './pages/CommunityTeamsPage'
 import { NotificationProvider } from './notifications/NotificationProvider'
 import { GamePage } from './pages/GamePage'
 import { LoginPage } from './pages/LoginPage'
@@ -42,7 +41,8 @@ const router = createBrowserRouter([
       { path: 'games/:gameId', element: <GamePage /> },
       { path: 'login', element: <LoginPage /> },
       { path: 'signup', element: <SignupPage /> },
-      { path: 'community', element: <CommunityTeamsPage /> },
+      // 커뮤니티 입구와 구단 게시판은 한 화면이다. (구단 줄 + 게시판) 입구는 관심 구단부터 보여 준다.
+      { path: 'community', element: <CommunityBoardPage /> },
       { path: 'community/:teamId', element: <CommunityBoardPage /> },
       {
         path: 'community/:teamId/write',
