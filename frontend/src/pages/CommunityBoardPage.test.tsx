@@ -47,7 +47,7 @@ function renderBoard(initialEntry = '/community/1') {
     ],
     { initialEntries: [initialEntry] },
   )
-  render(
+  return render(
     <AuthProvider>
       <RouterProvider router={router} />
     </AuthProvider>,
@@ -222,5 +222,55 @@ describe('CommunityBoardPage', () => {
 
     expect(await screen.findByText('아직 응원 글이 없어요.')).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: '응원' })).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('보고 있는 구단 색으로 페이지 바탕을 물들이고, 게시판을 떠나면 되돌린다', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url === '/api/teams') return jsonResponse(200, teams)
+        if (url.startsWith('/api/teams/')) return jsonResponse(200, { items: [], hasMore: false })
+        return jsonResponse(404, { code: 'NOT_FOUND', message: '없음' })
+      }),
+    )
+    const { unmount } = renderBoard()
+    const rootBg = () => document.documentElement.style.getPropertyValue('--bg')
+
+    await screen.findByText('LG 트윈스 게시판', { selector: 'h1' })
+    // 처음엔 흰 바탕. 띠가 다 나온 뒤 구단 색으로 칠해진다. (연출 전체 약 2.7초)
+    expect(rootBg()).toBe('#ffffff')
+    await waitFor(() => expect(rootBg()).toContain('#C30452'), { timeout: 5000 })
+
+    // 다른 구단을 고르면 이전 구단 색 위로 새 색을 칠한다.
+    await userEvent.click(screen.getByRole('button', { name: 'KIA 타이거즈 게시판' }))
+    await screen.findByText('KIA 타이거즈 게시판', { selector: 'h1' })
+    expect(rootBg()).toContain('#C30452')
+    await waitFor(() => expect(rootBg()).toContain('#EA0029'), { timeout: 5000 })
+
+    unmount()
+    expect(rootBg()).toBe('')
+  }, 15000)
+
+  it('구단 줄 아래 띠에 보고 있는 구단 영어 이름이 그 구단 색 바탕으로 흐른다', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url === '/api/teams') return jsonResponse(200, teams)
+        if (url.startsWith('/api/teams/')) return jsonResponse(200, { items: [], hasMore: false })
+        return jsonResponse(404, { code: 'NOT_FOUND', message: '없음' })
+      }),
+    )
+    renderBoard()
+
+    const names = await screen.findAllByText('LG TWINS')
+    expect(names.length).toBeGreaterThan(1)
+    expect(document.querySelector<HTMLElement>('.team-banner-wrap')!.style.getPropertyValue('--team-color')).toBe('#C30452')
+
+    await userEvent.click(screen.getByRole('button', { name: 'KIA 타이거즈 게시판' }))
+    // 테스트 자료의 KIA 코드(HT)는 영어 이름 목록에 없어 코드를 그대로 쓴다.
+    expect((await screen.findAllByText('HT')).length).toBeGreaterThan(1)
+    expect(screen.queryByText('LG TWINS')).not.toBeInTheDocument()
   })
 })
