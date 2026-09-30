@@ -9,6 +9,7 @@ import { Header } from '../components/Header'
 import { EmptyState, ErrorMessage, Loading } from '../components/StatusView'
 import { TeamMark } from '../components/TeamMark'
 import { TodayHero } from '../components/TodayHero'
+import { teamNameEn } from '../lib/teamNames'
 import {
   addDays,
   formatGameDate,
@@ -189,7 +190,7 @@ function TeamFilterRail({ teams, selectedTeamId, onSelect }: TeamFilterRailProps
             onClick={() => onSelect(team.id)}
           >
             <TeamMark team={team} size="lg" />
-            <span className="home-team-card__label">{team.shortName}</span>
+            <span className="home-team-card__label">{teamNameEn(team)}</span>
           </button>
         ))}
       </div>
@@ -225,7 +226,7 @@ function GameCard({ game }: { game: GameSummary }) {
       <div className="home-matchup">
         <div className="home-matchup__team home-matchup__team--away">
           <span className="home-matchup__label">
-            <span className="home-matchup__name">{game.awayTeam.name}</span>
+            <span className="home-matchup__name">{teamNameEn(game.awayTeam)}</span>
             <span className="home-matchup__role">원정</span>
           </span>
           <TeamMark team={game.awayTeam} />
@@ -234,7 +235,7 @@ function GameCard({ game }: { game: GameSummary }) {
         <div className="home-matchup__team">
           <TeamMark team={game.homeTeam} />
           <span className="home-matchup__label">
-            <span className="home-matchup__name">{game.homeTeam.name}</span>
+            <span className="home-matchup__name">{teamNameEn(game.homeTeam)}</span>
             <span className="home-matchup__role">홈</span>
           </span>
         </div>

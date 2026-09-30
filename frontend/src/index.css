@@ -1169,16 +1169,6 @@ p {
 
 /* ---------- 커뮤니티 ---------- */
 
-.page-subtitle {
-  margin-top: -12px;
-  margin-bottom: 20px;
-  color: var(--text-muted);
-}
-
-/*
- * 카드마다 응원 구단의 실제 색(--team-color, primaryColor)을 쓴다.
- * 위쪽 색 띠 + 은은한 색 배경으로 10개 카드가 다 같은 흰 상자로 보이지 않게 한다.
- */
 .community-post-form__content {
   min-height: 220px;
   padding: 12px 14px;
@@ -1192,6 +1182,16 @@ p {
 .community-post__article {
   display: grid;
   gap: 12px;
+}
+
+.community-post__category {
+  justify-self: start;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--navy-700) 12%, var(--surface));
+  color: var(--navy-700);
+  font-size: 12.5px;
+  font-weight: 700;
 }
 
 .community-post__title {
@@ -1759,15 +1759,18 @@ p {
   color: var(--text-muted);
 }
 
-.field input {
+.field input,
+.field select {
   height: 46px;
   padding: 0 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface);
+  color: var(--text);
 }
 
-.field input:focus-visible {
+.field input:focus-visible,
+.field select:focus-visible {
   outline: none;
   border-color: var(--navy-700);
   box-shadow: 0 0 0 3px rgb(27 58 99 / 18%);

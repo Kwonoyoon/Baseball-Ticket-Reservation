@@ -13,6 +13,7 @@ const post = (overrides: Partial<Record<string, unknown>> = {}) => ({
   authorName: '다른팬',
   title: '제목입니다',
   content: '본문입니다',
+  category: 'FREE',
   viewCount: 5,
   likeCount: 1,
   commentCount: 1,
@@ -59,6 +60,7 @@ describe('CommunityPostPage', () => {
 
     expect(await screen.findByText('제목입니다')).toBeInTheDocument()
     expect(screen.getByText('본문입니다')).toBeInTheDocument()
+    expect(screen.getByText('자유')).toBeInTheDocument()
     expect(await screen.findByText('댓글입니다')).toBeInTheDocument()
   })
 

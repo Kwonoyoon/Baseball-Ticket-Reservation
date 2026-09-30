@@ -3,6 +3,7 @@ import { isAbortError } from '../api/client'
 import { api } from '../api/endpoints'
 import type { GameSummary } from '../api/types'
 import { addDays, formatGameDate, formatMonthDay, formatTime, todayInSeoul } from '../lib/format'
+import { teamNameEn } from '../lib/teamNames'
 import { useAutoSlide } from '../lib/useAutoSlide'
 import { TeamMark } from './TeamMark'
 
@@ -91,13 +92,13 @@ export function TodayHero() {
             <div className="home-slide__teams">
               <div className="home-slide__team">
                 <TeamMark team={game.awayTeam} size="lg" />
-                <strong>{game.awayTeam.name}</strong>
+                <strong>{teamNameEn(game.awayTeam)}</strong>
                 <span>원정 · {formatTime(game.startAt)}</span>
               </div>
               <span className="home-slide__vs">VS</span>
               <div className="home-slide__team">
                 <TeamMark team={game.homeTeam} size="lg" />
-                <strong>{game.homeTeam.name}</strong>
+                <strong>{teamNameEn(game.homeTeam)}</strong>
                 <span>
                   {dateLabel} · {game.stadium.name}
                 </span>
@@ -115,7 +116,7 @@ export function TodayHero() {
             <button
               key={game.id}
               type="button"
-              aria-label={`${game.awayTeam.name} 대 ${game.homeTeam.name}`}
+              aria-label={`${teamNameEn(game.awayTeam)} 대 ${teamNameEn(game.homeTeam)}`}
               aria-current={position === index}
               onClick={() => goTo(position)}
             />
