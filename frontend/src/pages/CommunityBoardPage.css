@@ -99,14 +99,14 @@
   transform: translate(-50%, 0);
 }
 
-/* 고른 구단: 가운데 관심 구단 원처럼 그 구단 색 이중 테두리(원에 붙은 가는 선 + 여백 + 맨 바깥 굵은 테).
+/* 고른 구단: 가운데 관심 구단 원처럼 그 구단 색 이중 테두리(맨 바깥 굵은 테 + 안쪽 가는 선).
    사이트 강조색은 관심 구단 색이라 쓰지 않는다. */
 .team-strip__item.is-selected {
   opacity: 1;
   box-shadow:
-    inset 0 0 0 2px var(--team-color),
-    0 0 0 3px var(--bg),
-    0 0 0 7px var(--team-color);
+    0 0 0 4px var(--team-color),
+    inset 0 0 0 4px var(--surface),
+    inset 0 0 0 6px var(--team-color);
 }
 
 .team-strip__item img,
@@ -116,8 +116,8 @@
   object-fit: contain;
 }
 
-/* 가운데 관심 구단. 구단 색 이중 테두리(원에 붙은 2px 선 + 여백 + 맨 바깥 6px 테)를 두르고,
-   그 바깥은 바탕색 여백으로 흐르는 로고가 원에 붙어 보이지 않게 한다. */
+/* 가운데 관심 구단. 구단 색 이중 테두리: 맨 바깥 6px 테 + 원 안쪽으로 5px 들어간 2px 선.
+   바탕색을 칠해 가리는 방식은 배경과 조금만 어긋나도 연한 원으로 드러나므로 쓰지 않는다. */
 .team-strip__center {
   position: absolute;
   top: 50%;
@@ -136,10 +136,9 @@
   --ring: color-mix(in srgb, var(--team-color) 45%, var(--bg));
 
   box-shadow:
-    0 0 0 2px var(--ring),
-    0 0 0 7px var(--bg),
-    0 0 0 13px var(--ring),
-    0 0 0 20px var(--bg);
+    0 0 0 6px var(--ring),
+    inset 0 0 0 5px var(--surface),
+    inset 0 0 0 7px var(--ring);
   color: var(--text);
   font-size: 13px;
   font-weight: 700;
@@ -170,7 +169,7 @@
   gap: 2px;
   padding: 0 18px; /* 원 안에서 "관심 구단 / 설정"으로 줄을 나눈다. */
   word-break: keep-all;
-  box-shadow: 0 0 0 18px var(--bg);
+  box-shadow: none;
   border: 2px dashed var(--text-muted);
   color: var(--text-muted);
   font-size: 14px;
