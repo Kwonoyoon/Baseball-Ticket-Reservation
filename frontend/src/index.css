@@ -43,10 +43,6 @@
   --radius-lg: 20px;
   --shadow: 0 1px 2px rgb(15 35 64 / 6%), 0 8px 24px rgb(15 35 64 / 6%);
 
-  /* 메인 화면(SchedulePage.css의 --home-display)과 같은 로고 글꼴. index.html에서 전역으로 불러온다. */
-  --font-display: 'Archivo Black', Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', system-ui,
-    sans-serif;
-
   font-family: Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', system-ui, sans-serif;
   line-height: 1.5;
   color: var(--text);
@@ -1184,16 +1180,6 @@ p {
   gap: 12px;
 }
 
-.community-post__category {
-  justify-self: start;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--navy-700) 12%, var(--surface));
-  color: var(--navy-700);
-  font-size: 12.5px;
-  font-weight: 700;
-}
-
 .community-post__title {
   font-size: 26px;
   letter-spacing: -0.02em;
@@ -1759,8 +1745,7 @@ p {
   color: var(--text-muted);
 }
 
-.field input,
-.field select {
+.field input {
   height: 46px;
   padding: 0 14px;
   border: 1px solid var(--border);
@@ -1769,8 +1754,7 @@ p {
   color: var(--text);
 }
 
-.field input:focus-visible,
-.field select:focus-visible {
+.field input:focus-visible {
   outline: none;
   border-color: var(--navy-700);
   box-shadow: 0 0 0 3px rgb(27 58 99 / 18%);

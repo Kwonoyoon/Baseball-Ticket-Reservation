@@ -57,7 +57,7 @@ describe('TodayHero', () => {
 
     render(<TodayHero />)
 
-    expect(await screen.findByRole('button', { name: '두산 Bears 대 LG Twins' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Doosan Bears 대 LG Twins' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'NC Dinos 대 KIA Tigers' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Today KBO')
     expect(screen.getByText(/오늘 경기 · 2026 KBO 리그/)).toBeInTheDocument()
@@ -68,7 +68,7 @@ describe('TodayHero', () => {
     stubSchedule({ [today]: [game(1, today, LG, DOOSAN), game(2, today, KIA, NC)] })
     render(<TodayHero />)
 
-    const first = await screen.findByRole('button', { name: '두산 Bears 대 LG Twins' })
+    const first = await screen.findByRole('button', { name: 'Doosan Bears 대 LG Twins' })
     const second = screen.getByRole('button', { name: 'NC Dinos 대 KIA Tigers' })
     expect(first).toHaveAttribute('aria-current', 'true')
     expect(second).toHaveAttribute('aria-current', 'false')

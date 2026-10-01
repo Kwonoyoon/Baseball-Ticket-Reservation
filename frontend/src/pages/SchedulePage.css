@@ -23,8 +23,7 @@
   --home-hero-bg: #12151a;
   /* 공용 헤더(index.css의 .site-header)가 이제 두 줄이라 60px+46px, 여기에 border-bottom 1px을 더한 실제 높이. */
   --home-header-h: 107px;
-  --home-display: 'Archivo Black', Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', system-ui,
-    sans-serif;
+  --home-display: Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', system-ui, sans-serif;
   --home-mono: ui-monospace, Menlo, Consolas, monospace;
 
   min-height: 100vh;
@@ -42,18 +41,12 @@
   outline-color: #ffffff;
 }
 
-/*
- * 제목류에 쓰는 표시 글꼴. Archivo Black은 굵기가 하나뿐이고 한글 글리프가 없다.
- * font-synthesis를 끄지 않으면 굵기 800을 억지로 흉내 내(faux bold) 영문이 번져 보인다.
- * 끄면 영문은 원래 두께로, 한글은 대체 글꼴의 진짜 굵은체로 나온다.
- */
 .home-hero__mark,
 .home-section-title,
 .home-slide__team strong,
 .home-slide__vs {
   font-family: var(--home-display);
   font-weight: 800;
-  font-synthesis: none;
 }
 
 /* 헤더는 이제 index.css의 공용 Header(.site-header)를 그대로 쓴다. 폭만 이 화면의 콘텐츠 폭(1120px)에 맞춘다. */
