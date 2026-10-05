@@ -92,6 +92,19 @@ public class Reservation {
         this.status = ReservationStatus.CONFIRMED;
     }
 
+    /**
+     * 양도로 소유자가 바뀔 때 쓴다. 예매번호·좌석은 그대로 두고 소유자와 결제 정보만 구매자 것으로 바꾼다.
+     * (이후 취소하면 구매자가 낸 결제가 환불되어야 하므로 결제 번호도 같이 옮긴다)
+     */
+    public void transferTo(Member buyer, PaymentMethod method, String transactionId) {
+        if (status != ReservationStatus.CONFIRMED) {
+            throw new BusinessException(ErrorCode.TRANSFER_NOT_ALLOWED);
+        }
+        this.member = buyer;
+        this.paymentMethod = method;
+        this.paymentTransactionId = transactionId;
+    }
+
     public boolean isCancelable(LocalDateTime now) {
         return status == ReservationStatus.CONFIRMED && game.isBookable(now);
     }

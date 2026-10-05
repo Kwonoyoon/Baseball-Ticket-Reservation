@@ -73,6 +73,7 @@ export function Header() {
         </NavLink>
         <NavLink to="/community">커뮤니티</NavLink>
         {member && <NavLink to="/my/reservations">예매내역</NavLink>}
+        {member && <NavLink to="/transfers">티켓 양도</NavLink>}
       </nav>
 
       <Sidebar open={sidebarOpen && member !== null} onClose={closeSidebar} />

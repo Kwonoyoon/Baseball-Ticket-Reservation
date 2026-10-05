@@ -33,6 +33,7 @@ import com.ballpark.ticketing.seat.SeatHoldStore;
 import com.ballpark.ticketing.seat.SeatPosition;
 import com.ballpark.ticketing.seat.SeatService;
 import com.ballpark.ticketing.stadium.SeatSection;
+import com.ballpark.ticketing.transfer.TicketTransferService;
 
 @Service
 @Transactional(readOnly = true)
@@ -51,13 +52,14 @@ public class ReservationService {
     private final ReservationQuota reservationQuota;
     private final PaymentGateway paymentGateway;
     private final NotificationService notificationService;
+    private final TicketTransferService ticketTransferService;
     private final Clock clock;
     private final SecureRandom random = new SecureRandom();
 
     public ReservationService(ReservationRepository reservationRepository, SoldSeatRepository soldSeatRepository,
             MemberRepository memberRepository, SeatService seatService, SeatHoldStore seatHoldStore,
             ReservationQuota reservationQuota, PaymentGateway paymentGateway,
-            NotificationService notificationService, Clock clock) {
+            NotificationService notificationService, TicketTransferService ticketTransferService, Clock clock) {
         this.reservationRepository = reservationRepository;
         this.soldSeatRepository = soldSeatRepository;
         this.memberRepository = memberRepository;
@@ -66,6 +68,7 @@ public class ReservationService {
         this.reservationQuota = reservationQuota;
         this.paymentGateway = paymentGateway;
         this.notificationService = notificationService;
+        this.ticketTransferService = ticketTransferService;
         this.clock = clock;
     }
 
@@ -136,6 +139,8 @@ public class ReservationService {
     public ReservationResponse cancel(Long memberId, Long reservationId) {
         Reservation reservation = findOwnedReservation(memberId, reservationId);
         LocalDateTime now = LocalDateTime.now(clock);
+        // 양도글이 열려 있는 채로 취소되면 남이 이미 취소된 예매를 살 수 있다. 먼저 양도를 거두게 한다.
+        ticketTransferService.ensureNotListed(reservation.getId());
         reservation.cancel(now);
         soldSeatRepository.deleteByReservationId(reservation.getId());
         paymentGateway.cancel(reservation.getPaymentTransactionId(), reservation.getTotalPrice());
@@ -151,6 +156,7 @@ public class ReservationService {
     @Transactional
     public void cancelAllForGame(Game game) {
         LocalDateTime now = LocalDateTime.now(clock);
+        ticketTransferService.cancelAllForGame(game.getId());
         List<Reservation> reservations = reservationRepository.findAllByGameIdAndStatus(game.getId(),
                 ReservationStatus.CONFIRMED);
         for (Reservation reservation : reservations) {
