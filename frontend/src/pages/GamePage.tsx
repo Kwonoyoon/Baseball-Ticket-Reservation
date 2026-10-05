@@ -36,10 +36,12 @@ export function GamePage() {
   const gameId = Number(params.gameId)
   const validGameId = Number.isInteger(gameId) && gameId > 0
   const navigate = useNavigate()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, isAdmin } = useAuth()
 
   const [game, setGame] = useState<GameDetail | null>(null)
   const [loadError, setLoadError] = useState<string | null>(validGameId ? null : '잘못된 경기 주소입니다.')
+  const [canceling, setCanceling] = useState(false)
+  const [cancelNotice, setCancelNotice] = useState<string | null>(null)
   // 구장 화면에는 구역별 잔여 수만, 좌석 목록은 선택한 구역만 불러온다.
   const [summary, setSummary] = useState<SeatSummary | null>(null)
   const [sectionStatus, setSectionStatus] = useState<SeatStatus | null>(null)
@@ -187,7 +189,7 @@ export function GamePage() {
   if (loadError) return <ErrorMessage message={loadError} />
   if (!game) return <Loading label="경기 정보를 불러오는 중…" />
 
-  const bookable = isBookable(game.startAt)
+  const bookable = game.status === 'SCHEDULED' && isBookable(game.startAt)
   const activeSection = activeSectionId === null ? undefined : sectionsById.get(activeSectionId)
   const quotaExhausted = isAuthenticated && remainingQuota === 0
 
@@ -253,6 +255,26 @@ export function GamePage() {
     void refreshSeats()
   }
 
+  const handleCancelGame = async () => {
+    if (
+      !window.confirm(
+        '이 경기를 취소할까요?\n모든 예매자에게 알림·이메일이 자동으로 발송되고, 예매는 취소·환불 처리됩니다.',
+      )
+    ) {
+      return
+    }
+    setCanceling(true)
+    setCancelNotice(null)
+    try {
+      setGame(await api.cancelGame(gameId))
+      setCancelNotice('경기를 취소했습니다. 예매자 전원에게 알림을 보냈습니다.')
+    } catch (e) {
+      setCancelNotice(errorMessage(e, '경기를 취소하지 못했습니다.'))
+    } finally {
+      setCanceling(false)
+    }
+  }
+
   const bannerStyle = {
     '--home-color': game.homeTeam.primaryColor,
     '--away-color': game.awayTeam.primaryColor,
@@ -283,8 +305,33 @@ export function GamePage() {
         </h1>
       </section>
 
+      {isAdmin && game.status === 'SCHEDULED' && (
+        <div className="game-admin-bar">
+          <button
+            type="button"
+            className="button button--danger button--sm"
+            disabled={canceling}
+            onClick={() => void handleCancelGame()}
+          >
+            {canceling ? '취소 처리 중…' : '경기 취소 (우천 등)'}
+          </button>
+        </div>
+      )}
+      {cancelNotice && (
+        <p className="notice" role="status">
+          {cancelNotice}
+        </p>
+      )}
+
       {!bookable ? (
-        <EmptyState title="예매가 마감된 경기입니다." description="경기 시작 이후에는 예매할 수 없습니다.">
+        <EmptyState
+          title={game.status === 'CANCELED' ? '취소된 경기입니다.' : '예매가 마감된 경기입니다.'}
+          description={
+            game.status === 'CANCELED'
+              ? '경기가 취소되어 예매를 진행할 수 없습니다. 예매하셨던 내역은 자동으로 취소·환불 처리되었습니다.'
+              : '경기 시작 이후에는 예매할 수 없습니다.'
+          }
+        >
           <Link className="button button--ghost" to="/">
             다른 경기 보기
           </Link>

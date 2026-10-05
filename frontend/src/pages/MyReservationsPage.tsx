@@ -4,13 +4,19 @@ import { errorMessage, isAbortError } from '../api/client'
 import { api } from '../api/endpoints'
 import type { Reservation } from '../api/types'
 import { ReservationTicket } from '../components/ReservationTicket'
+import { ReservedSeatMap } from '../components/ReservedSeatMap'
 import { EmptyState, ErrorMessage, Loading } from '../components/StatusView'
+import { openCalendarWindow } from '../lib/calendarWindow'
+import { formatPrice } from '../lib/format'
 
 export function MyReservationsPage() {
   const [reservations, setReservations] = useState<Reservation[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
   const [cancelingId, setCancelingId] = useState<number | null>(null)
+  const [transferringId, setTransferringId] = useState<number | null>(null)
+  // 상세는 페이지를 옮기지 않고 카드 아래에 펼친다.
+  const [openId, setOpenId] = useState<number | null>(null)
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   useEffect(() => {
@@ -43,9 +49,35 @@ export function MyReservationsPage() {
     }
   }
 
+  // 양도글을 올리면 그 예매는 취소할 수 없다. (서버가 막는다) 마켓 화면에서 거둘 수 있다.
+  const handleTransfer = async (reservation: Reservation) => {
+    const confirmed = window.confirm(
+      `예매번호 ${reservation.reservationNumber}를 정가 ${formatPrice(reservation.totalPrice)}에 양도 등록할까요?
+등록 중에는 이 예매를 취소할 수 없고, 팔리면 결제가 환불됩니다.`,
+    )
+    if (!confirmed) return
+
+    setTransferringId(reservation.id)
+    setNotice(null)
+    try {
+      await api.registerTransfer(reservation.id)
+      setNotice({ type: 'success', message: '양도 등록했습니다. 양도 마켓에서 확인하고 거둘 수 있어요.' })
+    } catch (e) {
+      setNotice({ type: 'error', message: errorMessage(e, '양도 등록하지 못했습니다.') })
+    } finally {
+      setTransferringId(null)
+    }
+  }
+
   return (
     <div className="my-reservations">
-      <h1 className="page-title">예매 내역</h1>
+      <h1 className="page-title">예매 확인 / 취소</h1>
+      <p className="my-reservations__calendar">
+        확정된 예매는 직관 캘린더에 예정으로 기록돼요.{' '}
+        <button type="button" className="link-button" onClick={openCalendarWindow}>
+          캘린더에서 보기
+        </button>
+      </p>
 
       {notice && (
         <p className={`notice${notice.type === 'success' ? ' notice--success' : ''}`} role="status">
@@ -77,9 +109,25 @@ export function MyReservationsPage() {
                 reservation={reservation}
                 actions={
                   <>
-                    <Link className="button button--ghost button--sm" to={`/reservations/${reservation.id}`}>
-                      상세 보기
-                    </Link>
+                    <button
+                      type="button"
+                      className="button button--ghost button--sm"
+                      aria-expanded={openId === reservation.id}
+                      aria-controls={`reservation-detail-${reservation.id}`}
+                      onClick={() => setOpenId((current) => (current === reservation.id ? null : reservation.id))}
+                    >
+                      {openId === reservation.id ? '좌석 닫기' : '좌석 보기'}
+                    </button>
+                    {reservation.cancelable && (
+                      <button
+                        type="button"
+                        className="button button--ghost button--sm"
+                        disabled={transferringId === reservation.id}
+                        onClick={() => handleTransfer(reservation)}
+                      >
+                        {transferringId === reservation.id ? '등록 중…' : '양도 등록'}
+                      </button>
+                    )}
                     {reservation.cancelable && (
                       <button
                         type="button"
@@ -93,6 +141,20 @@ export function MyReservationsPage() {
                   </>
                 }
               />
+
+              {openId === reservation.id && (
+                <section
+                  id={`reservation-detail-${reservation.id}`}
+                  className="panel ticket-detail"
+                  aria-label={`예매번호 ${reservation.reservationNumber} 좌석 위치`}
+                >
+                  {reservation.seats.some((seat) => seat.sectionCode !== null) ? (
+                    <ReservedSeatMap seats={reservation.seats} />
+                  ) : (
+                    <p className="summary__empty">이 구장은 좌석 배치도가 없습니다.</p>
+                  )}
+                </section>
+              )}
             </li>
           ))}
         </ul>

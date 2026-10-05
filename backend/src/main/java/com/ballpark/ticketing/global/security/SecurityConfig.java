@@ -16,13 +16,16 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.ballpark.ticketing.global.error.ErrorCode;
+import com.ballpark.ticketing.member.MemberRole;
+
+import jakarta.servlet.DispatcherType;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtTokenProvider tokenProvider) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, AccessTokenAuthenticator authenticator) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
@@ -32,18 +35,34 @@ public class SecurityConfig {
                 // H2 콘솔(local 프로필)이 iframe을 사용한다.
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/api/auth/signup", "/api/auth/login").permitAll()
+                        // 알림 스트림(SSE)이 끝나거나 끊기면 서블릿이 같은 요청을 ASYNC로 한 번 더 태운다.
+                        // 이때는 토큰 필터가 다시 돌지 않아 익명으로 보이고, 이미 보낸 응답이라 거절도 못 해
+                        // 'Access Denied' 오류 로그만 쌓인다. 처음 요청에서 이미 인가됐으므로 통과시킨다.
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
+                        // 비회원(로그인 전)도 쓸 수 있는 API: 가입·로그인·토큰 갱신, 경기 일정과 좌석 현황 조회
+                        .requestMatchers(HttpMethod.POST, "/api/auth/signup", "/api/auth/login", "/api/auth/refresh",
+                                "/api/auth/logout")
+                        .permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/teams", "/api/games", "/api/games/*",
                                 "/api/games/*/seats", "/api/games/*/seats/summary")
                         .permitAll()
+                        // 커뮤니티 글·댓글은 비회원도 읽을 수 있다. 쓰기(글 작성·좋아요·신고 등)는 그 밖의 API로 걸린다.
+                        .requestMatchers(HttpMethod.GET, "/api/teams/*/posts", "/api/posts/*",
+                                "/api/posts/*/comments", "/api/community/team-post-counts")
+                        .permitAll()
                         .requestMatchers("/actuator/health", "/h2-console/**", "/error").permitAll()
+                        // 관리자
+                        .requestMatchers("/api/admin/**").hasRole(MemberRole.ADMIN.name())
+                        .requestMatchers(HttpMethod.PATCH, "/api/games/*/result", "/api/games/*/cancel")
+                        .hasRole(MemberRole.ADMIN.name())
+                        // 그 밖의 API는 회원(관리자 포함)
                         .anyRequest().authenticated())
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, e) ->
                                 JsonErrorWriter.write(response, ErrorCode.UNAUTHORIZED))
                         .accessDeniedHandler((request, response, e) ->
                                 JsonErrorWriter.write(response, ErrorCode.FORBIDDEN)))
-                .addFilterBefore(new JwtAuthenticationFilter(tokenProvider), UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(new JwtAuthenticationFilter(authenticator), UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 

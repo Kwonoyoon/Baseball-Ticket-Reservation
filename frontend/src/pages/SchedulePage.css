@@ -16,14 +16,14 @@
   /* 초안의 #8a95a3은 흰 바탕에서 대비가 2.9:1이라 원정·홈 표시가 안 읽힌다. 4.5:1 이상이 되게 진하게 잡았다. */
   --home-faint: #6b7785;
   /* 흰 글자를 올리는 버튼 색. 초안의 #e4572e는 흰 글자와 대비가 3.7:1이라 4.5:1 이상이 되게 살짝 진하게 잡았다. */
-  --home-accent: #cf4620;
-  --home-accent-hover: #b23c19;
+  --home-accent: var(--accent, #cf4620);
+  --home-accent-hover: var(--accent-strong, #b23c19);
   /* 토요일 표시 파랑도 같은 이유로 초안의 #3b7fd1보다 진하게 잡았다. */
   --home-sat: #2f6fbf;
   --home-hero-bg: #12151a;
-  --home-header-h: 62px;
-  --home-display: 'Archivo Black', Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', system-ui,
-    sans-serif;
+  /* 공용 헤더(index.css의 .site-header)가 이제 두 줄이라 60px+46px, 여기에 border-bottom 1px을 더한 실제 높이. */
+  --home-header-h: 107px;
+  --home-display: Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', system-ui, sans-serif;
   --home-mono: ui-monospace, Menlo, Consolas, monospace;
 
   min-height: 100vh;
@@ -41,119 +41,33 @@
   outline-color: #ffffff;
 }
 
-/*
- * 제목류에 쓰는 표시 글꼴. Archivo Black은 굵기가 하나뿐이고 한글 글리프가 없다.
- * font-synthesis를 끄지 않으면 굵기 800을 억지로 흉내 내(faux bold) 영문이 번져 보인다.
- * 끄면 영문은 원래 두께로, 한글은 대체 글꼴의 진짜 굵은체로 나온다.
- */
-.home-brand,
 .home-hero__mark,
 .home-section-title,
 .home-slide__team strong,
 .home-slide__vs {
   font-family: var(--home-display);
   font-weight: 800;
-  font-synthesis: none;
 }
 
-/* ---------- 헤더 ---------- */
-
-.home-header {
-  position: sticky;
-  top: 0;
-  z-index: 40;
-  border-bottom: 1px solid var(--home-line);
-  background: color-mix(in srgb, var(--home-surface) 88%, transparent);
-  backdrop-filter: blur(10px);
-}
-
-.home-header__inner {
-  display: flex;
-  align-items: center;
-  gap: 24px;
+/* 헤더는 이제 index.css의 공용 Header(.site-header)를 그대로 쓴다. 폭만 이 화면의 콘텐츠 폭(1120px)에 맞춘다. */
+.home .container {
   max-width: 1120px;
-  height: var(--home-header-h);
-  margin-inline: auto;
   padding-inline: 24px;
 }
 
-.home-brand {
-  color: var(--home-ink);
-  font-size: 16px;
-  letter-spacing: 0.05em;
-  line-height: 1;
-  text-decoration: none;
-}
+/* ---------- 히어로: 오늘의 경기 캐러셀 (고정 높이 배너) ---------- */
 
-.home-brand em {
-  color: var(--home-accent);
-  font-style: normal;
-}
-
-.home-nav a {
-  padding: 8px 12px;
-  border-radius: 6px;
-  color: var(--home-muted);
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.home-nav a:hover {
-  color: var(--home-ink);
-}
-
-.home-header__auth {
-  margin-left: auto;
-}
-
-.home-outline-button {
-  display: inline-flex;
-  align-items: center;
-  min-height: 36px;
-  padding: 0 14px;
-  border: 1px solid var(--home-line-strong);
-  border-radius: 6px;
-  background: none;
-  color: var(--home-ink-soft);
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.home-outline-button:hover {
-  border-color: var(--home-accent);
-  color: var(--home-accent);
-}
-
-/* ---------- 히어로: 오늘의 경기 캐러셀, 스크롤하면 고정된 채 흐려진다 ---------- */
-
-/*
- * 바깥 영역(165vh) 안에서 안쪽(.home-hero__sticky, 화면 높이 ≈ 100vh)이 헤더 아래에 붙어 있는 동안
- * 남는 약 65vh만큼 스크롤할 수 있다. 이 구간의 진행률이 --hero-p(0~1)이고 TodayHero가 스크롤마다 갱신한다.
- * 흐림·밝기·이동량은 여기서 --hero-p 하나로 계산하므로 숫자를 바꿔도 JS는 건드릴 필요가 없다.
- */
 .home-hero {
-  --hero-p: 0;
   position: relative;
-  height: 165vh;
-}
-
-.home-hero__sticky {
-  position: sticky;
-  top: var(--home-header-h);
-  height: max(380px, calc(100vh - var(--home-header-h)));
   overflow: hidden;
+  height: clamp(300px, 40vw, 400px);
   background: var(--home-hero-bg);
 }
 
 .home-hero__track {
   display: flex;
   height: 100%;
-  filter: blur(calc(var(--hero-p) * 14px)) brightness(calc(1 - var(--hero-p) * 0.5));
   transition: transform 0.7s cubic-bezier(0.65, 0, 0.35, 1);
-  will-change: filter;
 }
 
 .home-slide {
@@ -178,19 +92,19 @@
 }
 
 .home-slide__teams {
-  --slide-logo: clamp(64px, 9vw, 96px);
+  --slide-logo: clamp(44px, 7vw, 64px);
   display: flex;
   /* 홈팀 캡션(구장 이름)이 좁은 화면에서 여러 줄로 접혀도 두 로고의 높이가 어긋나지 않게 위쪽 기준으로 맞춘다. */
   align-items: flex-start;
-  gap: clamp(18px, 4vw, 56px);
+  gap: clamp(14px, 3.4vw, 44px);
 }
 
 .home-slide__team {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  width: clamp(96px, 18vw, 160px);
+  gap: 8px;
+  width: clamp(84px, 15vw, 128px);
   text-align: center;
 }
 
@@ -203,17 +117,17 @@
 }
 
 .home-slide__team strong {
-  font-size: clamp(14px, 1.6vw, 18px);
+  font-size: clamp(13px, 1.4vw, 16px);
 }
 
 .home-slide__team span {
   color: rgb(255 255 255 / 88%);
-  font-size: 12px;
+  font-size: 11.5px;
 }
 
 .home-slide__vs {
   color: rgb(255 255 255 / 60%);
-  font-size: clamp(18px, 2.4vw, 26px);
+  font-size: clamp(16px, 2vw, 22px);
   /* 로고 높이와 같게 두면 VS가 로고의 세로 가운데에 놓인다. */
   line-height: var(--slide-logo);
 }
@@ -230,48 +144,45 @@
 .home-hero__copy {
   position: absolute;
   inset-inline: 0;
-  bottom: 72px;
+  bottom: 20px;
   z-index: 2;
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 20px;
+  gap: 16px;
   max-width: 1120px;
   margin-inline: auto;
   padding-inline: 24px;
   color: #ffffff;
-  opacity: max(0, calc(1 - var(--hero-p) * 1.6));
-  transform: translateY(calc(var(--hero-p) * -36px));
-  will-change: transform, opacity;
 }
 
 .home-hero__mark {
-  font-size: clamp(30px, 4.6vw, 52px);
+  font-size: clamp(22px, 3.4vw, 32px);
   letter-spacing: 0.01em;
   line-height: 1.05;
 }
 
 .home-hero__mark em {
-  color: var(--home-accent);
+  color: var(--accent-on-dark, var(--home-accent));
   font-style: normal;
 }
 
 .home-hero__sub {
-  margin-top: 10px;
+  margin-top: 6px;
   color: rgb(255 255 255 / 85%);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .home-hero__cta {
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
-  padding: 0 22px;
+  min-height: 40px;
+  padding: 0 18px;
   border-radius: 6px;
   background: var(--home-accent);
   color: #ffffff;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   text-decoration: none;
   white-space: nowrap;
@@ -288,7 +199,6 @@
   right: 16px;
   z-index: 2;
   display: flex;
-  opacity: max(0, calc(1 - var(--hero-p) * 2.2));
 }
 
 .home-hero__dots button {
@@ -319,43 +229,6 @@
   background: #ffffff;
 }
 
-.home-hero__hint {
-  position: absolute;
-  bottom: 14px;
-  left: 50%;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  color: rgb(255 255 255 / 65%);
-  font-family: var(--home-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.2em;
-  opacity: max(0, calc(1 - var(--hero-p) * 4));
-  translate: -50% 0;
-}
-
-.home-hero__hint i {
-  display: block;
-  width: 1px;
-  height: 26px;
-  background: linear-gradient(to bottom, rgb(255 255 255 / 60%), transparent);
-  animation: home-hint 1.6s ease-in-out infinite;
-}
-
-@keyframes home-hint {
-  0%,
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  50% {
-    opacity: 0.3;
-    transform: translateY(8px);
-  }
-}
 
 /* ---------- 날짜 · 구단 선택 ---------- */
 
@@ -367,10 +240,134 @@
   scroll-margin-top: var(--home-header-h);
 }
 
+/* 구단 필터(원형 로고 캐러셀). 날짜 스트립보다 먼저 나온다. */
+.home-team-rail {
+  position: relative;
+  margin-bottom: 40px;
+}
+
+.home-team-rail__track {
+  display: flex;
+  /* 다 들어갈 땐 가운데로. 넘칠 땐 safe가 왼쪽 시작으로 되돌려서 앞부분이 잘리지 않게 한다. */
+  justify-content: safe center;
+  gap: 18px;
+  padding: 4px 4px 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+/* 화살표가 있을 때만 오른쪽에 여유를 둬서, 없을 땐 가운데 정렬이 좌우로 안 치우치게 한다. */
+.home-team-rail__track.is-scrollable {
+  padding-right: 44px;
+}
+
+.home-team-rail__track::-webkit-scrollbar {
+  display: none;
+}
+
+.home-team-card {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 68px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--home-ink-soft);
+  cursor: pointer;
+}
+
+.home-team-card .team-mark {
+  width: 64px;
+  height: 64px;
+  box-shadow: inset 0 0 0 1px var(--home-line);
+  transition: box-shadow 0.15s;
+}
+
+.home-team-card[aria-pressed='true'] .team-mark {
+  box-shadow: 0 0 0 3px var(--team-color, var(--home-accent));
+}
+
+.home-team-card__all {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--home-sunk);
+  color: var(--home-ink-soft);
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px var(--home-line);
+  transition:
+    box-shadow 0.15s,
+    background 0.15s,
+    color 0.15s;
+}
+
+.home-team-card[aria-pressed='true'] .home-team-card__all {
+  background: var(--home-accent);
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.home-team-card__label {
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* 마이팀 표시. 로고 오른쪽 위 모서리에 얹는다. */
+.home-team-card__mine {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  padding: 1px 6px;
+  border: 2px solid var(--home-bg);
+  border-radius: 999px;
+  background: var(--home-accent);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.3;
+}
+
+.home-team-card[aria-pressed='true'] .home-team-card__label {
+  color: var(--home-ink);
+  font-weight: 800;
+}
+
+/* 넘칠 때만 JS가 이 버튼을 붙인다. */
+.home-team-rail__next {
+  position: absolute;
+  top: 32px;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--home-line);
+  border-radius: 50%;
+  background: var(--home-surface);
+  color: var(--home-ink-soft);
+  box-shadow: 0 2px 8px rgb(20 29 41 / 16%);
+  cursor: pointer;
+}
+
+.home-team-rail__next:hover {
+  color: var(--home-ink);
+}
+
 .home-dates {
   display: flex;
+  /* 구단 필터와 같은 정렬. 14일치가 다 안 들어가는 화면에선 safe가 왼쪽 시작으로 되돌려 잘리지 않게 한다. */
+  justify-content: safe center;
   gap: 8px;
-  margin-bottom: 20px;
+  margin-bottom: 32px;
   padding-bottom: 4px;
   overflow-x: auto;
   scrollbar-width: thin;
@@ -424,49 +421,6 @@
 
 .home-date[aria-pressed='true'] .home-date__weekday {
   color: rgb(255 255 255 / 75%);
-}
-
-.home-teams {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 32px;
-}
-
-.home-team {
-  --team-color: var(--home-accent);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border: 1px solid var(--home-line-strong);
-  border-radius: 999px;
-  background: var(--home-surface);
-  color: var(--home-ink-soft);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.home-team__dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--team-color);
-}
-
-.home-team:hover {
-  border-color: var(--team-color);
-}
-
-.home-team[aria-pressed='true'] {
-  border-color: var(--team-color);
-  background: var(--team-color);
-  color: #ffffff;
-}
-
-.home-team[aria-pressed='true'] .home-team__dot {
-  background: #ffffff;
 }
 
 /* ---------- 경기 목록 ---------- */
@@ -601,6 +555,18 @@
   cursor: not-allowed;
 }
 
+/* 취소된 경기를 관리자만 클릭해 들어갈 수 있을 때. 회원용 비활성 버튼과 색은 같지만 테두리로 눌러볼 수 있음을 표시한다. */
+.home-button--admin-canceled {
+  background: var(--home-sunk);
+  color: var(--home-faint);
+  border: 1px solid var(--home-line-strong);
+}
+
+.home-button--admin-canceled:hover {
+  background: var(--home-line);
+  color: var(--home-ink-soft);
+}
+
 .home-footer {
   max-width: 1120px;
   margin-inline: auto;
@@ -632,14 +598,26 @@
 }
 
 @media (max-width: 640px) {
+  /* 좁은 화면은 캐러셀(팀 로고)과 카피(제목+버튼)가 세로로 한 화면 안에 다 안 들어가서 살짝 더 높이고,
+     캐러셀은 위로 붙여 카피가 들어갈 자리를 아래에 만든다. */
+  .home-hero {
+    height: 340px;
+  }
+
+  .home-slide {
+    align-items: flex-start;
+    padding-top: 20px;
+  }
+
   .home-hero__copy {
     align-items: flex-start;
     flex-direction: column;
+    bottom: 12px;
   }
 }
 
 @media (max-width: 560px) {
-  .home-header__inner,
+  .home .container,
   .home-hero__copy,
   .home-main,
   .home-footer {
@@ -683,9 +661,5 @@
 @media (prefers-reduced-motion: reduce) {
   .home-hero__track {
     transition: none;
-  }
-
-  .home-hero__hint i {
-    animation: none;
   }
 }

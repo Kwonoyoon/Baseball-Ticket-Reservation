@@ -2,11 +2,15 @@ package com.ballpark.ticketing.game;
 
 import java.time.LocalDateTime;
 
+import com.ballpark.ticketing.global.error.BusinessException;
+import com.ballpark.ticketing.global.error.ErrorCode;
 import com.ballpark.ticketing.stadium.Stadium;
 import com.ballpark.ticketing.team.Team;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -39,6 +43,16 @@ public class Game {
     @Column(nullable = false)
     private LocalDateTime startAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private GameStatus status;
+
+    @Column(name = "home_score")
+    private Integer homeScore;
+
+    @Column(name = "away_score")
+    private Integer awayScore;
+
     protected Game() {
     }
 
@@ -47,11 +61,12 @@ public class Game {
         this.awayTeam = awayTeam;
         this.stadium = stadium;
         this.startAt = startAt;
+        this.status = GameStatus.SCHEDULED;
     }
 
-    /** 경기 시작 전까지 예매와 취소가 가능하다. */
+    /** 경기가 예정 상태이고 시작 전까지만 예매와 취소가 가능하다. */
     public boolean isBookable(LocalDateTime now) {
-        return now.isBefore(startAt);
+        return status == GameStatus.SCHEDULED && now.isBefore(startAt);
     }
 
     public boolean involves(Long teamId) {
@@ -76,5 +91,31 @@ public class Game {
 
     public LocalDateTime getStartAt() {
         return startAt;
+    }
+
+    public GameStatus getStatus() {
+        return status;
+    }
+
+    public Integer getHomeScore() {
+        return homeScore;
+    }
+
+    public Integer getAwayScore() {
+        return awayScore;
+    }
+
+    public void recordResult(int homeScore, int awayScore) {
+        this.homeScore = homeScore;
+        this.awayScore = awayScore;
+        this.status = GameStatus.FINISHED;
+    }
+
+    /** 우천 등의 사유로 경기 자체를 취소한다. 이미 끝났거나 취소된 경기는 다시 취소할 수 없다. */
+    public void cancel() {
+        if (status != GameStatus.SCHEDULED) {
+            throw new BusinessException(ErrorCode.GAME_NOT_CANCELABLE);
+        }
+        this.status = GameStatus.CANCELED;
     }
 }

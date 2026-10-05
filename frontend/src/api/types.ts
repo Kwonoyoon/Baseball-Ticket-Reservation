@@ -1,9 +1,30 @@
 /** 백엔드 API 응답 타입. 날짜(LocalDateTime)는 서울 시간 기준 ISO 문자열이다. */
 
+/** 계정 권한. 로그인하지 않은 방문자(비회원)는 계정이 없으므로 여기에 없다. (auth/roles.ts의 UserType 참고) */
+export type MemberRole = 'MEMBER' | 'ADMIN'
+
+export type MemberStatus = 'ACTIVE' | 'LOCKED' | 'WITHDRAWN'
+
 export type Member = {
   id: number
+  username: string
   email: string
   name: string
+  role: MemberRole
+  favoriteTeamId: number | null
+}
+
+/** 관리자 회원 관리 화면의 회원 한 명 */
+export type AdminMember = {
+  id: number
+  username: string
+  name: string
+  email: string
+  role: MemberRole
+  status: MemberStatus
+  failedLoginAttempts: number
+  lastLoginAt: string | null
+  createdAt: string
 }
 
 export type LoginResult = {
@@ -27,12 +48,17 @@ export type Stadium = {
   city: string
 }
 
+export type GameStatus = 'SCHEDULED' | 'FINISHED' | 'CANCELED'
+
 export type GameSummary = {
   id: number
   startAt: string
   homeTeam: Team
   awayTeam: Team
   stadium: Stadium
+  status: GameStatus
+  homeScore: number | null
+  awayScore: number | null
 }
 
 export type SeatGrade =
@@ -106,11 +132,35 @@ export type ReservationStatus = 'PENDING' | 'CONFIRMED' | 'CANCELED'
 
 export type ReservedSeat = {
   sectionId: number
+  /** 좌석 배치도의 블록 코드. 배치도가 없는 구역은 null */
+  sectionCode: string | null
   sectionName: string
   grade: SeatGrade
   rowNo: number
   seatNo: number
+  /** 블록 전체 크기. 블록 안 어디에 앉는지 그릴 때 쓴다. */
+  seatRows: number
+  seatsPerRow: number
   price: number
+}
+
+export type NotificationType = 'RESERVATION_CONFIRMED' | 'RESERVATION_CANCELED' | 'GAME_CANCELED' | 'GENERAL'
+
+export type Notification = {
+  id: number
+  type: NotificationType
+  title: string
+  message: string
+  read: boolean
+  /** 서울 시간 기준 ISO 문자열 */
+  createdAt: string
+}
+
+export type NotificationPreference = {
+  type: NotificationType
+  label: string
+  enabled: boolean
+  emailEnabled: boolean
 }
 
 export type Reservation = {
@@ -124,4 +174,90 @@ export type Reservation = {
   cancelable: boolean
   game: GameSummary
   seats: ReservedSeat[]
+}
+
+export type TransferStatus = 'OPEN' | 'SOLD' | 'CANCELED'
+
+/** 정가 양도글 한 건. 판매자 이름은 서버가 가려서(홍**) 내려 준다. */
+export type Transfer = {
+  id: number
+  status: TransferStatus
+  price: number
+  createdAt: string
+  /** 내가 올린 글인지 */
+  mine: boolean
+  sellerName: string
+  game: GameSummary
+  seats: string[]
+}
+
+export type TeamPostCount = {
+  teamId: number
+  postCount: number
+}
+
+/** 게시판 안의 글 분류 (자유·경기·응원·티켓 양도) */
+export type PostCategory = 'FREE' | 'GAME' | 'CHEER' | 'TICKET_TRANSFER'
+
+export type PostSummary = {
+  id: number
+  category: PostCategory
+  authorName: string
+  title: string
+  /** 본문 앞부분을 한 줄로 합쳐 자른 것 */
+  preview: string
+  viewCount: number
+  likeCount: number
+  commentCount: number
+  createdAt: string
+}
+
+export type PostPage = {
+  items: PostSummary[]
+  hasMore: boolean
+}
+
+export type PostDetail = {
+  id: number
+  teamId: number
+  category: PostCategory
+  authorId: number
+  authorName: string
+  title: string
+  content: string
+  viewCount: number
+  likeCount: number
+  commentCount: number
+  liked: boolean
+  mine: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export type Comment = {
+  id: number
+  authorId: number
+  authorName: string
+  content: string
+  mine: boolean
+  createdAt: string
+}
+
+export type LikeResult = {
+  liked: boolean
+  likeCount: number
+}
+
+export type ReportTargetType = 'POST' | 'COMMENT'
+
+export type Report = {
+  id: number
+  targetType: ReportTargetType
+  targetId: number
+  /** 신고 대상이 이미 지워졌으면 null */
+  targetPreview: string | null
+  targetAuthorName: string | null
+  reporterName: string
+  reason: string
+  createdAt: string
 }

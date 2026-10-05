@@ -98,6 +98,10 @@ class ReservationFlowIntegrationTest {
                 .andExpect(jsonPath("$.totalPrice").value(section.getPrice()))
                 .andExpect(jsonPath("$.cancelable").value(true))
                 .andExpect(jsonPath("$.seats[0].sectionName").value(section.getName()))
+                // 예매 상세 화면이 좌석 위치를 배치도에 표시하려면 블록 코드와 크기가 필요하다.
+                .andExpect(jsonPath("$.seats[0].sectionCode").value(section.getZoneCode()))
+                .andExpect(jsonPath("$.seats[0].seatRows").value(section.getSeatRows()))
+                .andExpect(jsonPath("$.seats[0].seatsPerRow").value(section.getSeatsPerRow()))
                 .andReturn().getResponse().getContentAsString();
         long reservationId = ((Number) JsonPath.read(body, "$.id")).longValue();
 
@@ -260,35 +264,62 @@ class ReservationFlowIntegrationTest {
     }
 
     @Test
-    void 중복_이메일과_잘못된_비밀번호를_거부한다() throws Exception {
+    void 중복_아이디와_이메일_잘못된_비밀번호를_거부한다() throws Exception {
+        String username = newUsername();
         String email = "dup-" + UUID.randomUUID() + "@ballpark.com";
-        signup(email).andExpect(status().isCreated());
-        signup(email)
+        signup(username, email).andExpect(status().isCreated());
+        // 아이디는 대소문자를 구분하지 않는다.
+        signup(username.toUpperCase(), "other-" + email)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("DUPLICATE_USERNAME"));
+        signup(newUsername(), email)
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("DUPLICATE_EMAIL"));
 
-        mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"" + email + "\",\"password\":\"wrong-password\"}"))
+        login(username, "wrong-password")
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"));
+        login(email, "password123")
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"));
+        login(username.toUpperCase(), "password123")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.member.username").value(username));
+    }
+
+    @Test
+    void 형식에_맞지_않는_아이디를_거부한다() throws Exception {
+        for (String username : new String[] {"abc", "1fan", "fan_01", "a".repeat(21)}) {
+            signup(username, "fan-" + UUID.randomUUID() + "@ballpark.com")
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+        }
     }
 
     private String signupAndLogin() throws Exception {
-        String email = "fan-" + UUID.randomUUID() + "@ballpark.com";
-        signup(email).andExpect(status().isCreated());
-        String body = mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"" + email + "\",\"password\":\"password123\"}"))
+        String username = newUsername();
+        signup(username, "fan-" + UUID.randomUUID() + "@ballpark.com").andExpect(status().isCreated());
+        String body = login(username, "password123")
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         return JsonPath.read(body, "$.accessToken");
     }
 
-    private ResultActions signup(String email) throws Exception {
+    private static String newUsername() {
+        return "fan" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+    }
+
+    private ResultActions signup(String username, String email) throws Exception {
         return mockMvc.perform(post("/api/auth/signup")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"email\":\"" + email + "\",\"password\":\"password123\",\"name\":\"야구팬\"}"));
+                .content("{\"username\":\"" + username + "\",\"email\":\"" + email
+                        + "\",\"password\":\"password123\",\"name\":\"야구팬\"}"));
+    }
+
+    private ResultActions login(String username, String password) throws Exception {
+        return mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}"));
     }
 
     private ResultActions hold(String token, String seatsJson) throws Exception {

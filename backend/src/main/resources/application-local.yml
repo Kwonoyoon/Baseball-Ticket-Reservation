@@ -18,3 +18,11 @@ management:
 ticketing:
   seat-hold:
     store: memory
+  notification:
+    broadcast: local
+  auth:
+    cookie-secure: false
+  admin:
+    # 로컬(H2) 전용 관리자 계정. 운영에서는 ADMIN_USERNAME/ADMIN_PASSWORD 환경 변수로 설정한다.
+    username: ${ADMIN_USERNAME:admin}
+    password: ${ADMIN_PASSWORD:local-admin-1234}

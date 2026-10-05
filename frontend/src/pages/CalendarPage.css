@@ -1,0 +1,207 @@
+/* 직관 캘린더(새 창) 전용 스타일. 색은 index.css의 공용 토큰을 그대로 쓴다. */
+
+.calendar-page {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+}
+
+.calendar {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.calendar__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.calendar__nav .icon-button {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.calendar__month {
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.calendar__summary {
+  margin: 4px 0 12px;
+  color: var(--text-muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+.calendar__summary strong {
+  color: var(--accent);
+}
+
+.calendar__grid {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.calendar__grid th {
+  padding-block: 6px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.calendar__grid td {
+  padding: 3px 0;
+  text-align: center;
+}
+
+/* 일요일은 공용 강조색, 토요일은 등급 파랑. 흰 바탕에서 4.5:1 이상 대비가 나오는 값이다. */
+.calendar__grid .is-sun {
+  color: var(--red-500);
+}
+
+.calendar__grid .is-sat {
+  color: var(--grade-infield);
+}
+
+.calendar__day {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  background: none;
+  color: inherit;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.calendar__day.is-today {
+  border-color: var(--text-muted);
+  font-weight: 800;
+}
+
+/* 직관한 날: 색을 채워서 한눈에 보이게 한다. */
+.calendar__day.is-attended {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #ffffff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.calendar__day.is-attended:hover {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+}
+
+.calendar__day.is-attended[aria-pressed='true'] {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, white);
+}
+
+/* 예매만 해 둔 날(아직 시작 전): 색은 채우지 않고 테두리만 둬서 "다녀온 날"과 구분한다. */
+.calendar__day.is-scheduled {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.calendar__day.is-scheduled:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.calendar__day.is-scheduled[aria-pressed='true'] {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, white);
+}
+
+/* 같은 날 두 경기 이상이면 오른쪽 위에 개수를 적는다. */
+.calendar__count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  display: grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--navy-800);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.calendar-hint {
+  margin-top: 16px;
+  color: var(--text-muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+.calendar-detail {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.calendar-detail__title {
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+.calendar-detail__list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.calendar-detail__item {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+}
+
+.calendar-detail__item span {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* 직관 완료 / 예매 예정 꼬리표 */
+.calendar-detail__tag {
+  justify-self: start;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.calendar-detail__tag.is-upcoming {
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+}
+
+.calendar-detail__item a {
+  justify-self: start;
+  margin-top: 4px;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+}

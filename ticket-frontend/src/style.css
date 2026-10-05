@@ -1,0 +1,61 @@
+:root {
+  font-family: Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+  color: #16202e;
+  background: #f3f5f9;
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; }
+button { font: inherit; }
+
+.page { min-height: 100vh; padding: 42px 20px; }
+.ticket-shell { width: min(100%, 560px); margin: 0 auto; overflow: hidden; border-radius: 20px; background: #fff; box-shadow: 0 16px 42px rgb(15 35 64 / 15%); }
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; background: #0f2340; color: #fff; }
+.brand { display: flex; align-items: center; gap: 7px; font-size: 17px; font-weight: 800; }
+.brand em { color: #f2b53c; font-style: normal; }
+.brand-ball { width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: inset 5px 0 0 -3px #d6343a, inset -5px 0 0 -3px #d6343a; }
+.active-badge { padding: 4px 10px; border-radius: 999px; background: #e7f4ec; color: #1f6b41; font-size: 12px; font-weight: 800; }
+.ticket-content { padding: 22px 24px 26px; text-align: center; }
+.eyebrow { margin: 0; color: #d6343a; font-size: 12px; font-weight: 800; letter-spacing: .12em; }
+h1 { margin: 5px 0 20px; font-size: 30px; letter-spacing: -.04em; }
+.league-line { display: flex; justify-content: center; gap: 7px; color: #7a899c; font-size: 14px; }
+.league-line strong { color: #1b3a63; }
+.ticket-picker { margin: 12px 0 16px; color: #5b6a7f; font-size: 13px; }
+.ticket-picker label { display: inline-flex; align-items: center; gap: 7px; }
+.ticket-picker select { max-width: 240px; padding: 6px 8px; border: 1px solid #d6dde7; border-radius: 6px; background: #fff; color: #16202e; }
+.matchup { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 14px; padding: 8px 0 15px; }
+.matchup__versus { padding: 7px 10px; border-radius: 999px; background: #edf2f8; color: #1b3a63; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.team { display: grid; justify-items: center; gap: 5px; }
+.team__role { color: #7a899c; font-size: 12px; font-weight: 700; }
+.team img, .team__fallback { display: grid; place-items: center; width: 66px; height: 66px; object-fit: contain; }
+.team__fallback { border-radius: 50%; background: #1b3a63; color: #fff; font-weight: 800; }
+.team strong { font-size: 18px; }
+.stadium-name { margin: 0 0 20px; color: #5b6a7f; font-size: 14px; }
+.qr-section { padding: 23px 16px; border-block: 2px dashed #e1e6ee; background: #f7f9fc; }
+.qr-frame { width: min(100%, 244px); margin: 0 auto; padding: 12px; border-radius: 12px; background: #fff; box-shadow: 0 1px 5px rgb(15 35 64 / 12%); }
+.qr-frame img { display: block; width: 100%; height: auto; }
+.entry-guide { margin: 13px 0 3px; font-size: 14px; font-weight: 700; }
+.refresh-guide { margin: 0; color: #5b6a7f; font-size: 13px; }
+.timer { color: #d6343a; font-variant-numeric: tabular-nums; font-weight: 800; }
+.refresh-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; margin-top: 14px; padding: 0 14px; border: 1px solid #d6dde7; border-radius: 8px; background: #fff; color: #1b3a63; font-weight: 800; cursor: pointer; }
+.refresh-button:hover:not(:disabled) { border-color: #1b3a63; background: #f1f5fa; }
+.refresh-button:disabled { opacity: .55; cursor: wait; }
+.refresh-button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
+.ticket-details { display: grid; gap: 14px; margin: 22px 0 0; text-align: left; }
+.ticket-details div { display: grid; gap: 3px; }
+.ticket-details dt { color: #5b6a7f; font-size: 12px; font-weight: 700; }
+.ticket-details dd { margin: 0; font-size: 14px; font-weight: 800; }
+.notice { margin: 16px auto 0; color: #5b6a7f; font-size: 13px; text-align: center; }
+.logout-button { padding: 6px 9px; border: 0; background: transparent; color: rgb(255 255 255 / 75%); cursor: pointer; font-size: 13px; }
+.logout-button:hover { color: #fff; }
+.login-card, .empty-card { width: min(100%, 420px); margin: 8vh auto; padding: 32px; border-radius: 20px; background: #fff; box-shadow: 0 16px 42px rgb(15 35 64 / 12%); }
+.brand--dark { color: #0f2340; margin-bottom: 28px; }
+.login-card h1, .empty-card h1 { margin-bottom: 8px; }
+.login-card__description, .empty-card p { color: #5b6a7f; }
+.login-form { display: grid; gap: 14px; margin-top: 24px; }
+.login-form label { display: grid; gap: 6px; font-size: 14px; font-weight: 700; }
+.login-form input { height: 44px; padding: 0 12px; border: 1px solid #d6dde7; border-radius: 8px; }
+.login-form button, .empty-card button { min-height: 44px; border: 0; border-radius: 8px; background: #d6343a; color: #fff; font-weight: 800; cursor: pointer; }
+.form-message { margin: 16px 0 0; padding: 10px 12px; border-radius: 8px; background: #fdecec; color: #9a2227; font-size: 14px; }
+@media (max-width: 480px) { .page { padding: 16px 10px; } .ticket-content { padding-inline: 16px; } .topbar { padding-inline: 16px; } .team img, .team__fallback { width: 54px; height: 54px; } .team strong { font-size: 16px; } .matchup { gap: 8px; } .matchup__versus { padding-inline: 8px; } .ticket-picker label { display: grid; gap: 5px; } .ticket-picker select { max-width: 100%; } }

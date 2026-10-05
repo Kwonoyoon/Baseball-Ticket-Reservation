@@ -1,0 +1,128 @@
+/* ---------- 티켓 양도 마켓 (pages/TransferMarketPage.tsx) ---------- */
+
+.transfer-market {
+  display: grid;
+  gap: 28px;
+}
+
+.transfer-market__intro {
+  margin: -12px 0 0;
+  color: var(--text-muted);
+  font-size: 14.5px;
+}
+
+.transfer-market__heading {
+  margin: 0 0 14px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+.transfer-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.transfer-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+  padding: 20px 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.transfer-card__main {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.transfer-card__matchup {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+.transfer-card__matchup span {
+  margin: 0 4px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.transfer-card__info,
+.transfer-card__seller,
+.transfer-card__date {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13.5px;
+}
+
+.transfer-card__seats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.transfer-card__seats li {
+  padding: 2px 10px;
+  border-radius: 6px;
+  background: var(--surface-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.transfer-card__side {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.transfer-card__price {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.transfer-card__method {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+}
+
+.transfer-card__status {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.transfer-card__status.is-open {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+}
+
+@media (max-width: 640px) {
+  .transfer-card {
+    padding: 18px;
+  }
+
+  .transfer-card__side {
+    justify-items: start;
+  }
+}

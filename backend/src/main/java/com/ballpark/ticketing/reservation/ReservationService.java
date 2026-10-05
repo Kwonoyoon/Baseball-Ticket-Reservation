@@ -21,6 +21,9 @@ import com.ballpark.ticketing.global.error.BusinessException;
 import com.ballpark.ticketing.global.error.ErrorCode;
 import com.ballpark.ticketing.member.Member;
 import com.ballpark.ticketing.member.MemberRepository;
+import com.ballpark.ticketing.notification.NotificationService;
+import com.ballpark.ticketing.notification.NotificationType;
+import com.ballpark.ticketing.notification.ReservationEmailContent;
 import com.ballpark.ticketing.reservation.dto.ReservationRequest;
 import com.ballpark.ticketing.reservation.dto.ReservationResponse;
 import com.ballpark.ticketing.reservation.payment.PaymentGateway;
@@ -30,6 +33,7 @@ import com.ballpark.ticketing.seat.SeatHoldStore;
 import com.ballpark.ticketing.seat.SeatPosition;
 import com.ballpark.ticketing.seat.SeatService;
 import com.ballpark.ticketing.stadium.SeatSection;
+import com.ballpark.ticketing.transfer.TicketTransferService;
 
 @Service
 @Transactional(readOnly = true)
@@ -47,12 +51,15 @@ public class ReservationService {
     private final SeatHoldStore seatHoldStore;
     private final ReservationQuota reservationQuota;
     private final PaymentGateway paymentGateway;
+    private final NotificationService notificationService;
+    private final TicketTransferService ticketTransferService;
     private final Clock clock;
     private final SecureRandom random = new SecureRandom();
 
     public ReservationService(ReservationRepository reservationRepository, SoldSeatRepository soldSeatRepository,
             MemberRepository memberRepository, SeatService seatService, SeatHoldStore seatHoldStore,
-            ReservationQuota reservationQuota, PaymentGateway paymentGateway, Clock clock) {
+            ReservationQuota reservationQuota, PaymentGateway paymentGateway,
+            NotificationService notificationService, TicketTransferService ticketTransferService, Clock clock) {
         this.reservationRepository = reservationRepository;
         this.soldSeatRepository = soldSeatRepository;
         this.memberRepository = memberRepository;
@@ -60,6 +67,8 @@ public class ReservationService {
         this.seatHoldStore = seatHoldStore;
         this.reservationQuota = reservationQuota;
         this.paymentGateway = paymentGateway;
+        this.notificationService = notificationService;
+        this.ticketTransferService = ticketTransferService;
         this.clock = clock;
     }
 
@@ -109,6 +118,8 @@ public class ReservationService {
         }
         reservation.confirm(payment.transactionId());
 
+        notifyAfterCommit(memberId, NotificationType.RESERVATION_CONFIRMED, "예매가 완료되었습니다",
+                reservation.getReservationNumber() + " 예매가 정상적으로 완료되었습니다.", buildEmailContent(reservation));
         releaseHoldsAfterCommit(game.getId(), memberId, seats.keySet());
         return ReservationResponse.from(reservation, now);
     }
@@ -128,10 +139,70 @@ public class ReservationService {
     public ReservationResponse cancel(Long memberId, Long reservationId) {
         Reservation reservation = findOwnedReservation(memberId, reservationId);
         LocalDateTime now = LocalDateTime.now(clock);
+        // 양도글이 열려 있는 채로 취소되면 남이 이미 취소된 예매를 살 수 있다. 먼저 양도를 거두게 한다.
+        ticketTransferService.ensureNotListed(reservation.getId());
         reservation.cancel(now);
         soldSeatRepository.deleteByReservationId(reservation.getId());
         paymentGateway.cancel(reservation.getPaymentTransactionId(), reservation.getTotalPrice());
+        notifyAfterCommit(memberId, NotificationType.RESERVATION_CANCELED, "예매가 취소되었습니다",
+                reservation.getReservationNumber() + " 예매가 취소되었습니다.", buildEmailContent(reservation));
         return ReservationResponse.from(reservation, now);
+    }
+
+    /**
+     * 경기가 취소되면(우천취소 등) 그 경기의 확정 예매를 전부 취소·환불하고, 예매자 전원에게 알림·이메일을 보낸다.
+     * 게임 취소 트랜잭션(GameService.cancelGame)에 합류해 같이 커밋·롤백된다.
+     */
+    @Transactional
+    public void cancelAllForGame(Game game) {
+        LocalDateTime now = LocalDateTime.now(clock);
+        ticketTransferService.cancelAllForGame(game.getId());
+        List<Reservation> reservations = reservationRepository.findAllByGameIdAndStatus(game.getId(),
+                ReservationStatus.CONFIRMED);
+        for (Reservation reservation : reservations) {
+            reservation.cancelDueToGameCancellation(now);
+            soldSeatRepository.deleteByReservationId(reservation.getId());
+            paymentGateway.cancel(reservation.getPaymentTransactionId(), reservation.getTotalPrice());
+            notifyAfterCommit(reservation.getMember().getId(), NotificationType.GAME_CANCELED, "경기가 취소되었습니다",
+                    reservation.getReservationNumber() + " 경기가 취소되어 예매가 자동으로 취소되고 결제가 환불되었습니다.",
+                    buildEmailContent(reservation));
+        }
+    }
+
+    /**
+     * 알림 메일에 쓸 경기·좌석·결제 정보를 미리 뽑아 둔다. afterCommit 콜백은 트랜잭션이 끝난 뒤 실행되어
+     * 지연 로딩된 엔티티 필드에 접근할 수 없으므로, 값이 살아 있는 지금(커밋 전)에 문자열/숫자로 옮겨 둔다.
+     */
+    private ReservationEmailContent buildEmailContent(Reservation reservation) {
+        Game game = reservation.getGame();
+        List<String> seatLabels = reservation.getSeats().stream()
+                .map(seat -> seat.getSection().getName() + " " + seat.getRowNo() + "열 " + seat.getSeatNo() + "번")
+                .toList();
+        return new ReservationEmailContent(reservation.getId(), reservation.getReservationNumber(),
+                game.getHomeTeam().getName(), game.getAwayTeam().getName(), game.getStadium().getName(),
+                game.getStartAt(), seatLabels, reservation.getTotalPrice());
+    }
+
+    /**
+     * 알림은 결제·취소와 무관한 부가 작업이라 커밋이 끝난 뒤에 보낸다. (releaseHoldsAfterCommit과 같은 이유)
+     * <ul>
+     *   <li>알림에서 무슨 오류가 나도 이미 승인된 결제가 롤백되지 않는다.</li>
+     *   <li>예매가 롤백되면 알림도 나가지 않는다. (예전엔 커밋 전에 보내 실패한 예매에도 알림이 갔다)</li>
+     * </ul>
+     * 자세한 경위: docs/troubleshooting/notification-transaction-500.md
+     */
+    private void notifyAfterCommit(Long memberId, NotificationType type, String title, String message,
+            ReservationEmailContent emailContent) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                try {
+                    notificationService.create(memberId, type, title, message, emailContent);
+                } catch (RuntimeException e) {
+                    log.warn("알림을 보내지 못했습니다. 예매는 정상 처리됐습니다. memberId={}, type={}", memberId, type, e);
+                }
+            }
+        });
     }
 
     /** 다른 회원의 예매는 존재 여부도 드러내지 않도록 404로 응답한다. */
