@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Reservation, ReservationStatus, Team } from '../api/types'
-import { attendedGames, countAll, countInMonth, monthGrid, shiftMonth } from './calendar'
+import { attendedGames, countAll, countInMonth, monthGrid, scheduledGames, shiftMonth } from './calendar'
 
 const team = (id: number, name: string): Team => ({ id, code: name, name, shortName: name, primaryColor: '#123456' })
 
@@ -106,6 +106,41 @@ describe('attendedGames', () => {
     const transferred = reservation(1, '2026-09-05T18:30:00', 'TRANSFERRED' as ReservationStatus)
 
     expect(attendedGames([transferred], NOW).size).toBe(0)
+  })
+})
+
+describe('scheduledGames', () => {
+  it('확정이고 아직 시작하지 않은 경기만 모은다', () => {
+    const scheduled = scheduledGames(
+      [
+        reservation(1, '2026-09-05T18:30:00'),
+        reservation(2, '2026-09-30T18:30:00'),
+        reservation(3, '2026-10-02T18:30:00', 'CANCELED'),
+        reservation(4, '2026-10-03T14:00:00', 'PENDING'),
+      ],
+      NOW,
+    )
+
+    expect([...scheduled.keys()]).toEqual(['2026-09-30'])
+  })
+
+  it('경기 시작 시각이 지금과 같으면 예정이 아니라 직관이다', () => {
+    const same = reservation(1, '2026-09-27T12:00:00')
+
+    expect(scheduledGames([same], NOW).size).toBe(0)
+    expect(attendedGames([same], NOW).size).toBe(1)
+  })
+
+  it('한 예매는 직관과 예정 중 정확히 한 쪽에만 들어간다', () => {
+    const all = [reservation(1, '2026-09-05T18:30:00'), reservation(2, '2026-09-30T18:30:00')]
+
+    expect(countAll(attendedGames(all, NOW)) + countAll(scheduledGames(all, NOW))).toBe(2)
+  })
+
+  it('취소한 예매나 양도처럼 CONFIRMED가 아닌 새 상태는 빠진다', () => {
+    const transferred = reservation(1, '2026-09-30T18:30:00', 'TRANSFERRED' as ReservationStatus)
+
+    expect(scheduledGames([transferred], NOW).size).toBe(0)
   })
 })
 

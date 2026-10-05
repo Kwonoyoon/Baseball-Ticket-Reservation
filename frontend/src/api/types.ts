@@ -176,13 +176,28 @@ export type Reservation = {
   seats: ReservedSeat[]
 }
 
+export type TransferStatus = 'OPEN' | 'SOLD' | 'CANCELED'
+
+/** 정가 양도글 한 건. 판매자 이름은 서버가 가려서(홍**) 내려 준다. */
+export type Transfer = {
+  id: number
+  status: TransferStatus
+  price: number
+  createdAt: string
+  /** 내가 올린 글인지 */
+  mine: boolean
+  sellerName: string
+  game: GameSummary
+  seats: string[]
+}
+
 export type TeamPostCount = {
   teamId: number
   postCount: number
 }
 
-/** 게시판 안의 글 분류 (자유·경기·응원) */
-export type PostCategory = 'FREE' | 'GAME' | 'CHEER'
+/** 게시판 안의 글 분류 (자유·경기·응원·티켓 양도) */
+export type PostCategory = 'FREE' | 'GAME' | 'CHEER' | 'TICKET_TRANSFER'
 
 export type PostSummary = {
   id: number

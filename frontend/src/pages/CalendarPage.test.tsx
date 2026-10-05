@@ -70,7 +70,7 @@ describe('CalendarPage', () => {
     vi.unstubAllGlobals()
   })
 
-  it('이번 달을 보여주고, 직관한 날만 눌러볼 수 있는 버튼으로 표시한다', async () => {
+  it('이번 달을 보여주고, 직관한 날과 예매해 둔 날만 눌러볼 수 있는 버튼으로 표시한다', async () => {
     stubReservations([
       reservation(1, '2026-09-05T18:30:00'),
       reservation(2, '2026-09-10T18:30:00', 'CANCELED'),
@@ -80,10 +80,36 @@ describe('CalendarPage', () => {
 
     expect(await screen.findByRole('heading', { name: '2026년 9월' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '9월 5일 (토), 직관 1경기' })).toBeInTheDocument()
-    // 취소한 예매(10일)와 아직 오지 않은 경기(30일)는 버튼이 아니다.
+    // 아직 오지 않은 확정 예매(30일)는 "예매"로 따로 표시되고, 취소한 예매(10일)는 버튼이 아니다.
+    expect(screen.getByRole('button', { name: '9월 30일 (수), 예매 1경기' })).toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: /직관 \d경기/ })).toHaveLength(1)
+    expect(screen.queryByRole('button', { name: /9월 10일/ })).not.toBeInTheDocument()
     expect(screen.getByText('1경기')).toBeInTheDocument()
     expect(screen.getByText(/전체 1경기/)).toBeInTheDocument()
+    expect(screen.getByText(/예매한 예정 1경기/)).toBeInTheDocument()
+  })
+
+  it('예정인 날을 누르면 "예매 예정"으로, 다녀온 날은 "직관 완료"로 표시한다', async () => {
+    stubReservations([reservation(1, '2026-09-05T18:30:00'), reservation(2, '2026-09-30T18:30:00')])
+    renderPage()
+    const user = userEvent.setup()
+
+    await user.click(await screen.findByRole('button', { name: '9월 30일 (수), 예매 1경기' }))
+    expect(screen.getByText('예매 예정')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '9월 5일 (토), 직관 1경기' }))
+    expect(screen.getByText('직관 완료')).toBeInTheDocument()
+  })
+
+  it('창으로 돌아오면(focus) 예매 내역을 다시 불러와 방금 한 예매가 보인다', async () => {
+    stubReservations([])
+    renderPage()
+    await screen.findByText(/아직 직관한 경기가 없습니다/)
+
+    stubReservations([reservation(1, '2026-09-30T18:30:00')])
+    window.dispatchEvent(new Event('focus'))
+
+    expect(await screen.findByRole('button', { name: '9월 30일 (수), 예매 1경기' })).toBeInTheDocument()
   })
 
   it('날짜를 누르면 그날의 경기를 보여주고, 다시 누르면 닫는다', async () => {

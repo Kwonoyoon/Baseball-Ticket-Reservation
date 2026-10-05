@@ -23,6 +23,7 @@ import type {
   SeatSummary,
   Team,
   TeamPostCount,
+  Transfer,
 } from './types'
 
 export const api = {
@@ -68,10 +69,12 @@ export const api = {
   getTeamPostCounts: (signal?: AbortSignal) =>
     request<TeamPostCount[]>('/community/team-post-counts', { signal }),
 
-  /** category를 주면 그 분류만, 안 주면 모든 분류를 섞어 준다. */
-  getPosts: (teamId: number, page: number, signal?: AbortSignal, category?: PostCategory) =>
+  /** category를 주면 그 분류만, 안 주면 모든 분류를 섞어 준다. keyword를 주면 제목·본문에서 찾는다. */
+  getPosts: (teamId: number, page: number, signal?: AbortSignal, category?: PostCategory, keyword?: string) =>
     request<PostPage>(
-      `/teams/${teamId}/posts?page=${page}&size=20${category ? `&category=${category}` : ''}`,
+      `/teams/${teamId}/posts?page=${page}&size=20${category ? `&category=${category}` : ''}${
+        keyword ? `&q=${encodeURIComponent(keyword)}` : ''
+      }`,
       { signal },
     ),
 
@@ -142,6 +145,20 @@ export const api = {
 
   cancelReservation: (reservationId: number) =>
     request<Reservation>(`/reservations/${reservationId}/cancel`, { method: 'POST' }),
+
+  /** 판매 중인 양도글. teamId를 주면 그 구단이 뛰는 경기만. */
+  getTransfers: (signal?: AbortSignal, teamId?: number) =>
+    request<Transfer[]>(`/transfers${teamId ? `?teamId=${teamId}` : ''}`, { signal }),
+
+  getMyTransfers: (signal?: AbortSignal) => request<Transfer[]>('/transfers/me', { signal }),
+
+  registerTransfer: (reservationId: number) =>
+    request<Transfer>(`/reservations/${reservationId}/transfer`, { method: 'POST' }),
+
+  cancelTransfer: (transferId: number) => request<void>(`/transfers/${transferId}/cancel`, { method: 'POST' }),
+
+  buyTransfer: (transferId: number, paymentMethod: PaymentMethod) =>
+    request<void>(`/transfers/${transferId}/buy`, { method: 'POST', body: { paymentMethod } }),
 
   getNotifications: (signal?: AbortSignal) => request<Notification[]>('/notifications', { signal }),
 

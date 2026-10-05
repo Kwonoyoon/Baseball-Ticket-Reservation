@@ -59,12 +59,40 @@ class CommunityIntegrationTest {
     }
 
     @Test
+    void 제목_또는_본문으로_검색하고_와일드카드는_글자로_찾는다() throws Exception {
+        String token = signup();
+        String tag = UUID.randomUUID().toString().substring(0, 8);
+        createPost(token, "제목매칭-" + tag, "평범한 본문");
+        createPost(token, "본문쪽", "여기에 Needle" + tag + " 가 있다");
+        createPost(token, "퍼센트-" + tag, "할인 100% 행사");
+        createPost(token, "다른글-" + tag, "관계없는 내용");
+
+        // 제목에서 찾고, 대소문자는 가리지 않는다.
+        mockMvc.perform(get("/api/teams/" + TEAM_ID + "/posts").param("q", "제목매칭-" + tag.toUpperCase()))
+                .andExpect(jsonPath("$.items[*].title").value(org.hamcrest.Matchers.contains("제목매칭-" + tag)));
+
+        // 본문에서도 찾는다.
+        mockMvc.perform(get("/api/teams/" + TEAM_ID + "/posts").param("q", "needle" + tag))
+                .andExpect(jsonPath("$.items[*].title").value(org.hamcrest.Matchers.contains("본문쪽")));
+
+        // %는 "아무거나"가 아니라 % 글자다. 와일드카드로 먹었다면 이 구단의 모든 글이 나온다.
+        mockMvc.perform(get("/api/teams/" + TEAM_ID + "/posts").param("q", "100%"))
+                .andExpect(jsonPath("$.items[?(@.title == '퍼센트-" + tag + "')]").isNotEmpty())
+                .andExpect(jsonPath("$.items[?(@.title == '다른글-" + tag + "')]").isEmpty());
+
+        // 공백뿐이면 검색 없이 전체 목록이다.
+        mockMvc.perform(get("/api/teams/" + TEAM_ID + "/posts").param("q", "   "))
+                .andExpect(jsonPath("$.items[?(@.title == '다른글-" + tag + "')]").isNotEmpty());
+    }
+
+    @Test
     void 분류별로_나눠_보고_목록에는_본문_미리보기가_온다() throws Exception {
         String token = signup();
         String tag = UUID.randomUUID().toString().substring(0, 8);
         // JSON 안의 줄바꿈이라 \\n으로 쓴다.
         createPost(token, "경기-" + tag, "GAME", "어제 경기\\n정말\\n\\n  좋았다");
         createPost(token, "응원-" + tag, "CHEER", "가자");
+        createPost(token, "양도-" + tag, "TICKET_TRANSFER", "1루 2연석 양도합니다");
         createPost(token, "분류없음-" + tag, null, "분류가 생기기 전 화면에서 쓴 글");
 
         // 경기 탭에는 경기 글만 나오고, 미리보기는 줄바꿈·공백을 한 칸으로 합친다.
@@ -73,6 +101,11 @@ class CommunityIntegrationTest {
                 .andExpect(jsonPath("$.items[?(@.category != 'GAME')]").isEmpty())
                 .andExpect(jsonPath("$.items[?(@.title == '경기-" + tag + "')].preview")
                         .value(hasItem("어제 경기 정말 좋았다")));
+
+        // 티켓 양도 탭에는 양도 글만 나온다.
+        mockMvc.perform(get("/api/teams/" + TEAM_ID + "/posts").param("category", "TICKET_TRANSFER"))
+                .andExpect(jsonPath("$.items[?(@.title == '양도-" + tag + "')]").isNotEmpty())
+                .andExpect(jsonPath("$.items[?(@.category != 'TICKET_TRANSFER')]").isEmpty());
 
         // 분류 없이 쓴 글은 자유로 들어간다.
         mockMvc.perform(get("/api/teams/" + TEAM_ID + "/posts").param("category", "FREE"))

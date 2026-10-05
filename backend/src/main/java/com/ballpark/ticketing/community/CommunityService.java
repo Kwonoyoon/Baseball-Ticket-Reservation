@@ -59,13 +59,27 @@ public class CommunityService {
                 .toList();
     }
 
-    /** category가 null이면 모든 분류를 섞어서 보여 준다. */
-    public PostPageResponse listPosts(Long teamId, PostCategory category, int page, int size) {
+    /** category가 null이면 모든 분류를 섞어서, keyword가 비어 있으면 검색 없이 보여 준다. */
+    public PostPageResponse listPosts(Long teamId, PostCategory category, String keyword, int page, int size) {
         // hasMore 판단을 위해 한 개 더 가져와서 잘라낸다.
-        List<CommunityPost> posts = postRepository.findByTeamId(teamId, category, PageRequest.of(page, size + 1));
+        List<CommunityPost> posts = postRepository.findByTeamId(teamId, category, likePattern(keyword),
+                PageRequest.of(page, size + 1));
         boolean hasMore = posts.size() > size;
         List<PostSummaryResponse> items = posts.stream().limit(size).map(PostSummaryResponse::from).toList();
         return new PostPageResponse(items, hasMore);
+    }
+
+    /**
+     * 제목·본문 부분 일치용 LIKE 패턴. 사용자가 친 %, _ 는 와일드카드가 아니라 글자 그대로 찾아야 해서
+     * 이스케이프 문자(!)를 앞에 붙인다. (저장소 쿼리의 escape '!' 와 짝이다)
+     */
+    private static String likePattern(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return null;
+        }
+        String escaped = keyword.strip().toLowerCase()
+                .replace("!", "!!").replace("%", "!%").replace("_", "!_");
+        return "%" + escaped + "%";
     }
 
     @Transactional

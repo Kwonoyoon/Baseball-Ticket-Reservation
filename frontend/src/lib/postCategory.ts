@@ -5,6 +5,7 @@ export const POST_CATEGORIES: { value: PostCategory; label: string }[] = [
   { value: 'FREE', label: '자유' },
   { value: 'GAME', label: '경기' },
   { value: 'CHEER', label: '응원' },
+  { value: 'TICKET_TRANSFER', label: '티켓 양도' },
 ]
 
 export const DEFAULT_POST_CATEGORY: PostCategory = 'FREE'

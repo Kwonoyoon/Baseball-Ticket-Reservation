@@ -30,8 +30,17 @@ export function SchedulePage() {
 
   const dateParam = searchParams.get('date')
   const selectedDate = dateParam && dates.includes(dateParam) ? dateParam : today
-  const teamParam = Number(searchParams.get('team'))
-  const selectedTeamId = Number.isInteger(teamParam) && teamParam > 0 ? teamParam : null
+  // 구단 선택: 주소에 team이 없으면 마이팀(마이페이지에서 정한 관심 구단)이 기본이다. "전체"는 team=all로 따로 적어
+  // 두어야 한다 — 그냥 team을 지우면 "고르지 않음"이라 다시 마이팀이 되어 버리기 때문이다.
+  const { member, loading: authLoading } = useAuth()
+  const teamParamRaw = searchParams.get('team')
+  const explicitTeam = Number(teamParamRaw)
+  const hasExplicitChoice = teamParamRaw === 'all' || (Number.isInteger(explicitTeam) && explicitTeam > 0)
+  const favoriteTeamId = member?.favoriteTeamId ?? null
+  const selectedTeamId =
+    teamParamRaw === 'all' ? null : Number.isInteger(explicitTeam) && explicitTeam > 0 ? explicitTeam : favoriteTeamId
+  // 로그인 복원이 끝나기 전에는 마이팀을 알 수 없다. 전체를 먼저 불러왔다가 마이팀으로 바뀌는 깜빡임을 막으려고 기다린다.
+  const waitingForSession = authLoading && !hasExplicitChoice
 
   const [teams, setTeams] = useState<Team[]>([])
   const [reloadKey, setReloadKey] = useState(0)
@@ -55,6 +64,7 @@ export function SchedulePage() {
   }, [])
 
   useEffect(() => {
+    if (waitingForSession) return undefined
     const controller = new AbortController()
     api
       .getSchedule(selectedDate, selectedTeamId, controller.signal)
@@ -65,12 +75,12 @@ export function SchedulePage() {
         }
       })
     return () => controller.abort()
-  }, [selectedDate, selectedTeamId, requestKey])
+  }, [selectedDate, selectedTeamId, requestKey, waitingForSession])
 
   const updateParams = (next: { date?: string; team?: number | null }) => {
     const params = new URLSearchParams(searchParams)
     if (next.date !== undefined) params.set('date', next.date)
-    if (next.team === null) params.delete('team')
+    if (next.team === null) params.set('team', 'all')
     else if (next.team !== undefined) params.set('team', String(next.team))
     setSearchParams(params, { replace: true })
   }
@@ -85,7 +95,12 @@ export function SchedulePage() {
 
       <main className="home-main" id="schedule">
         {teams.length > 0 && (
-          <TeamFilterRail teams={teams} selectedTeamId={selectedTeamId} onSelect={(team) => updateParams({ team })} />
+          <TeamFilterRail
+            teams={teams}
+            selectedTeamId={selectedTeamId}
+            favoriteTeamId={favoriteTeamId}
+            onSelect={(team) => updateParams({ team })}
+          />
         )}
 
         <div className="home-dates" aria-label="경기 날짜 선택">
@@ -124,7 +139,13 @@ export function SchedulePage() {
                 ? '월요일은 KBO 리그 정규 휴식일입니다.'
                 : '다른 날짜나 구단을 선택해 보세요.'
             }
-          />
+          >
+            {selectedTeamId !== null && (
+              <button type="button" className="home-button home-button--primary" onClick={() => updateParams({ team: null })}>
+                전체 구단 보기
+              </button>
+            )}
+          </EmptyState>
         ) : (
           <ul className="home-games">
             {games.map((game) => (
@@ -146,11 +167,19 @@ export function SchedulePage() {
 type TeamFilterRailProps = {
   teams: Team[]
   selectedTeamId: number | null
+  favoriteTeamId: number | null
   onSelect: (teamId: number | null) => void
 }
 
-/** 구단 필터를 원형 로고 캐러셀로 보여준다. 넘칠 때만 오른쪽에 화살표 버튼을 띄운다. */
-function TeamFilterRail({ teams, selectedTeamId, onSelect }: TeamFilterRailProps) {
+/**
+ * 구단 필터를 원형 로고 캐러셀로 보여준다. 넘칠 때만 오른쪽에 화살표 버튼을 띄운다.
+ * 마이팀은 "전체" 바로 뒤에 고정해 두고 "MY" 표시를 붙인다. 나머지 구단은 원래 순서 그대로다.
+ */
+function TeamFilterRail({ teams, selectedTeamId, favoriteTeamId, onSelect }: TeamFilterRailProps) {
+  const ordered = useMemo(
+    () => [...teams.filter((team) => team.id === favoriteTeamId), ...teams.filter((team) => team.id !== favoriteTeamId)],
+    [teams, favoriteTeamId],
+  )
   const trackRef = useRef<HTMLDivElement>(null)
   const [canScroll, setCanScroll] = useState(false)
 
@@ -180,7 +209,7 @@ function TeamFilterRail({ teams, selectedTeamId, onSelect }: TeamFilterRailProps
           <span className="home-team-card__all">전체</span>
           <span className="home-team-card__label">전체</span>
         </button>
-        {teams.map((team) => (
+        {ordered.map((team) => (
           <button
             key={team.id}
             type="button"
@@ -191,6 +220,7 @@ function TeamFilterRail({ teams, selectedTeamId, onSelect }: TeamFilterRailProps
           >
             <TeamMark team={team} size="lg" />
             <span className="home-team-card__label">{teamNameEn(team)}</span>
+            {team.id === favoriteTeamId && <span className="home-team-card__mine">MY</span>}
           </button>
         ))}
       </div>

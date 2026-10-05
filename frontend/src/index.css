@@ -3274,3 +3274,21 @@ p {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
+
+/* 문장 속에 끼우는 글자 모양 버튼. 눌러서 창을 여는 동작이라 링크가 아니라 button이다. */
+.link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.my-reservations__calendar {
+  margin: -8px 0 16px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
