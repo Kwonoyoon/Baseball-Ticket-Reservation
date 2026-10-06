@@ -23,7 +23,7 @@ function renderHeader(initialEntry = '/') {
 async function renderLoggedIn(role: 'MEMBER' | 'ADMIN' = 'MEMBER', initialEntry = '/') {
   const fetchMock = restoreSessionAs(testMember(role))
   renderHeader(initialEntry)
-  await screen.findByText('야구팬님')
+  await screen.findByRole('link', { name: '야구팬님' })
   return fetchMock
 }
 
@@ -41,35 +41,31 @@ describe('Header', () => {
     expect(screen.queryByRole('button', { name: '로그아웃' })).not.toBeInTheDocument()
   })
 
-  it('로그인 후에는 이름(마이페이지 링크)과 예매내역, 로그아웃이 보인다', async () => {
+  it('로그인 후에는 이름(마이페이지 링크)과 예매내역이 보이고, 로그아웃은 사이드바 안에 있다', async () => {
     await renderLoggedIn()
 
     expect(screen.getByRole('link', { name: '야구팬님' })).toHaveAttribute('href', '/my/account')
     expect(screen.getByRole('link', { name: '예매내역' })).toHaveAttribute('href', '/my/reservations')
-    expect(screen.getByRole('button', { name: '로그아웃' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '로그아웃' })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: '로그인' })).not.toBeInTheDocument()
   })
 
   it('로그아웃하면 예매내역이 사라지고 로그인/회원가입이 다시 나온다', async () => {
     const fetchMock = await renderLoggedIn()
+    const user = userEvent.setup()
 
-    await userEvent.setup().click(screen.getByRole('button', { name: '로그아웃' }))
+    // 로그아웃은 이제 사이드바 안에 있다.
+    await user.click(screen.getByRole('button', { name: '메뉴 열기' }))
+    await user.click(screen.getByRole('button', { name: '로그아웃' }))
 
-    expect(screen.queryByText('예매내역')).not.toBeInTheDocument()
+    // 닫는 애니메이션이 끝나야 사이드바 속 "예매내역" 항목도 화면에서 빠진다.
+    await waitFor(() => expect(screen.queryByText('예매내역')).not.toBeInTheDocument())
     expect(screen.getByRole('link', { name: '로그인' })).toBeInTheDocument()
     expect(fetchMock).toHaveBeenCalledWith('/api/auth/logout', expect.objectContaining({ method: 'POST' }))
     expect(localStorage.getItem('ballpark.session')).toBeNull()
   })
 
-  it('회원 관리 메뉴는 관리자에게만 보인다', async () => {
-    await renderLoggedIn('MEMBER')
-    expect(screen.queryByRole('link', { name: '회원 관리' })).not.toBeInTheDocument()
-  })
-
-  it('관리자에게는 회원 관리 메뉴가 보인다', async () => {
-    await renderLoggedIn('ADMIN')
-    expect(screen.getByRole('link', { name: '회원 관리' })).toHaveAttribute('href', '/admin/members')
-  })
+  // 회원 관리(관리자) 메뉴는 이제 헤더가 아니라 사이드바("관리자 페이지")에 있다. 아래 'Header 사이드바'에서 확인한다.
 
   it('세션을 복원하는 동안에는 로그인 버튼을 잠깐 보여 주지 않는다', async () => {
     localStorage.setItem('ballpark.session', '1')

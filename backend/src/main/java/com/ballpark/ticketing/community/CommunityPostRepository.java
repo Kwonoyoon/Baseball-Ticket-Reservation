@@ -16,10 +16,13 @@ public interface CommunityPostRepository extends JpaRepository<CommunityPost, Lo
             join fetch p.member
             where p.team.id = :teamId
               and (:category is null or p.category = :category)
+              and (:pattern is null
+                   or lower(p.title) like :pattern escape '!'
+                   or lower(p.content) like :pattern escape '!')
             order by p.id desc
             """)
     List<CommunityPost> findByTeamId(@Param("teamId") Long teamId, @Param("category") PostCategory category,
-            Pageable pageable);
+            @Param("pattern") String pattern, Pageable pageable);
 
     @Query("""
             select p from CommunityPost p

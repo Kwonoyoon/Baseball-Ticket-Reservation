@@ -6,6 +6,7 @@ import type { Reservation } from '../api/types'
 import { ReservationTicket } from '../components/ReservationTicket'
 import { ReservedSeatMap } from '../components/ReservedSeatMap'
 import { ErrorMessage, Loading } from '../components/StatusView'
+import { openCalendarWindow } from '../lib/calendarWindow'
 
 export function ReservationDetailPage() {
   const params = useParams()
@@ -44,6 +45,12 @@ export function ReservationDetailPage() {
           <div>
             <h1>예매가 완료되었습니다</h1>
             <p>경기 당일 예매번호를 매표소 또는 입장 게이트에서 확인해 주세요.</p>
+            <p>
+              직관 캘린더에 예정으로 기록됐어요.{' '}
+              <button type="button" className="link-button" onClick={openCalendarWindow}>
+                캘린더에서 보기
+              </button>
+            </p>
           </div>
         </section>
       ) : (

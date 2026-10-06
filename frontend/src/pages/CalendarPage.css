@@ -106,6 +106,22 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, white);
 }
 
+/* 예매만 해 둔 날(아직 시작 전): 색은 채우지 않고 테두리만 둬서 "다녀온 날"과 구분한다. */
+.calendar__day.is-scheduled {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.calendar__day.is-scheduled:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.calendar__day.is-scheduled[aria-pressed='true'] {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, white);
+}
+
 /* 같은 날 두 경기 이상이면 오른쪽 위에 개수를 적는다. */
 .calendar__count {
   position: absolute;
@@ -162,6 +178,24 @@
 .calendar-detail__item span {
   color: var(--text-muted);
   font-size: 13px;
+}
+
+/* 직관 완료 / 예매 예정 꼬리표 */
+.calendar-detail__tag {
+  justify-self: start;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.calendar-detail__tag.is-upcoming {
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
 }
 
 .calendar-detail__item a {

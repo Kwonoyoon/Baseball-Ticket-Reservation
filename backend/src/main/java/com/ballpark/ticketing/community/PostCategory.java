@@ -5,7 +5,8 @@ public enum PostCategory {
 
     FREE("자유"),
     GAME("경기"),
-    CHEER("응원");
+    CHEER("응원"),
+    TICKET_TRANSFER("티켓 양도");
 
     private final String label;
 

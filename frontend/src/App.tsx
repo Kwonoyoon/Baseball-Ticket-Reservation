@@ -21,6 +21,7 @@ import { ProfileEditPage } from './pages/ProfileEditPage'
 import { ReservationDetailPage } from './pages/ReservationDetailPage'
 import { SchedulePage } from './pages/SchedulePage'
 import { SignupPage } from './pages/SignupPage'
+import { TransferMarketPage } from './pages/TransferMarketPage'
 import { WithdrawPage } from './pages/WithdrawPage'
 
 const router = createBrowserRouter([
@@ -66,6 +67,14 @@ const router = createBrowserRouter([
         element: (
           <RequireAuth>
             <MyReservationsPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'transfers',
+        element: (
+          <RequireAuth>
+            <TransferMarketPage />
           </RequireAuth>
         ),
       },

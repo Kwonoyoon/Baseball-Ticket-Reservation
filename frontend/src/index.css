@@ -43,10 +43,6 @@
   --radius-lg: 20px;
   --shadow: 0 1px 2px rgb(15 35 64 / 6%), 0 8px 24px rgb(15 35 64 / 6%);
 
-  /* 메인 화면(SchedulePage.css의 --home-display)과 같은 로고 글꼴. index.html에서 전역으로 불러온다. */
-  --font-display: 'Archivo Black', Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', system-ui,
-    sans-serif;
-
   font-family: Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', system-ui, sans-serif;
   line-height: 1.5;
   color: var(--text);
@@ -138,7 +134,7 @@ p {
 }
 
 :root[data-team-theme] .site-header .site-nav a,
-:root[data-team-theme] .site-header .site-header__user,
+:root[data-team-theme] .site-header .site-header__mypage,
 :root[data-team-theme] .site-header .icon-button {
   color: rgb(255 255 255 / 88%);
 }
@@ -154,7 +150,7 @@ p {
   color: #fff;
 }
 
-:root[data-team-theme] .site-header .site-header__user:hover {
+:root[data-team-theme] .site-header .site-header__mypage:hover {
   color: #fff;
 }
 
@@ -200,11 +196,11 @@ p {
   color: var(--accent);
 }
 
-.site-header__inner {
+.site-header__row {
   display: flex;
   align-items: center;
   gap: 28px;
-  height: 64px;
+  height: 60px;
 }
 
 .brand {
@@ -220,13 +216,18 @@ p {
   height: 40px;
 }
 
+/* 둘째 줄(경기 일정·예매내역). 참고 사이트처럼 항목 사이가 붙어 보이지 않게 gap을 넉넉히 두고, 가운데 정렬한다. */
 .site-nav {
   display: flex;
-  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  height: 46px;
+  border-top: 1px solid var(--border);
 }
 
 .site-nav a {
-  padding: 8px 12px;
+  padding: 8px 4px;
   border-radius: var(--radius-sm);
   color: var(--text-muted);
   font-weight: 600;
@@ -250,16 +251,18 @@ p {
   margin-left: auto;
 }
 
-.site-header__user {
-  margin-right: 4px;
+.site-header__mypage {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
   font-size: 14px;
   color: var(--text-muted);
+  font-weight: 600;
   text-decoration: none;
 }
 
-.site-header__user:hover {
+.site-header__mypage:hover {
   color: var(--text);
-  text-decoration: underline;
+  background: var(--surface-muted);
 }
 
 .icon-button {
@@ -1162,16 +1165,6 @@ p {
 
 /* ---------- 커뮤니티 ---------- */
 
-.page-subtitle {
-  margin-top: -12px;
-  margin-bottom: 20px;
-  color: var(--text-muted);
-}
-
-/*
- * 카드마다 응원 구단의 실제 색(--team-color, primaryColor)을 쓴다.
- * 위쪽 색 띠 + 은은한 색 배경으로 10개 카드가 다 같은 흰 상자로 보이지 않게 한다.
- */
 .community-post-form__content {
   min-height: 220px;
   padding: 12px 14px;
@@ -1758,6 +1751,7 @@ p {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface);
+  color: var(--text);
 }
 
 .field input:focus-visible {
@@ -2028,25 +2022,22 @@ p {
 }
 
 @media (max-width: 720px) {
-  .site-header__inner {
+  .site-header__row {
+    gap: 12px;
+  }
+
+  .site-nav {
     gap: 12px;
   }
 
   .site-nav a {
-    padding: 6px 8px;
+    padding: 6px 4px;
     font-size: 14px;
-  }
-
-  .site-header__user,
-  .brand__sub {
-    display: none;
   }
 
   .brand__logo {
     height: 30px;
   }
-
-
 
   .ticket {
     grid-template-columns: 1fr;
@@ -2063,14 +2054,8 @@ p {
     padding-inline: 16px;
   }
 
-  .site-header__inner {
+  .site-header__row {
     gap: 8px;
-  }
-
-  /* 로그인 상태의 헤더(메뉴+로고+알림+로그아웃)만으로도 좁은 화면이 꽉 차서 링크는 접는다.
-     로고가 홈 링크이고, 예매내역은 사이드바에 있다. */
-  .site-nav {
-    display: none;
   }
 
   /* 아주 좁은 화면에서는 로그인만 남기고 회원가입 버튼을 접어 헤더 줄바꿈을 막는다. */
@@ -3288,4 +3273,22 @@ p {
 .password-input__toggle:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
+}
+
+/* 문장 속에 끼우는 글자 모양 버튼. 눌러서 창을 여는 동작이라 링크가 아니라 button이다. */
+.link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.my-reservations__calendar {
+  margin: -8px 0 16px;
+  color: var(--text-muted);
+  font-size: 14px;
 }

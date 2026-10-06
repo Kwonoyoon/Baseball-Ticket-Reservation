@@ -39,6 +39,12 @@ public enum ErrorCode {
     HOLD_EXPIRED(HttpStatus.CONFLICT, "좌석 선점 시간이 만료되었습니다. 좌석을 다시 선택해 주세요."),
     PAYMENT_FAILED(HttpStatus.PAYMENT_REQUIRED, "결제에 실패했습니다."),
     NOT_CANCELABLE(HttpStatus.CONFLICT, "취소할 수 없는 예매입니다."),
+    TRANSFER_NOT_FOUND(HttpStatus.NOT_FOUND, "양도글을 찾을 수 없습니다."),
+    TRANSFER_CLOSED(HttpStatus.CONFLICT, "이미 판매되었거나 거둬들인 양도글입니다."),
+    TRANSFER_NOT_ALLOWED(HttpStatus.CONFLICT, "양도할 수 없는 예매입니다. 확정된 예매이고 경기가 시작되기 전이어야 합니다."),
+    ALREADY_LISTED(HttpStatus.CONFLICT, "이미 양도 등록된 예매입니다."),
+    CANNOT_BUY_OWN_TICKET(HttpStatus.BAD_REQUEST, "본인이 올린 양도글은 살 수 없습니다."),
+    TRANSFER_LISTED(HttpStatus.CONFLICT, "양도 등록 중인 예매는 취소할 수 없습니다. 먼저 양도 등록을 취소해 주세요."),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
 
     private final HttpStatus status;

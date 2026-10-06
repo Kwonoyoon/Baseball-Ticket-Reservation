@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
-import { Link, NavLink, useNavigate } from 'react-router'
+import { Link, NavLink } from 'react-router'
 import { useAuth } from '../auth/useAuth'
 import { NotificationBell } from './NotificationBell'
 import { Sidebar } from './Sidebar'
@@ -7,14 +7,14 @@ import brandLogo from '../../image/safeticket_full.png'
 
 /**
  * 모든 화면이 함께 쓰는 헤더. 메인 화면(SchedulePage)도 다른 화면(Layout)도 이 파일 하나만 가져다 쓴다.
- * 예전엔 이 둘이 따로 구현돼 있어서 로고 크기·글꼴이 서로 어긋나는 일이 있었다 — 그래서 하나로 합쳤다.
+ * 두 줄 구조다: 윗줄은 로고와 마이페이지·알림(로그인 전엔 로그인·회원가입)만, 아랫줄은 경기 일정·예매내역 메뉴다.
  *
- * 비회원(로그인 전)에게는 예매내역·메뉴(사이드바)·알림을 아예 렌더링하지 않고, 회원 관리는 관리자에게만 보인다. (숨김이 아니라 DOM에 없음)
+ * 비회원(로그인 전)에게는 예매내역·메뉴(사이드바)·마이페이지·알림을 아예 렌더링하지 않는다. (숨김이 아니라 DOM에 없음)
  * 다만 이건 화면 정리일 뿐 접근 제어가 아니다. 회원 화면은 RequireAuth와 서버 401이, 관리자 화면은 RequireAdmin과 서버 403이 막는다.
+ * 로그아웃·관리자 페이지는 사이드바(메뉴 버튼) 안에 있다.
  */
 export function Header() {
-  const { member, isAdmin, loading, logout } = useAuth()
-  const navigate = useNavigate()
+  const { member, loading } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const menuButtonRef = useRef<HTMLButtonElement>(null)
 
@@ -24,38 +24,34 @@ export function Header() {
     menuButtonRef.current?.focus()
   }, [])
 
-  const handleLogout = () => {
-    void logout()
-    navigate('/')
-  }
-
   return (
     <header className="site-header">
-      <div className="container site-header__inner">
-
+      <div className="container site-header__row">
         <Link to="/" className="brand">
           <img src={brandLogo} alt="SAFETICKET" className="brand__logo" />
         </Link>
 
-        <nav className="site-nav" aria-label="주요 메뉴">
-          <NavLink to="/" end>
-            경기 일정
-          </NavLink>
-          <NavLink to="/community">커뮤니티</NavLink>
-          {member && <NavLink to="/my/reservations">예매내역</NavLink>}
-          {isAdmin && <NavLink to="/admin/members">회원 관리</NavLink>}
-          {isAdmin && <NavLink to="/admin/community/reports">신고 관리</NavLink>}
-        </nav>
-
         <div className="site-header__auth">
           {member ? (
             <>
-              <NotificationBell />
-              <Link to="/my/account" className="site-header__user" title="마이페이지">
+              <Link to="/my/account" className="site-header__mypage">
                 {member.name}님
               </Link>
-              <button type="button" className="button button--ghost button--sm" onClick={handleLogout}>
-                로그아웃
+              <NotificationBell />
+              <button
+                ref={menuButtonRef}
+                type="button"
+                className={`icon-button site-header__menu${sidebarOpen ? ' is-open' : ''}`}
+                aria-label="메뉴 열기"
+                aria-expanded={sidebarOpen}
+                onClick={() => setSidebarOpen((open) => !open)}
+              >
+                {/* 세 줄이 X로 바뀌는 애니메이션이라 아이콘 대신 선을 직접 그린다. */}
+                <span className="hamburger" aria-hidden="true">
+                  <span />
+                  <span />
+                  <span />
+                </span>
               </button>
             </>
           ) : loading ? null : (
@@ -69,25 +65,16 @@ export function Header() {
             </>
           )}
         </div>
-
-        {member && (
-          <button
-            ref={menuButtonRef}
-            type="button"
-            className={`icon-button site-header__menu${sidebarOpen ? ' is-open' : ''}`}
-            aria-label="메뉴 열기"
-            aria-expanded={sidebarOpen}
-            onClick={() => setSidebarOpen((open) => !open)}
-          >
-            {/* 세 줄이 X로 바뀌는 애니메이션이라 아이콘 대신 선을 직접 그린다. */}
-            <span className="hamburger" aria-hidden="true">
-              <span />
-              <span />
-              <span />
-            </span>
-          </button>
-        )}
       </div>
+
+      <nav className="container site-nav" aria-label="주요 메뉴">
+        <NavLink to="/" end>
+          경기 일정
+        </NavLink>
+        <NavLink to="/community">커뮤니티</NavLink>
+        {member && <NavLink to="/my/reservations">예매내역</NavLink>}
+        {member && <NavLink to="/transfers">티켓 양도</NavLink>}
+      </nav>
 
       <Sidebar open={sidebarOpen && member !== null} onClose={closeSidebar} />
     </header>
