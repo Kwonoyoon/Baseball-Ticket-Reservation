@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -83,6 +84,32 @@ class CommunityIntegrationTest {
         // 공백뿐이면 검색 없이 전체 목록이다.
         mockMvc.perform(get("/api/teams/" + TEAM_ID + "/posts").param("q", "   "))
                 .andExpect(jsonPath("$.items[?(@.title == '다른글-" + tag + "')]").isNotEmpty());
+    }
+
+    @Test
+    void 인기글은_좋아요_많은_순이고_좋아요가_없는_글은_뺀다() throws Exception {
+        String author = signup();
+        String fan = signup();
+        String tag = UUID.randomUUID().toString().substring(0, 8);
+        // 구단 하나를 이 테스트만 쓰는 건 아니라서, 이 글들의 상대 순서만 확인한다.
+        Long none = createPost(author, "무관심-" + tag, "내용");
+        Long one = createPost(author, "하나-" + tag, "내용");
+        Long two = createPost(author, "둘-" + tag, "내용");
+        like(fan, one);
+        like(fan, two);
+        like(author, two);
+
+        String body = mockMvc.perform(get("/api/teams/" + TEAM_ID + "/posts/popular").param("limit", "10"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        List<Integer> ids = JsonPath.read(body, "$[*].id");
+        // 좋아요 2개인 글이 1개인 글보다 앞이고, 0개인 글은 목록에 없다.
+        assertThat(ids).contains(two.intValue(), one.intValue()).doesNotContain(none.intValue());
+        assertThat(ids.indexOf(two.intValue())).isLessThan(ids.indexOf(one.intValue()));
+
+        // limit 만큼만 준다.
+        mockMvc.perform(get("/api/teams/" + TEAM_ID + "/posts/popular").param("limit", "1"))
+                .andExpect(jsonPath("$.length()").value(1));
     }
 
     @Test
@@ -272,6 +299,11 @@ class CommunityIntegrationTest {
                         .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
                 .andExpect(status().isNoContent());
         mockMvc.perform(get("/api/posts/" + postId)).andExpect(status().isNotFound());
+    }
+
+    private void like(String token, Long postId) throws Exception {
+        mockMvc.perform(post("/api/posts/" + postId + "/like").header(HttpHeaders.AUTHORIZATION, bearer(token)))
+                .andExpect(status().isOk());
     }
 
     private long teamPostCount(long teamId) throws Exception {

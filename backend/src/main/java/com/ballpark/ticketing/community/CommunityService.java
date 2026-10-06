@@ -69,6 +69,14 @@ public class CommunityService {
         return new PostPageResponse(items, hasMore);
     }
 
+    /** 구단 게시판의 인기글. 좋아요가 많은 순으로 limit개(1~10)를 준다. */
+    public List<PostSummaryResponse> listPopularPosts(Long teamId, int limit) {
+        int size = Math.min(Math.max(limit, 1), 10);
+        return postRepository.findPopularByTeamId(teamId, PageRequest.of(0, size)).stream()
+                .map(PostSummaryResponse::from)
+                .toList();
+    }
+
     /**
      * 제목·본문 부분 일치용 LIKE 패턴. 사용자가 친 %, _ 는 와일드카드가 아니라 글자 그대로 찾아야 해서
      * 이스케이프 문자(!)를 앞에 붙인다. (저장소 쿼리의 escape '!' 와 짝이다)

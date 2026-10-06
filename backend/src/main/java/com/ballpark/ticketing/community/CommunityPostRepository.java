@@ -24,6 +24,16 @@ public interface CommunityPostRepository extends JpaRepository<CommunityPost, Lo
     List<CommunityPost> findByTeamId(@Param("teamId") Long teamId, @Param("category") PostCategory category,
             @Param("pattern") String pattern, Pageable pageable);
 
+    /** 좋아요를 받은 글만, 많은 순(같으면 최신 먼저). 좋아요가 0인 글은 인기글이 아니라서 뺀다. */
+    @Query("""
+            select p from CommunityPost p
+            join fetch p.team
+            join fetch p.member
+            where p.team.id = :teamId and p.likeCount > 0
+            order by p.likeCount desc, p.id desc
+            """)
+    List<CommunityPost> findPopularByTeamId(@Param("teamId") Long teamId, Pageable pageable);
+
     @Query("""
             select p from CommunityPost p
             join fetch p.team

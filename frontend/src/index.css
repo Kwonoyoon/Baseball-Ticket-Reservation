@@ -1181,12 +1181,15 @@ p {
 
 .community-post__article {
   display: grid;
+  /* 공백 없이 긴 글자가 있어도 카드가 옆으로 늘어나지 않게 한다. grid 칸은 기본으로 내용 폭 아래로 줄지 않아서 minmax(0, 1fr)이 필요하다. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
 }
 
 .community-post__title {
   font-size: 26px;
   letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
 }
 
 .community-post__meta,
@@ -1200,6 +1203,8 @@ p {
 
 .community-post__content {
   white-space: pre-wrap;
+  /* 띄어쓰기 없이 이어진 긴 글자는 칸 끝에서 줄을 바꾼다. */
+  overflow-wrap: anywhere;
   line-height: 1.7;
 }
 
@@ -1232,6 +1237,12 @@ p {
   display: flex;
   justify-content: space-between;
   gap: 12px;
+}
+
+/* flex 칸도 내용 폭 아래로 줄지 않으므로 min-width: 0을 줘야 긴 댓글이 줄바꿈된다. */
+.community-comments__body {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .community-report-form {

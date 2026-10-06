@@ -77,7 +77,7 @@ export function TeamBoard({
         {team ? `${team.name} 게시판` : '게시판'}
       </h1>
 
-      {/* 왼쪽: 게시판(분류) 목록과 글쓰기. 오른쪽: 고른 게시판의 글. */}
+      {/* 왼쪽: 게시판(분류) 목록. 오른쪽: 맨 위에 검색과 글쓰기, 그 아래 고른 게시판의 글. */}
       <aside className="team-board__side">
         <div>
           <p className="team-board__side-title" aria-hidden="true">
@@ -98,28 +98,34 @@ export function TeamBoard({
             ))}
           </div>
         </div>
-        {/* 비회원에게도 보인다. 누르면 RequireAuth가 로그인으로 보내고, 로그인하면 이 글쓰기 화면으로 돌아온다. */}
-        {/* 지금 보는 게시판을 글쓰기 화면의 기본 분류로 넘긴다. */}
-        <Link to={`/community/${teamId}/write`} state={{ category }} className="button button--primary">
-          글쓰기
-        </Link>
       </aside>
 
       <div className="team-board__main">
-        <form className="board-search" role="search" onSubmit={submitSearch}>
-          <input
-            type="search"
-            className="board-search__input"
-            value={draft}
-            maxLength={50}
-            placeholder={`${label} 게시판에서 제목·내용 검색`}
-            aria-label="게시글 검색"
-            onChange={(e) => setDraft(e.target.value)}
-          />
-          <button type="submit" className="button button--primary button--sm">
-            검색
-          </button>
-        </form>
+        <div className="board-toolbar">
+          <form className="board-search" role="search" onSubmit={submitSearch}>
+            <input
+              type="search"
+              className="board-search__input"
+              value={draft}
+              maxLength={50}
+              placeholder={`${label} 게시판에서 제목·내용 검색`}
+              aria-label="게시글 검색"
+              onChange={(e) => setDraft(e.target.value)}
+            />
+            <button type="submit" className="button button--primary button--sm">
+              검색
+            </button>
+          </form>
+          {/* 비회원에게도 보인다. 누르면 RequireAuth가 로그인으로 보내고, 로그인하면 이 글쓰기 화면으로 돌아온다.
+              지금 보는 게시판을 글쓰기 화면의 기본 분류로 넘긴다. */}
+          <Link
+            to={`/community/${teamId}/write`}
+            state={{ category }}
+            className="button button--primary board-toolbar__write"
+          >
+            글쓰기
+          </Link>
+        </div>
         {keyword && (
           <p className="board-search__result">
             <strong>{keyword}</strong> 검색 결과

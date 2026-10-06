@@ -147,6 +147,19 @@ describe('Header 사이드바', () => {
     expect(within(sidebar).queryByRole('link', { name: /관리자 페이지/ })).not.toBeInTheDocument()
   })
 
+  it('공지는 상단바가 아니라 사이드바에 있다', async () => {
+    await renderLoggedIn()
+    const user = userEvent.setup()
+
+    // 상단바(헤더)에는 공지 링크가 없다.
+    expect(screen.queryByRole('link', { name: '공지' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '메뉴 열기' }))
+    const sidebar = screen.getByRole('complementary', { name: '사이드바' })
+
+    expect(within(sidebar).getByRole('link', { name: '공지' })).toHaveAttribute('href', '/notices')
+  })
+
   it('관리자는 사이드바에서 관리자 페이지로 갈 수 있다', async () => {
     await renderLoggedIn('ADMIN')
     const user = userEvent.setup()

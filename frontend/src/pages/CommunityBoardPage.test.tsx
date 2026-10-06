@@ -33,7 +33,17 @@ function CurrentLocation() {
   return <output aria-label="현재 주소">{location.pathname + location.search}</output>
 }
 
+/** 테스트가 따로 준비하지 않은 공지·인기글 요청은 "없음"으로 답한다. 해당 화면을 보는 테스트가 직접 덮어쓴다. */
+let extraRoutes: Record<string, unknown> = {}
+
 function renderBoard(initialEntry = '/community/1') {
+  const inner = globalThis.fetch
+  vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input)
+    if (url.startsWith('/api/notices')) return Promise.resolve(jsonResponse(200, extraRoutes.notices ?? []))
+    if (url.includes('/posts/popular')) return Promise.resolve(jsonResponse(200, extraRoutes.popular ?? []))
+    return inner(input, init)
+  })
   const page = (
     <>
       <CommunityBoardPage />
@@ -58,6 +68,7 @@ describe('CommunityBoardPage', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
     vi.restoreAllMocks()
+    extraRoutes = {}
   })
 
   it('구단 이름과 글 목록을 보여 준다', async () => {
@@ -215,23 +226,61 @@ describe('CommunityBoardPage', () => {
     // 다른 구단은 고르는 버튼으로 나오지 않는다.
     expect(screen.queryByRole('navigation', { name: '구단 선택' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'KIA 타이거즈 게시판' })).not.toBeInTheDocument()
-    // 이미 마이팀 게시판을 보고 있으니 돌아가는 버튼도 없다.
-    expect(screen.queryByRole('button', { name: '마이팀 게시판으로' })).not.toBeInTheDocument()
+    // 구단 목록은 배너를 누르기 전에는 접혀 있다.
+    expect(screen.queryByRole('list', { name: '구단 목록' })).not.toBeInTheDocument()
   })
 
-  it('마이팀이 있어도 주소로 다른 구단 게시판에 들어오면 마이팀으로 돌아가는 버튼이 나온다', async () => {
+  it('마이팀 배너를 누르면 아래에 구단 목록이 펼쳐지고, 다른 구단을 고르면 그 게시판으로 간다', async () => {
     restoreSessionAs(testMember('MEMBER', { favoriteTeamId: 2 }), (url) => {
       if (url === '/api/teams') return jsonResponse(200, teams)
       if (url.startsWith('/api/teams/')) return jsonResponse(200, { items: [], hasMore: false })
       return undefined
     })
-    renderBoard('/community/3')
+    renderBoard('/community')
 
-    await screen.findByText('KIA 타이거즈 게시판', { selector: 'h1' })
-    await userEvent.click(await screen.findByRole('button', { name: '마이팀 게시판으로' }))
+    // 처음에는 마이팀 배너만 보이고 구단 목록은 접혀 있다.
+    const banner = await screen.findByRole('button', { name: /눌러서 다른 구단 보기/ })
+    expect(banner).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByRole('list', { name: '구단 목록' })).not.toBeInTheDocument()
 
-    expect(await screen.findByText('두산 베어스 게시판', { selector: 'h1' })).toBeInTheDocument()
-    expect(screen.getByLabelText('현재 주소')).toHaveTextContent('/community/2')
+    await userEvent.click(banner)
+
+    const strip = screen.getByRole('list', { name: '구단 목록' })
+    expect(banner).toHaveAttribute('aria-expanded', 'true')
+    expect(within(strip).getAllByRole('button')).toHaveLength(teams.length)
+    // 끊김 없이 흐르게 같은 목록을 이어 붙였지만, 복사본은 보조기기와 키보드에서 숨겨 구단이 중복으로 읽히지 않는다.
+    const clones = document.querySelectorAll('.team-picker__strip[aria-hidden="true"]')
+    expect(clones.length).toBeGreaterThan(0)
+    clones.forEach((clone) => {
+      clone.querySelectorAll('button').forEach((button) => expect(button).toHaveAttribute('tabindex', '-1'))
+    })
+    // 지금 보는 구단이 눌린 상태이고, 마이팀에는 별이 붙는다. (글자 "마이팀"은 쓰지 않는다)
+    expect(within(strip).getByRole('button', { pressed: true })).toHaveAccessibleName(/두산/)
+    expect(within(strip).getByText(/★/)).toBeInTheDocument()
+
+    await userEvent.click(within(strip).getByRole('button', { name: /KIA/ }))
+
+    expect(await screen.findByText('KIA 타이거즈 게시판', { selector: 'h1' })).toBeInTheDocument()
+    expect(screen.getByLabelText('현재 주소')).toHaveTextContent('/community/3')
+    // 고르면 목록이 접히고, 배너가 고른 구단으로 바뀐다.
+    expect(screen.queryByRole('list', { name: '구단 목록' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /KIA 타이거즈 게시판, 눌러서/ })).toBeInTheDocument()
+  })
+
+  it('구단 목록은 Esc로 접힌다', async () => {
+    restoreSessionAs(testMember('MEMBER', { favoriteTeamId: 2 }), (url) => {
+      if (url === '/api/teams') return jsonResponse(200, teams)
+      if (url.startsWith('/api/teams/')) return jsonResponse(200, { items: [], hasMore: false })
+      return undefined
+    })
+    renderBoard('/community')
+
+    await userEvent.click(await screen.findByRole('button', { name: /눌러서 다른 구단 보기/ }))
+    expect(screen.getByRole('list', { name: '구단 목록' })).toBeInTheDocument()
+
+    await userEvent.keyboard('{Escape}')
+
+    expect(screen.queryByRole('list', { name: '구단 목록' })).not.toBeInTheDocument()
   })
 
   it('마이팀이 없을 때만 구단이 모두 보이고, 마이팀을 정하러 가는 링크가 있다', async () => {
@@ -273,7 +322,11 @@ describe('CommunityBoardPage', () => {
 
     const side = screen.getByRole('tablist', { name: '게시글 분류' })
     expect(side).toHaveAttribute('aria-orientation', 'vertical')
-    expect(within(side).getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['자유', '경기', '응원', '티켓 양도'])
+    expect(
+      within(side)
+        .getAllByRole('tab')
+        .map((tab) => tab.textContent),
+    ).toEqual(['자유', '경기', '응원', '티켓 양도'])
   })
 
   it('구단을 누르면 아래 게시판이 그 구단으로 바뀐다', async () => {
@@ -303,7 +356,9 @@ describe('CommunityBoardPage', () => {
       if (url === '/api/teams') return jsonResponse(200, teams)
       if (url.startsWith('/api/teams/1/posts') && url.includes('category=GAME')) {
         return jsonResponse(200, {
-          items: [{ ...postPage().items[0], id: 11, category: 'GAME', title: '오늘 경기 후기', preview: '9회말 끝내기!' }],
+          items: [
+            { ...postPage().items[0], id: 11, category: 'GAME', title: '오늘 경기 후기', preview: '9회말 끝내기!' },
+          ],
           hasMore: false,
         })
       }
@@ -355,8 +410,9 @@ describe('CommunityBoardPage', () => {
     await screen.findByText('KIA 타이거즈 게시판', { selector: 'h1' })
     await waitFor(() => expect(rootBg()).toContain('#EA0029'))
 
-    // 마이팀 게시판으로 돌아가면 마이팀 색으로 바뀐다.
-    await userEvent.click(screen.getByRole('button', { name: '마이팀 게시판으로' }))
+    // 배너를 눌러 마이팀(LG)을 고르면 마이팀 색으로 바뀐다.
+    await userEvent.click(screen.getByRole('button', { name: /눌러서 다른 구단 보기/ }))
+    await userEvent.click(within(screen.getByRole('list', { name: '구단 목록' })).getByRole('button', { name: /LG/ }))
     await screen.findByText('LG 트윈스 게시판', { selector: 'h1' })
     await waitFor(() => expect(rootBg()).toContain('#C30452'))
 
@@ -380,5 +436,84 @@ describe('CommunityBoardPage', () => {
     expect(document.querySelector('.team-banner-wrap')).toBeNull()
     expect(document.querySelector('.cheer')).toBeNull()
     expect(screen.queryByText('LG TWINS')).not.toBeInTheDocument()
+  })
+
+  it('커뮤니티 공지와 인기글이 구단 아래, 게시판 위에 순서대로 뜬다', async () => {
+    extraRoutes = {
+      notices: [
+        {
+          id: 1,
+          scope: 'COMMUNITY',
+          category: 'MAINTENANCE',
+          title: '새벽 점검 안내',
+          content: '2시부터 점검합니다.',
+          createdAt: '2026-10-05T10:00:00',
+          updatedAt: '2026-10-05T10:00:00',
+        },
+      ],
+      popular: [{ ...postPage().items[0], id: 77, title: '좋아요 많은 글', likeCount: 9 }],
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url === '/api/teams') return jsonResponse(200, teams)
+        if (url.startsWith('/api/teams/1/posts')) return jsonResponse(200, postPage())
+        return jsonResponse(404, { code: 'NOT_FOUND', message: '없음' })
+      }),
+    )
+    renderBoard()
+
+    const notices = await screen.findByRole('region', { name: '커뮤니티 공지' })
+    const popular = await screen.findByRole('region', { name: '인기글' })
+    expect(within(notices).getByText('새벽 점검 안내')).toBeInTheDocument()
+    expect(within(notices).getByText('점검')).toBeInTheDocument()
+    expect(within(popular).getByRole('link', { name: /좋아요 많은 글/ })).toHaveAttribute(
+      'href',
+      '/community/1/posts/77',
+    )
+    expect(within(popular).getByText('좋아요 9')).toBeInTheDocument()
+    // 공지 → 인기글 → 게시판(검색·글쓰기) 순서
+    const board = screen.getByRole('search')
+    expect(notices.compareDocumentPosition(popular) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(popular.compareDocumentPosition(board) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('공지나 인기글이 없으면 그 자리를 그리지 않는다', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url === '/api/teams') return jsonResponse(200, teams)
+        if (url.startsWith('/api/teams/1/posts')) return jsonResponse(200, postPage())
+        return jsonResponse(404, { code: 'NOT_FOUND', message: '없음' })
+      }),
+    )
+    renderBoard()
+
+    await screen.findByText('첫 글입니다')
+    expect(screen.queryByRole('region', { name: '커뮤니티 공지' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: '인기글' })).not.toBeInTheDocument()
+  })
+
+  it('글쓰기 버튼은 게시판 맨 위 검색창의 오른쪽에 있다', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url === '/api/teams') return jsonResponse(200, teams)
+        if (url.startsWith('/api/teams/1/posts')) return jsonResponse(200, postPage())
+        return jsonResponse(404, { code: 'NOT_FOUND', message: '없음' })
+      }),
+    )
+    renderBoard()
+
+    const write = await screen.findByRole('link', { name: '글쓰기' })
+    const side = document.querySelector('.team-board__side')
+    expect(side).not.toContainElement(write)
+    const search = screen.getByRole('search')
+    expect(write.closest('.board-toolbar')).toContainElement(search)
+    // 검색창의 오른쪽에 있다.
+    expect(search.compareDocumentPosition(write) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 })

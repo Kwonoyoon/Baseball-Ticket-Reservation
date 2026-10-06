@@ -98,7 +98,8 @@ describe('TodayHero', () => {
     const slide = (await screen.findAllByRole('group', { hidden: true }))[0]
     // 오늘이 아니므로 "오늘 · 구장" 대신 "월.일 · 구장"으로 표시한다.
     expect(within(slide).getByText(/^\d+\.\d+ · LG구장$/)).toBeInTheDocument()
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    // 오늘, 내일 두 날짜만 조회한다. (뉴스 요청은 일정 조회가 아니라서 센다고 하지 않는다)
+    expect(fetchMock.mock.calls.filter(([url]) => String(url).startsWith('/api/games'))).toHaveLength(2)
   })
 
   it('가까운 날짜에 경기가 하나도 없으면 안내 문구를 보여준다', async () => {
@@ -117,5 +118,64 @@ describe('TodayHero', () => {
 
     expect(await screen.findByText('경기 정보를 불러오지 못했습니다.')).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Today KBO')
+  })
+
+  it('경기 슬라이드 뒤에 KBO 뉴스를 붙이고, 뉴스 슬라이드의 링크는 새 탭으로 연다', async () => {
+    const today = todayInSeoul()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => {
+        const body = String(url).startsWith('/api/news')
+          ? [
+              {
+                title: '프로야구, 역대 최다관중 달성',
+                link: 'https://www.yna.co.kr/view/A1',
+                source: '연합뉴스',
+                imageUrl: null,
+                publishedAt: '2026-10-06T12:04:05',
+              },
+            ]
+          : [game(1, today, LG, DOOSAN)]
+        return Promise.resolve(
+          new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+        )
+      }),
+    )
+
+    render(<TodayHero />)
+
+    const link = await screen.findByRole('link', { name: /프로야구, 역대 최다관중 달성/, hidden: true })
+    expect(link).toHaveAttribute('href', 'https://www.yna.co.kr/view/A1')
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'))
+    expect(link).toHaveTextContent('연합뉴스')
+    // 경기 1개 + 뉴스 1개 = 점 2개, 뉴스는 경기 뒤(맨 끝)에 온다.
+    const dots = screen.getAllByRole('button')
+    expect(dots).toHaveLength(2)
+    expect(dots[1]).toHaveAccessibleName(/KBO 뉴스/)
+    // 화면에 안 보이는 뉴스 링크는 키보드로 잡히지 않는다.
+    expect(link).toHaveAttribute('tabindex', '-1')
+  })
+
+  it('뉴스를 불러오지 못해도 경기 슬라이드는 그대로 보인다', async () => {
+    const today = todayInSeoul()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) =>
+        String(url).startsWith('/api/news')
+          ? Promise.resolve(new Response('{}', { status: 500, headers: { 'Content-Type': 'application/json' } }))
+          : Promise.resolve(
+              new Response(JSON.stringify([game(1, today, LG, DOOSAN)]), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' },
+              }),
+            ),
+      ),
+    )
+
+    render(<TodayHero />)
+
+    expect(await screen.findAllByRole('group', { hidden: true })).toHaveLength(1)
+    expect(screen.queryByRole('link', { name: /KBO 뉴스/, hidden: true })).not.toBeInTheDocument()
   })
 })

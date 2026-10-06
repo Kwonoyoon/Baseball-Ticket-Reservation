@@ -47,8 +47,11 @@ public class SecurityConfig {
                                 "/api/games/*/seats", "/api/games/*/seats/summary")
                         .permitAll()
                         // 커뮤니티 글·댓글은 비회원도 읽을 수 있다. 쓰기(글 작성·좋아요·신고 등)는 그 밖의 API로 걸린다.
-                        .requestMatchers(HttpMethod.GET, "/api/teams/*/posts", "/api/posts/*",
-                                "/api/posts/*/comments", "/api/community/team-post-counts")
+                        .requestMatchers(HttpMethod.GET, "/api/teams/*/posts", "/api/teams/*/posts/popular",
+                                "/api/posts/*", "/api/posts/*/comments", "/api/community/team-post-counts")
+                        .permitAll()
+                        // 공지와 KBO 뉴스도 로그인 없이 읽는다. (공지 쓰기는 /api/admin/** 로 관리자만)
+                        .requestMatchers(HttpMethod.GET, "/api/notices", "/api/news")
                         .permitAll()
                         .requestMatchers("/actuator/health", "/h2-console/**", "/error").permitAll()
                         // 관리자
