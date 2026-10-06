@@ -21,7 +21,7 @@ const reservation: Reservation = {
     startAt: '2026-09-20T18:30:00',
     homeTeam: team,
     awayTeam: { ...team, id: 2, code: 'KIA', name: 'KIA 타이거즈', shortName: 'KIA' },
-    stadium: { id: 1, name: '서울종합운동장 야구장', city: '서울' },
+    stadium: { id: 1, name: '서울종합운동장 야구장', city: '서울', code: 'JAMSIL' },
     status: 'SCHEDULED',
     homeScore: null,
     awayScore: null,

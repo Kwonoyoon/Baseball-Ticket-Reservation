@@ -21,6 +21,10 @@ public class Stadium {
     @Column(nullable = false, length = 50)
     private String city;
 
+    /** 좌석 배치도를 고르는 코드 (예: JAMSIL). 프론트 lib/stadiumMaps.ts 의 키와 같다. */
+    @Column(length = 20)
+    private String code;
+
     protected Stadium() {
     }
 
@@ -34,5 +38,9 @@ public class Stadium {
 
     public String getCity() {
         return city;
+    }
+
+    public String getCode() {
+        return code;
     }
 }

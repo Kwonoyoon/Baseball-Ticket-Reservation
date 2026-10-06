@@ -37,6 +37,10 @@
   --grade-navy: #28356b;
   --grade-infield: #1c6fd1;
   --grade-outfield: #2f8a57;
+  --grade-cheer: #e0457b;
+  --grade-sky: #4fa3c7;
+  --grade-grass: #6baa3c;
+  --grade-party: #b5651d;
 
   --radius-sm: 8px;
   --radius: 14px;
@@ -1350,6 +1354,22 @@ p {
 
 .grade--outfield {
   --grade-color: var(--grade-outfield);
+}
+
+.grade--cheer {
+  --grade-color: var(--grade-cheer);
+}
+
+.grade--sky {
+  --grade-color: var(--grade-sky);
+}
+
+.grade--grass {
+  --grade-color: var(--grade-grass);
+}
+
+.grade--party {
+  --grade-color: var(--grade-party);
 }
 
 .stadium {

@@ -65,7 +65,7 @@ export function ReservationDetailPage() {
           <h2 id="seat-location-title" className="panel__title">
             내 좌석 위치
           </h2>
-          <ReservedSeatMap seats={reservation.seats} />
+          <ReservedSeatMap seats={reservation.seats} stadiumCode={reservation.game.stadium.code} />
         </section>
       )}
 

@@ -22,7 +22,7 @@ function reservation(id: number, startAt: string, status: ReservationStatus = 'C
       startAt,
       homeTeam: team(1, 'LG 트윈스'),
       awayTeam: team(2, '두산 베어스'),
-      stadium: { id: 1, name: '잠실야구장', city: '서울' },
+      stadium: { id: 1, name: '잠실야구장', city: '서울', code: 'JAMSIL' },
       status: 'SCHEDULED',
       homeScore: null,
       awayScore: null,

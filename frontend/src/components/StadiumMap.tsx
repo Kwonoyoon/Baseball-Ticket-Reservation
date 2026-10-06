@@ -1,18 +1,13 @@
 import { useRef, useState, type KeyboardEvent, type MouseEvent } from 'react'
 import type { SeatSection } from '../api/types'
 import { formatPrice } from '../lib/format'
-import {
-  BASE_LABELS,
-  FIELD_LINES,
-  FIELD_MARKS,
-  FIELD_SHAPES,
-  STADIUM_BLOCKS,
-  STADIUM_OUTLINE,
-  STADIUM_VIEW_BOX,
-} from '../lib/stadiumBlocks'
 import { remainingLabel } from '../lib/stadiumMap'
+import { STADIUM_VIEW_BOX, type StadiumLayout } from '../lib/stadiumMaps'
+import { StadiumGround } from './StadiumGround'
 
 type StadiumMapProps = {
+  /** 이 경기 구장의 좌석 배치도 (구장마다 다르다) */
+  layout: StadiumLayout
   sections: SeatSection[]
   activeSectionId: number | null
   /** 구역별 잔여석. 아직 불러오지 못한 구역은 값이 없다. */
@@ -32,6 +27,7 @@ type Tooltip = {
 }
 
 export function StadiumMap({
+  layout,
   sections,
   activeSectionId,
   remainingBySection,
@@ -83,33 +79,15 @@ export function StadiumMap({
         onKeyDown={handleEscape}
         onMouseLeave={() => setTooltip(null)}
       >
-        <circle
-          cx={STADIUM_OUTLINE.cx}
-          cy={STADIUM_OUTLINE.cy}
-          r={STADIUM_OUTLINE.r}
-          fill="#FFFFFF"
-          stroke="#DDE2EA"
-          strokeWidth={6}
-        />
-        <g className="stadium-map__field" aria-hidden="true">
-          {FIELD_SHAPES.map((shape) => (
-            <path key={shape.d} d={shape.d} fill={shape.fill} />
-          ))}
-          {FIELD_LINES.map((d) => (
-            <path key={d} d={d} fill="none" stroke="#FFFFFF" strokeWidth={4} />
-          ))}
-          {FIELD_MARKS.map((mark) => (
-            <circle key={`${mark.cx}-${mark.cy}`} cx={mark.cx} cy={mark.cy} r={mark.r} fill={mark.fill} />
-          ))}
-        </g>
+        <StadiumGround layout={layout} fieldClassName="stadium-map__field" />
 
-        {BASE_LABELS.map((label) => (
+        {layout.labels.map((label) => (
           <text key={label.text} className="stadium-map__base" x={label.x} y={label.y} aria-hidden="true">
             {label.text}
           </text>
         ))}
 
-        {STADIUM_BLOCKS.map((block) => {
+        {layout.blocks.map((block) => {
           const section = sectionByCode.get(block.code)
           if (!section) return null
 
