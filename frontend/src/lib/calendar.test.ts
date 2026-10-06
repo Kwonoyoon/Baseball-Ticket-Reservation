@@ -13,6 +13,7 @@ function reservation(id: number, startAt: string, status: ReservationStatus = 'C
     paymentMethod: 'CARD',
     createdAt: '2026-08-01T10:00:00',
     canceledAt: null,
+    paymentDeadline: null,
     cancelable: false,
     game: {
       id,

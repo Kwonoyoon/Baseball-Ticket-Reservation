@@ -13,10 +13,12 @@ import { CommunityPostPage } from './pages/CommunityPostPage'
 import { NotificationProvider } from './notifications/NotificationProvider'
 import { GamePage } from './pages/GamePage'
 import { LoginPage } from './pages/LoginPage'
+import { MockCheckoutPage } from './pages/MockCheckoutPage'
 import { MyReservationsPage } from './pages/MyReservationsPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { NotificationSettingsPage } from './pages/NotificationSettingsPage'
 import { PasswordChangePage } from './pages/PasswordChangePage'
+import { PaymentFailPage, PaymentSuccessPage } from './pages/PaymentResultPage'
 import { ProfileEditPage } from './pages/ProfileEditPage'
 import { ReservationDetailPage } from './pages/ReservationDetailPage'
 import { SchedulePage } from './pages/SchedulePage'
@@ -33,6 +35,15 @@ const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <CalendarPage />
+      </RequireAuth>
+    ),
+  },
+  // 가짜 PG 결제창. 실제 PG의 결제창처럼 사이트 헤더 없이 띄우므로 Layout 밖에 둔다.
+  {
+    path: '/mock-pg/checkout',
+    element: (
+      <RequireAuth>
+        <MockCheckoutPage />
       </RequireAuth>
     ),
   },
@@ -75,6 +86,22 @@ const router = createBrowserRouter([
         element: (
           <RequireAuth>
             <TransferMarketPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'payments/success',
+        element: (
+          <RequireAuth>
+            <PaymentSuccessPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'payments/fail',
+        element: (
+          <RequireAuth>
+            <PaymentFailPage />
           </RequireAuth>
         ),
       },

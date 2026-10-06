@@ -45,6 +45,27 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     @Query("select r from Reservation r where r.id = :id")
     Optional<Reservation> findForUpdateById(@Param("id") Long id);
 
+    /** 결제 승인·결제창 이탈 때 주문번호(예매번호)로 결제 대기 예매를 잠그고 읽는다. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select r from Reservation r where r.reservationNumber = :reservationNumber")
+    Optional<Reservation> findForUpdateByReservationNumber(@Param("reservationNumber") String reservationNumber);
+
+    @Query("""
+            select r from Reservation r
+            join fetch r.game g
+            join fetch g.homeTeam
+            join fetch g.awayTeam
+            join fetch g.stadium
+            where r.reservationNumber = :reservationNumber
+            """)
+    Optional<Reservation> findDetailByReservationNumber(@Param("reservationNumber") String reservationNumber);
+
+    /** 결제 시간이 지난 결제 대기 예매를 잠그고 읽는다. (정리 작업용, id 순으로 잠근다) */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select r from Reservation r where r.status = :status and r.createdAt < :before order by r.id")
+    List<Reservation> findAllForUpdateByStatusCreatedBefore(@Param("status") ReservationStatus status,
+            @Param("before") LocalDateTime before);
+
     /**
      * 경기 취소 시 자동으로 취소·환불하고 알림을 보낼 예매를 잠그고 읽는다.
      * 회원의 개별 취소와 겹쳐도 한쪽이 끝난 뒤 다른 쪽이 진행되어 환불이 두 번 나가지 않는다. (잠금 순서는 id 순)

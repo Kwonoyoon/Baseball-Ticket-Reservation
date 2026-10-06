@@ -178,6 +178,8 @@ export type Reservation = {
   createdAt: string
   canceledAt: string | null
   cancelable: boolean
+  /** 결제 대기(PENDING)일 때만 값이 있다. 이 시각까지 결제창에서 결제를 마쳐야 한다. */
+  paymentDeadline: string | null
   game: GameSummary
   seats: ReservedSeat[]
 }

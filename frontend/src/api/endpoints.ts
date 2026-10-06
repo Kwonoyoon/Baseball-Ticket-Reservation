@@ -135,8 +135,28 @@ export const api = {
 
   releaseSeats: (gameId: number) => request<void>(`/games/${gameId}/holds`, { method: 'DELETE' }),
 
+  /** 결제 대기 예매를 만든다. 돌려준 예매번호(주문번호)·금액으로 결제창을 연다. */
   reserve: (body: { gameId: number; seats: SeatPosition[]; paymentMethod: PaymentMethod }) =>
     request<Reservation>('/reservations', { method: 'POST', body }),
+
+  /** 결제창에서 인증을 마친 결제를 승인하고 예매를 확정한다. 같은 결제로 다시 불러도 안전하다. */
+  confirmPayment: (body: { paymentKey: string; orderId: string; amount: number }) =>
+    request<Reservation>('/reservations/confirm', { method: 'POST', body }),
+
+  /** 결제를 그만두면 결제 대기 예매를 지우고 좌석을 푼다. 다시 고르러 갈 경기를 돌려준다. */
+  abandonPayment: (orderId: string) =>
+    request<{ gameId: number }>('/reservations/abandon', { method: 'POST', body: { orderId } }),
+
+  /** 가짜 PG 결제창의 [결제하기]. 거절되면 PG 오류 코드·문구가 ApiError로 온다. */
+  mockPgCheckout: (body: {
+    orderId: string
+    orderName: string
+    amount: number
+    method: PaymentMethod
+    cardCompany: string | null
+    installmentMonths: number
+    testOutcome: string
+  }) => request<{ paymentKey: string; orderId: string; amount: number }>('/mock-pg/checkout', { method: 'POST', body }),
 
   getMyReservations: (signal?: AbortSignal) => request<Reservation[]>('/reservations/me', { signal }),
 

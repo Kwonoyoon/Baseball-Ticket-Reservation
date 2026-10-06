@@ -19,10 +19,16 @@ public record ReservationResponse(
         LocalDateTime createdAt,
         LocalDateTime canceledAt,
         boolean cancelable,
+        /** 결제 대기(PENDING)일 때만 값이 있다. 이 시각까지 결제창에서 결제를 마쳐야 한다. */
+        LocalDateTime paymentDeadline,
         GameSummaryResponse game,
         List<ReservedSeatResponse> seats) {
 
     public static ReservationResponse from(Reservation reservation, LocalDateTime now) {
+        return from(reservation, now, null);
+    }
+
+    public static ReservationResponse from(Reservation reservation, LocalDateTime now, LocalDateTime paymentDeadline) {
         return new ReservationResponse(
                 reservation.getId(),
                 reservation.getReservationNumber(),
@@ -32,6 +38,7 @@ public record ReservationResponse(
                 reservation.getCreatedAt(),
                 reservation.getCanceledAt(),
                 reservation.isCancelable(now),
+                paymentDeadline,
                 GameSummaryResponse.from(reservation.getGame()),
                 reservation.getSeats().stream().map(ReservedSeatResponse::from).toList());
     }

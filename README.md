@@ -21,7 +21,7 @@
 - 구역 선택 → 좌석 배치도에서 좌석 선택 (**매수를 고르면 커서 위치 기준 연석 자동 선택**)
 - **1인 예매 제한**: 한 경기에서 한 회원은 최대 4석까지 (취소하면 한도 복구)
 - **Redis 좌석 선점**: 결제 전 5분간 좌석을 선점하고, 다른 고객에게는 "선택 중"으로 표시
-- 가상 결제로 예매 확정, 예매 내역 조회 및 경기 시작 전 취소
+- **가짜 PG 결제창**(SAFEPAY)으로 결제 → 승인 확인 후 예매 확정, 예매 내역 조회 및 경기 시작 전 취소(환불)
 - 아이디 기반 회원가입/로그인, 자동 로그인, 마이페이지(비밀번호 변경·회원 탈퇴)
 - 관리자 회원 관리: 회원 검색, 잠금/해제, 권한 변경
 
@@ -47,15 +47,29 @@
 [좌석 선택] ──POST /holds──▶ Redis Lua 스크립트 (SET PX, 여러 좌석 원자적 처리)
                                └ 하나라도 다른 회원이 선점 중이면 전체 실패 (409)
 [결제하기]  ──POST /reservations──▶ ① Redis에서 본인 선점 확인
-                                     ② reservations + sold_seats INSERT & flush
+                                     ② reservations(PENDING) + sold_seats INSERT & flush
                                         └ UNIQUE(game_id, section_id, row_no, seat_no)가 최종 방어선
-                                     ③ 좌석 확보 후에만 결제 요청
-                                     ④ 커밋 후 선점 해제 (실패해도 TTL로 자동 만료)
+                                     ③ 커밋 후 선점 해제 (실패해도 TTL로 자동 만료)
+[결제창]    ──POST /mock-pg/checkout──▶ 가짜 PG가 결제 키 발급 (아직 돈은 빠져나가지 않음)
+[성공 페이지] ──POST /reservations/confirm──▶ ④ 주문 금액과 결제창 금액 비교
+                                     ⑤ PG 승인 (DB 트랜잭션 밖에서 호출)
+                                     ⑥ 예매를 잠그고 확정. 그사이 결제 시간이 지났으면 방금 승인을 환불
+[실패 페이지] ──POST /reservations/abandon──▶ 결제 대기 예매를 지우고 좌석을 다시 판매
 ```
 
 - **Redis**: 사용자 경험을 위한 1차 잠금. 좌석 키에 해시 태그(`{game:ID}`)를 붙여 Redis Cluster에서도 스크립트가 동작합니다.
 - **MySQL 유니크 제약**: Redis 장애나 TTL 만료 경합이 있어도 같은 좌석이 두 번 팔리지 않도록 보장합니다.
 - 예매를 취소하면 `sold_seats` 행만 삭제되고 `reservation_seats`는 이력으로 남습니다.
+- 결제 대기(PENDING) 예매는 10분(`ticketing.reservation.payment-time-limit`) 안에 결제하지 않으면 1분마다 도는 정리 작업이 지우고 좌석을 다시 팝니다.
+
+## 가짜 결제(mockpg)
+
+실제 돈은 오가지 않지만 토스페이먼츠 같은 PG의 흐름(결제창 인증 → 가맹점 승인 → 환불)을 흉내 냅니다.
+
+- 결제창(`/mock-pg/checkout`)에서 결제 수단·카드사·할부와 **테스트 결과**(승인 / 카드 한도 초과 / 잔액 부족 / 정지된 카드)를 고를 수 있습니다. 카드 번호는 받지 않습니다.
+- 결제 기록은 `mock_pg_payments` 테이블에 따로 남습니다: `READY`(결제창 인증) → `DONE`(승인) → `CANCELED`(환불), 승인 요청이 없으면 `EXPIRED`.
+- 결제창에서 넘어온 금액은 조작될 수 있으므로, 서버가 주문 금액과 비교한 뒤에만 승인합니다.
+- 실제 PG를 붙일 때는 `PaymentGateway` 구현(`MockPgPaymentGateway`)과 프론트 결제창 연결만 바꾸면 됩니다.
 
 ## 프로젝트 구조
 
@@ -156,7 +170,10 @@ cd frontend && npm run test:run   # 포맷 유틸, 좌석 배치도, 로그인 �
 | GET | `/api/games/{gameId}/seats/summary` | 선택 | 구역별 잔여석 요약 (구장 화면용, 좌석 목록 없음) |
 | POST | `/api/games/{gameId}/holds` | ✅ | 좌석 선점 |
 | DELETE | `/api/games/{gameId}/holds` | ✅ | 내 선점 해제 |
-| POST | `/api/reservations` | ✅ | 예매(결제) |
+| POST | `/api/reservations` | ✅ | 결제 대기 예매 만들기 (결제창을 열 주문번호·금액) |
+| POST | `/api/reservations/confirm` | ✅ | 결제 승인 후 예매 확정 |
+| POST | `/api/reservations/abandon` | ✅ | 결제 그만두기 (좌석 다시 판매) |
+| POST | `/api/mock-pg/checkout` | ✅ | 가짜 PG 결제창의 [결제하기] |
 | GET | `/api/reservations/me` | ✅ | 내 예매 내역 |
 | GET | `/api/reservations/{id}` | ✅ | 예매 상세 |
 | POST | `/api/reservations/{id}/cancel` | ✅ | 예매 취소 |
@@ -165,6 +182,6 @@ cd frontend && npm run test:run   # 포맷 유틸, 좌석 배치도, 로그인 �
 
 ## 참고
 
-- 결제는 `FakePaymentGateway`가 항상 승인하는 가상 결제입니다. 실제 PG 연동 시 `PaymentGateway` 구현만 교체하면 됩니다.
+- 결제는 가짜 PG(`mockpg`)를 거칩니다. 위 [가짜 결제(mockpg)](#가짜-결제mockpg) 참고.
 - 샘플 경기는 서버 시작 시 오늘부터 14일치(월요일 제외)가 자동 생성됩니다. `SAMPLE_DATA_ENABLED=false`로 끌 수 있습니다.
 - 구단명과 구장명은 학습용 샘플 데이터입니다.

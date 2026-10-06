@@ -30,6 +30,7 @@ import com.ballpark.ticketing.stadium.SeatSection;
 import com.ballpark.ticketing.stadium.SeatSectionRepository;
 import com.ballpark.ticketing.team.Team;
 import com.ballpark.ticketing.team.TeamRepository;
+import com.ballpark.ticketing.support.PaymentTestSupport;
 import com.jayway.jsonpath.JsonPath;
 
 @SpringBootTest(properties = {
@@ -220,12 +221,13 @@ class TicketTransferIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"seats\":[" + seat + "]}"))
                 .andExpect(status().isOk());
-        String body = mockMvc.perform(post("/api/reservations")
+        String pending = mockMvc.perform(post("/api/reservations")
                         .header(HttpHeaders.AUTHORIZATION, bearer(token))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"gameId\":" + game.getId() + ",\"paymentMethod\":\"CARD\",\"seats\":[" + seat + "]}"))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
+        String body = PaymentTestSupport.payAndConfirm(mockMvc, token, pending);
         return ((Number) JsonPath.read(body, "$.id")).longValue();
     }
 

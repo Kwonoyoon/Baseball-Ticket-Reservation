@@ -78,6 +78,8 @@ ticketing:
   reservation:
     # 한 회원이 한 경기에서 예매할 수 있는 최대 좌석 수
     max-seats-per-game: 4
+    # 결제창에서 이 시간 안에 결제를 마치지 않으면 결제 대기 예매를 지우고 좌석을 푼다
+    payment-time-limit: 10m
   sample-data:
     enabled: ${SAMPLE_DATA_ENABLED:true}
     days: 14

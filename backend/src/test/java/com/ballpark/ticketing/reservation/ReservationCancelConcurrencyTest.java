@@ -37,6 +37,7 @@ import com.ballpark.ticketing.stadium.SeatSection;
 import com.ballpark.ticketing.stadium.SeatSectionRepository;
 import com.ballpark.ticketing.team.Team;
 import com.ballpark.ticketing.team.TeamRepository;
+import com.ballpark.ticketing.support.PaymentTestSupport;
 import com.jayway.jsonpath.JsonPath;
 
 /** 같은 예매를 동시에 두 번 취소해도 환불은 한 번만 나가야 한다. */
@@ -117,12 +118,13 @@ class ReservationCancelConcurrencyTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"seats\":[" + seat + "]}"))
                 .andExpect(status().isOk());
-        String body = mockMvc.perform(post("/api/reservations")
+        String pending = mockMvc.perform(post("/api/reservations")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"gameId\":" + game.getId() + ",\"paymentMethod\":\"CARD\",\"seats\":[" + seat + "]}"))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
+        String body = PaymentTestSupport.payAndConfirm(mockMvc, token, pending);
         return ((Number) JsonPath.read(body, "$.id")).longValue();
     }
 

@@ -30,6 +30,7 @@ import com.ballpark.ticketing.stadium.SeatSection;
 import com.ballpark.ticketing.stadium.SeatSectionRepository;
 import com.ballpark.ticketing.team.Team;
 import com.ballpark.ticketing.team.TeamRepository;
+import com.ballpark.ticketing.support.PaymentTestSupport;
 import com.jayway.jsonpath.JsonPath;
 
 import jakarta.servlet.http.Cookie;
@@ -262,12 +263,13 @@ class AuthFlowIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"seats\":[" + seat + "]}"))
                 .andExpect(status().isOk());
-        String reservation = mockMvc.perform(post("/api/reservations")
+        String pending = mockMvc.perform(post("/api/reservations")
                         .header(HttpHeaders.AUTHORIZATION, bearer(token))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"gameId\":" + game.getId() + ",\"paymentMethod\":\"CARD\",\"seats\":[" + seat + "]}"))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
+        String reservation = PaymentTestSupport.payAndConfirm(mockMvc, token, pending);
 
         withdraw(token, PASSWORD)
                 .andExpect(status().isConflict())

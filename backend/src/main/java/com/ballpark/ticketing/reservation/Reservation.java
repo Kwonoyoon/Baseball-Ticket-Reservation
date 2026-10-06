@@ -1,5 +1,6 @@
 package com.ballpark.ticketing.reservation;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -88,8 +89,25 @@ public class Reservation {
     }
 
     public void confirm(String transactionId) {
+        if (status != ReservationStatus.PENDING) {
+            throw new BusinessException(ErrorCode.PAYMENT_EXPIRED);
+        }
         this.paymentTransactionId = transactionId;
         this.status = ReservationStatus.CONFIRMED;
+    }
+
+    public boolean isPending() {
+        return status == ReservationStatus.PENDING;
+    }
+
+    /** 결제를 마쳐야 하는 시각 */
+    public LocalDateTime paymentDeadline(Duration paymentTimeLimit) {
+        return createdAt.plus(paymentTimeLimit);
+    }
+
+    /** 결제 대기 중인데 결제 시간이 지났는지 */
+    public boolean isPaymentOverdue(LocalDateTime now, Duration paymentTimeLimit) {
+        return isPending() && !now.isBefore(paymentDeadline(paymentTimeLimit));
     }
 
     /**

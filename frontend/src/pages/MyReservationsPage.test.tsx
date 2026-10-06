@@ -15,6 +15,7 @@ const reservation: Reservation = {
   paymentMethod: 'CARD',
   createdAt: '2026-09-16T10:00:00',
   canceledAt: null,
+  paymentDeadline: null,
   cancelable: true,
   game: {
     id: 7,

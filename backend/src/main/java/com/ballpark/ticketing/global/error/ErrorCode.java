@@ -38,6 +38,8 @@ public enum ErrorCode {
     SEAT_ALREADY_SOLD(HttpStatus.CONFLICT, "이미 판매된 좌석입니다."),
     HOLD_EXPIRED(HttpStatus.CONFLICT, "좌석 선점 시간이 만료되었습니다. 좌석을 다시 선택해 주세요."),
     PAYMENT_FAILED(HttpStatus.PAYMENT_REQUIRED, "결제에 실패했습니다."),
+    PAYMENT_AMOUNT_MISMATCH(HttpStatus.BAD_REQUEST, "결제 금액이 주문 금액과 다릅니다."),
+    PAYMENT_EXPIRED(HttpStatus.CONFLICT, "결제 시간이 지나 예매가 취소되었습니다. 좌석을 다시 선택해 주세요."),
     NOT_CANCELABLE(HttpStatus.CONFLICT, "취소할 수 없는 예매입니다."),
     TRANSFER_NOT_FOUND(HttpStatus.NOT_FOUND, "양도글을 찾을 수 없습니다."),
     TRANSFER_CLOSED(HttpStatus.CONFLICT, "이미 판매되었거나 거둬들인 양도글입니다."),
