@@ -137,7 +137,10 @@ public class ReservationService {
 
     @Transactional
     public ReservationResponse cancel(Long memberId, Long reservationId) {
-        Reservation reservation = findOwnedReservation(memberId, reservationId);
+        // 잠그고 읽는다. 동시에 두 번 취소해도 두 번째는 이미 취소된 예매를 보게 되어 환불이 한 번만 나간다.
+        Reservation reservation = reservationRepository.findForUpdateById(reservationId)
+                .filter(found -> found.isOwnedBy(memberId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_NOT_FOUND));
         LocalDateTime now = LocalDateTime.now(clock);
         // 양도글이 열려 있는 채로 취소되면 남이 이미 취소된 예매를 살 수 있다. 먼저 양도를 거두게 한다.
         ticketTransferService.ensureNotListed(reservation.getId());
@@ -157,7 +160,8 @@ public class ReservationService {
     public void cancelAllForGame(Game game) {
         LocalDateTime now = LocalDateTime.now(clock);
         ticketTransferService.cancelAllForGame(game.getId());
-        List<Reservation> reservations = reservationRepository.findAllByGameIdAndStatus(game.getId(),
+        // 회원의 개별 취소와 겹쳐도 환불이 두 번 나가지 않게 잠그고 읽는다.
+        List<Reservation> reservations = reservationRepository.findAllForUpdateByGameIdAndStatus(game.getId(),
                 ReservationStatus.CONFIRMED);
         for (Reservation reservation : reservations) {
             reservation.cancelDueToGameCancellation(now);
