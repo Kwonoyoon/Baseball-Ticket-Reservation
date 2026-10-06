@@ -34,6 +34,16 @@ public interface CommunityPostRepository extends JpaRepository<CommunityPost, Lo
             """)
     List<CommunityPost> findPopularByTeamId(@Param("teamId") Long teamId, Pageable pageable);
 
+    /** 모든 구단을 통틀어 좋아요를 받은 글 중 많은 순. 메인 화면의 "지금 뜨는 커뮤니티"에 쓴다. */
+    @Query("""
+            select p from CommunityPost p
+            join fetch p.team
+            join fetch p.member
+            where p.likeCount > 0
+            order by p.likeCount desc, p.id desc
+            """)
+    List<CommunityPost> findHotPosts(Pageable pageable);
+
     @Query("""
             select p from CommunityPost p
             join fetch p.team

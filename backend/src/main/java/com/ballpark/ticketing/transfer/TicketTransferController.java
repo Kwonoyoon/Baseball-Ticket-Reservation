@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ballpark.ticketing.global.security.AuthMember;
+import com.ballpark.ticketing.transfer.dto.RecentTransferResponse;
 import com.ballpark.ticketing.transfer.dto.TransferBuyRequest;
 import com.ballpark.ticketing.transfer.dto.TransferResponse;
 
@@ -31,6 +32,12 @@ public class TicketTransferController {
     public List<TransferResponse> listOpen(@AuthenticationPrincipal AuthMember authMember,
             @RequestParam(required = false) Long teamId) {
         return transferService.listOpen(authMember.id(), teamId);
+    }
+
+    /** 메인 화면용 최근 양도글. SecurityConfig에서 비회원도 읽게 열어 둔다. */
+    @GetMapping("/api/transfers/recent")
+    public List<RecentTransferResponse> listRecent(@RequestParam(defaultValue = "3") int limit) {
+        return transferService.listRecent(limit);
     }
 
     @GetMapping("/api/transfers/me")

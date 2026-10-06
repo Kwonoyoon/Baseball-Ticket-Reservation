@@ -53,6 +53,10 @@ public class SecurityConfig {
                         // 공지와 KBO 뉴스도 로그인 없이 읽는다. (공지 쓰기는 /api/admin/** 로 관리자만)
                         .requestMatchers(HttpMethod.GET, "/api/notices", "/api/news")
                         .permitAll()
+                        // 메인 화면 슬라이드가 쓰는 읽기 전용 요약: 매진 임박 경기, 순위, 뜨는 글, 최근 양도글
+                        .requestMatchers(HttpMethod.GET, "/api/games/hot", "/api/standings", "/api/community/hot-posts",
+                                "/api/transfers/recent")
+                        .permitAll()
                         .requestMatchers("/actuator/health", "/h2-console/**", "/error").permitAll()
                         // 관리자
                         .requestMatchers("/api/admin/**").hasRole(MemberRole.ADMIN.name())

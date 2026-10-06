@@ -5,11 +5,15 @@ import type {
   GameDetail,
   GameSummary,
   HoldResult,
+  HotGame,
+  HotPost,
+  LostProperty,
+  LostPropertyInput,
+  LostStatus,
   LikeResult,
   LoginResult,
   Member,
   MemberRole,
-  NewsItem,
   Notice,
   NoticeInput,
   NoticeScope,
@@ -21,11 +25,13 @@ import type {
   PostDetail,
   PostPage,
   PostSummary,
+  RecentTransfer,
   Report,
   Reservation,
   SeatPosition,
   SeatStatus,
   SeatSummary,
+  Standing,
   Team,
   TeamPostCount,
   Transfer,
@@ -186,6 +192,35 @@ export const api = {
   buyTransfer: (transferId: number, paymentMethod: PaymentMethod) =>
     request<void>(`/transfers/${transferId}/buy`, { method: 'POST', body: { paymentMethod } }),
 
+  /** 메인 슬라이드용 읽기 전용 요약 4가지. 모두 비회원도 부를 수 있다. */
+  getHotGames: (limit = 3, signal?: AbortSignal) => request<HotGame[]>(`/games/hot?limit=${limit}`, { signal }),
+
+  getStandings: (signal?: AbortSignal) => request<Standing[]>('/standings', { signal }),
+
+  getHotPosts: (limit = 3, signal?: AbortSignal) =>
+    request<HotPost[]>(`/community/hot-posts?limit=${limit}`, { signal }),
+
+  getRecentTransfers: (limit = 3, signal?: AbortSignal) =>
+    request<RecentTransfer[]>(`/transfers/recent?limit=${limit}`, { signal }),
+
+  /** 분실물센터. 구장·상태를 주면 그 조건으로 거른다. */
+  getLostProperties: (filter: { stadiumName?: string; status?: LostStatus } = {}, signal?: AbortSignal) => {
+    const params = new URLSearchParams()
+    if (filter.stadiumName) params.set('stadiumName', filter.stadiumName)
+    if (filter.status) params.set('status', filter.status)
+    const query = params.toString()
+    return request<LostProperty[]>(`/lost-properties${query ? `?${query}` : ''}`, { signal })
+  },
+
+  getLostStadiums: (signal?: AbortSignal) => request<string[]>('/lost-properties/stadiums', { signal }),
+
+  createLostProperty: (body: LostPropertyInput) =>
+    request<LostProperty>('/lost-properties', { method: 'POST', body }),
+
+  /** 관리자 전용. storageLocation을 비우면 이전 보관 장소를 유지한다. */
+  updateLostStatus: (id: number, body: { status: LostStatus; storageLocation?: string }) =>
+    request<LostProperty>(`/admin/lost-properties/${id}/status`, { method: 'PATCH', body }),
+
   getNotices: (scope?: NoticeScope, size?: number, signal?: AbortSignal) => {
     const params = new URLSearchParams()
     if (scope) params.set('scope', scope)
@@ -200,8 +235,6 @@ export const api = {
     request<Notice>(`/admin/notices/${noticeId}`, { method: 'PUT', body }),
 
   deleteNotice: (noticeId: number) => request<void>(`/admin/notices/${noticeId}`, { method: 'DELETE' }),
-
-  getNews: (signal?: AbortSignal) => request<NewsItem[]>('/news', { signal }),
 
   /** 구단 게시판의 인기글. 좋아요가 많은 순이고 좋아요가 없는 글은 빠진다. */
   getPopularPosts: (teamId: number, limit = 3, signal?: AbortSignal) =>

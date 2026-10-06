@@ -55,6 +55,12 @@ public class CommunityController {
         return communityService.listPosts(teamId, category, q, page, size);
     }
 
+    @GetMapping("/api/community/hot-posts")
+    public List<com.ballpark.ticketing.community.dto.HotPostResponse> listHotPosts(
+            @RequestParam(defaultValue = "3") int limit) {
+        return communityService.listHotPosts(limit);
+    }
+
     @GetMapping("/api/teams/{teamId}/posts/popular")
     public List<PostSummaryResponse> listPopularPosts(@PathVariable Long teamId,
             @RequestParam(defaultValue = "3") int limit) {

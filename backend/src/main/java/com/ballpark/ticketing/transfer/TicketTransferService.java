@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -34,6 +35,7 @@ import com.ballpark.ticketing.reservation.payment.PaymentGateway.PaymentRequest;
 import com.ballpark.ticketing.reservation.payment.PaymentGateway.PaymentResult;
 import com.ballpark.ticketing.reservation.payment.PaymentMethod;
 import com.ballpark.ticketing.transfer.TransferPriority.Window;
+import com.ballpark.ticketing.transfer.dto.RecentTransferResponse;
 import com.ballpark.ticketing.transfer.dto.TransferResponse;
 
 /**
@@ -75,6 +77,14 @@ public class TicketTransferService {
 
     public List<TransferResponse> listOpen(Long viewerId, Long teamId) {
         return toResponses(transferRepository.findOpen(LocalDateTime.now(clock), teamId), viewerId);
+    }
+
+    /** 메인 화면용: 최근에 올라온 양도글 몇 개. 판매자 정보 없이 경기·가격·좌석만 담아 비회원에게도 보여 준다. */
+    public List<RecentTransferResponse> listRecent(int limit) {
+        int size = Math.min(Math.max(limit, 1), 10);
+        return transferRepository.findRecentOpen(LocalDateTime.now(clock), PageRequest.of(0, size)).stream()
+                .map(RecentTransferResponse::from)
+                .toList();
     }
 
     public List<TransferResponse> listMine(Long sellerId) {

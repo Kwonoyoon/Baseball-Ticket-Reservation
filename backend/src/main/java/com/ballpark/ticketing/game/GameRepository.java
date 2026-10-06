@@ -29,5 +29,14 @@ public interface GameRepository extends JpaRepository<Game, Long> {
             """)
     Optional<Game> findWithTeamsById(@Param("id") Long id);
 
+    /** 결과가 나온 경기 전체. 순위표 계산에 쓴다. */
+    @Query("""
+            select g from Game g
+            join fetch g.homeTeam
+            join fetch g.awayTeam
+            where g.status = com.ballpark.ticketing.game.GameStatus.FINISHED
+            """)
+    List<Game> findAllFinished();
+
     boolean existsByStartAtGreaterThanEqualAndStartAtLessThan(LocalDateTime from, LocalDateTime to);
 }

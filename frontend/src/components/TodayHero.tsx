@@ -1,210 +1,152 @@
-import { useEffect, useState, type CSSProperties, type FocusEvent } from 'react'
+import { useEffect, useMemo, useState, type FocusEvent, type ReactNode } from 'react'
 import { isAbortError } from '../api/client'
-import { api } from '../api/endpoints'
-import type { GameSummary, NewsItem } from '../api/types'
-import { addDays, formatDateTime, formatGameDate, formatMonthDay, formatTime, todayInSeoul } from '../lib/format'
-import { teamNameEn } from '../lib/teamNames'
+import { useAuth } from '../auth/useAuth'
+import { EMPTY_HERO_DATA, loadHeroData, type HeroData } from '../lib/heroData'
 import { useAutoSlide } from '../lib/useAutoSlide'
-import { TeamMark } from './TeamMark'
+import { CommunitySlide, HotGamesSlide, MyTicketSlide, NextGameSlide, TodaySlide } from './hero/HeroSlides'
 
-/** 경기 슬라이드 뒤에 붙일 KBO 뉴스 수. 슬라이드가 너무 길어져 경기를 보기 전에 지루해지지 않게 적게 둔다. */
-const NEWS_SLIDE_COUNT = 3
+type Slide = { key: string; label: string; render: (visible: boolean) => ReactNode }
 
-/** 오늘 경기가 없는 날(월요일 휴식일)에 다음 경기일을 찾아볼 최대 일수 */
-const LOOKAHEAD_DAYS = 3
-
-type HeroState = { status: 'loading' } | { status: 'error' } | { status: 'ready'; date: string; games: GameSummary[] }
-
-/** 오늘부터 차례로 보며 경기가 있는 첫 날의 경기 목록을 찾는다. 휴식일은 월요일뿐이라 보통 한 번 더 조회하면 끝난다. */
-async function loadHeroGames(signal: AbortSignal) {
-  const today = todayInSeoul()
-  for (let offset = 0; offset < LOOKAHEAD_DAYS; offset += 1) {
-    const date = addDays(today, offset)
-    const games = await api.getSchedule(date, null, signal)
-    if (games.length > 0) return { date, games }
-  }
-  return { date: today, games: [] as GameSummary[] }
-}
-
-/** 오늘의 경기를 한 장씩 3초마다 옆으로 넘겨 보여주는 고정 높이 배너. */
+/**
+ * 메인 화면 맨 위 슬라이드. 3초마다 옆으로 넘어가고, 양옆 화살표와 아래 점으로 직접 넘길 수 있다.
+ * 슬라이드는 데이터가 있을 때만 만든다: 다음 경기 D-day → 내 티켓(로그인) → 매진 임박 → 오늘의 KBO·순위 →
+ * 뜨는 커뮤니티·양도. 하나가 비거나 실패해도 나머지는 그대로 나온다.
+ */
 export function TodayHero() {
-  const [state, setState] = useState<HeroState>({ status: 'loading' })
-  // 마우스를 올렸거나 키보드로 점에 포커스가 있으면 넘기지 않는다. 둘 중 하나만 풀려도 다시 넘기면 안 되므로 따로 든다.
+  const { member, loading: authLoading } = useAuth()
+  const [data, setData] = useState<HeroData | null>(null)
+  const [loadedAt, setLoadedAt] = useState(() => new Date())
+  // 마우스를 올렸거나 키보드로 포커스가 안에 있으면 넘기지 않는다. 둘 중 하나만 풀려도 다시 넘기면 안 되므로 따로 든다.
   const [hovered, setHovered] = useState(false)
   const [focused, setFocused] = useState(false)
 
-  // 뉴스는 장식이라 못 불러와도 경기 슬라이드는 그대로 쓴다.
-  const [news, setNews] = useState<NewsItem[]>([])
+  const memberId = member?.id ?? null
+  const favoriteTeamId = member?.favoriteTeamId ?? null
 
-  const games = state.status === 'ready' ? state.games : []
-  const today = todayInSeoul()
-  const dateLabel = state.status === 'ready' && state.date !== today ? formatMonthDay(state.date) : '오늘'
-  const message =
-    state.status === 'error'
-      ? '경기 정보를 불러오지 못했습니다.'
-      : state.status === 'ready' && games.length === 0
-        ? '예정된 경기가 없습니다.'
-        : null
-  const newsSlides = news.slice(0, NEWS_SLIDE_COUNT)
-  // 경기 → 뉴스 순서로 이어 붙인다. (메시지 슬라이드는 경기가 없을 때만 맨 앞에 나오며 번호 계산에는 포함한다)
-  const slideCount = (message === null ? 0 : 1) + games.length + newsSlides.length
-  const { index, goTo } = useAutoSlide(slideCount, hovered || focused)
-  const newsStart = (message === null ? 0 : 1) + games.length
-  const onNewsSlide = newsSlides.length > 0 && index >= newsStart
-
+  // 로그인 복원이 끝난 뒤에 불러온다. (복원 전에 불러오면 마이팀과 내 티켓을 모른 채 한 번 더 불러오게 된다)
   useEffect(() => {
+    if (authLoading) return undefined
     const controller = new AbortController()
-    loadHeroGames(controller.signal)
-      .then((result) => setState({ status: 'ready', ...result }))
+    const now = new Date()
+    loadHeroData(favoriteTeamId, memberId !== null, controller.signal, now)
+      .then((result) => {
+        setData(result)
+        setLoadedAt(now)
+      })
       .catch((e: unknown) => {
-        // 히어로는 장식에 가까워서 실패해도 아래 일정 목록(자체 오류 표시)은 계속 쓸 수 있다.
-        if (!isAbortError(e)) setState({ status: 'error' })
+        // 슬라이드는 장식에 가까워서 실패해도 아래 일정 목록(자체 오류 표시)은 계속 쓸 수 있다.
+        if (!isAbortError(e)) setData(EMPTY_HERO_DATA)
       })
     return () => controller.abort()
-  }, [])
+  }, [authLoading, memberId, favoriteTeamId])
 
-  useEffect(() => {
-    const controller = new AbortController()
-    api
-      .getNews(controller.signal)
-      .then(setNews)
-      .catch(() => setNews([]))
-    return () => controller.abort()
-  }, [])
+  const slides = useMemo<Slide[]>(() => {
+    if (!data) return []
+    const list: Slide[] = []
+    if (data.nextGame) {
+      const info = data.nextGame
+      list.push({ key: 'next', label: '다음 경기', render: () => <NextGameSlide info={info} /> })
+    }
+    if (data.myTicket && member) {
+      const info = data.myTicket
+      list.push({
+        key: 'ticket',
+        label: '내 티켓',
+        render: () => <MyTicketSlide info={info} name={member.name} now={loadedAt} />,
+      })
+    }
+    if (data.hotGames.length > 0) {
+      const games = data.hotGames
+      list.push({ key: 'hot', label: '매진 임박', render: () => <HotGamesSlide games={games} /> })
+    }
+    if (data.today) {
+      const today = data.today
+      const standings = data.standings
+      list.push({ key: 'today', label: '오늘의 KBO', render: () => <TodaySlide today={today} standings={standings} /> })
+    }
+    if (data.hotPosts.length > 0 || data.transfers.length > 0) {
+      const { hotPosts, transfers } = data
+      list.push({
+        key: 'community',
+        label: '커뮤니티와 양도',
+        render: () => <CommunitySlide posts={hotPosts} transfers={transfers} />,
+      })
+    }
+    return list
+  }, [data, member, loadedAt])
 
-  const handleBlur = (event: FocusEvent<HTMLDivElement>) => {
-    // 점에서 점으로 포커스가 옮겨 가는 동안에는 캐러셀 안에 있는 것으로 본다.
+  const { index, goTo } = useAutoSlide(slides.length, hovered || focused)
+
+  const handleBlur = (event: FocusEvent<HTMLElement>) => {
+    // 점·화살표 사이로 포커스가 옮겨 가는 동안에는 슬라이드 안에 있는 것으로 본다.
     if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false)
   }
 
+  const empty = data !== null && slides.length === 0
+
   return (
     <section
-      className={`home-hero${onNewsSlide ? ' is-news' : ''}`}
+      className="home-hero"
       aria-roledescription="carousel"
-      aria-label={`${dateLabel} 경기`}
+      aria-label="오늘의 KBO 소식"
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
       onFocus={() => setFocused(true)}
       onBlur={handleBlur}
     >
+      {/* 눈에 보이는 큰 제목은 슬라이드마다 따로 있어서, 문서 제목은 화면 낭독기용으로만 둔다. */}
+      <h1 className="sr-only">Today KBO</h1>
+
       <div className="home-hero__track" style={{ transform: `translateX(-${index * 100}%)` }}>
-        {message && (
+        {empty && (
           <div className="home-slide home-slide--message">
-            <p>{message}</p>
+            <p>지금 보여 드릴 경기 소식이 없습니다.</p>
           </div>
         )}
-        {games.map((game, gameIndex) => {
-          const position = (message === null ? 0 : 1) + gameIndex
-          return (
-            <div
-              key={game.id}
-              className="home-slide"
-              role="group"
-              aria-roledescription="slide"
-              aria-label={`${position + 1} / ${slideCount}`}
-              aria-hidden={position !== index}
-              style={
-                {
-                  '--away-color': game.awayTeam.primaryColor,
-                  '--home-color': game.homeTeam.primaryColor,
-                } as CSSProperties
-              }
-            >
-              <div className="home-slide__teams">
-                <div className="home-slide__team">
-                  <TeamMark team={game.awayTeam} size="lg" />
-                  <strong>{teamNameEn(game.awayTeam)}</strong>
-                  <span>원정 · {formatTime(game.startAt)}</span>
-                </div>
-                <span className="home-slide__vs">VS</span>
-                <div className="home-slide__team">
-                  <TeamMark team={game.homeTeam} size="lg" />
-                  <strong>{teamNameEn(game.homeTeam)}</strong>
-                  <span>
-                    {dateLabel} · {game.stadium.name}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )
-        })}
-        {newsSlides.map((item, newsIndex) => {
-          const position = newsStart + newsIndex
-          const visible = position === index
-          return (
-            <div
-              key={item.link}
-              className={`home-slide home-slide--news${item.imageUrl ? ' has-image' : ''}`}
-              role="group"
-              aria-roledescription="slide"
-              aria-label={`${position + 1} / ${slideCount} KBO 뉴스`}
-              aria-hidden={!visible}
-              style={
-                item.imageUrl ? ({ '--news-image': `url("${encodeURI(item.imageUrl)}")` } as CSSProperties) : undefined
-              }
-            >
-              <a
-                className="home-news"
-                href={item.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                tabIndex={visible ? undefined : -1}
-              >
-                <span className="home-news__tag">KBO 뉴스 · {item.source}</span>
-                <strong className="home-news__title">{item.title}</strong>
-                <span className="home-news__meta">
-                  {item.publishedAt ? `${formatDateTime(item.publishedAt)} · ` : ''}기사 보기 ↗
-                </span>
-              </a>
-            </div>
-          )
-        })}
+        {slides.map((slide, position) => (
+          <div
+            key={slide.key}
+            className={`home-slide home-slide--${slide.key.split('-')[0]}`}
+            role="group"
+            aria-roledescription="slide"
+            aria-label={`${position + 1} / ${slides.length} ${slide.label}`}
+            aria-hidden={position !== index}
+            // 보이지 않는 슬라이드의 링크와 버튼은 키보드로 잡히지 않게 한다.
+            inert={position !== index}
+          >
+            {slide.render(position === index)}
+          </div>
+        ))}
       </div>
 
-      <div className="home-hero__shade" />
-
-      {slideCount > 1 && (
-        <div className="home-hero__dots">
-          {games.map((game, gameIndex) => {
-            const position = (message === null ? 0 : 1) + gameIndex
-            return (
+      {slides.length > 1 && (
+        <>
+          {/* 양옆 화살표로 이전·다음 슬라이드로 넘긴다. 맨 끝에서 다음을 누르면 처음으로, 처음에서 이전을 누르면 끝으로 돈다. */}
+          <button
+            type="button"
+            className="home-hero__arrow home-hero__arrow--prev"
+            aria-label="이전 슬라이드"
+            onClick={() => goTo((index - 1 + slides.length) % slides.length)}
+          />
+          <button
+            type="button"
+            className="home-hero__arrow home-hero__arrow--next"
+            aria-label="다음 슬라이드"
+            onClick={() => goTo((index + 1) % slides.length)}
+          />
+          <div className="home-hero__dots">
+            {slides.map((slide, position) => (
               <button
-                key={game.id}
+                key={slide.key}
                 type="button"
-                aria-label={`${teamNameEn(game.awayTeam)} 대 ${teamNameEn(game.homeTeam)}`}
+                aria-label={slide.label}
                 aria-current={position === index}
                 onClick={() => goTo(position)}
               />
-            )
-          })}
-          {newsSlides.map((item, newsIndex) => (
-            <button
-              key={item.link}
-              type="button"
-              aria-label={`KBO 뉴스: ${item.title}`}
-              aria-current={newsStart + newsIndex === index}
-              onClick={() => goTo(newsStart + newsIndex)}
-            />
-          ))}
-        </div>
+            ))}
+          </div>
+        </>
       )}
-
-      <div className="home-hero__copy">
-        <div>
-          <h1 className="home-hero__mark">
-            Today <em>KBO</em>
-          </h1>
-          <p className="home-hero__sub">
-            {state.status === 'ready' && games.length > 0 && (
-              <>{state.date === today ? '오늘' : formatGameDate(state.date)} 경기 · </>
-            )}
-            2026 KBO 리그 · 날짜와 응원 구단을 고르고 좌석을 예매하세요
-          </p>
-        </div>
-        <a className="home-hero__cta" href="#schedule">
-          일정 보러가기
-        </a>
-      </div>
     </section>
   )
 }

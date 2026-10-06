@@ -1,0 +1,679 @@
+/* ---------- 메인 슬라이드 내용 (components/hero/HeroSlides.tsx) ---------- */
+/* 슬라이드 바탕(어두운 곤색~자주 그라데이션)과 틀은 pages/SchedulePage.css의 .home-hero / .home-slide가 만든다. 여기는 안쪽만. */
+
+.hs {
+  --hs-accent: #e1572a;
+  --hs-glass: rgb(255 255 255 / 7%);
+  --hs-line: rgb(255 255 255 / 14%);
+
+  display: grid;
+  align-items: center;
+  gap: 40px;
+  width: 100%;
+  max-width: 1120px;
+  /* 양옆 화살표(48px)와 겹치지 않게 좌우를 비운다. */
+  padding-inline: 72px;
+  color: #ffffff;
+}
+
+.hs button,
+.hs a {
+  font: inherit;
+}
+
+.hs-tag {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 12%);
+  color: rgb(255 255 255 / 88%);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.hs-title {
+  margin: 14px 0 10px;
+  font-size: clamp(26px, 3.4vw, 38px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+}
+
+.hs-title em {
+  color: #ffb199;
+  font-style: normal;
+}
+
+.hs-sub {
+  margin: 0 0 18px;
+  color: rgb(255 255 255 / 72%);
+  font-size: 14px;
+}
+
+.hs-empty {
+  margin: 24px 0;
+  color: rgb(255 255 255 / 62%);
+  font-size: 14px;
+  text-align: center;
+}
+
+/* ----- 버튼 ----- */
+
+.hs-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.hs-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 11px 20px;
+  border: 1px solid rgb(255 255 255 / 40%);
+  border-radius: 10px;
+  background: transparent;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
+}
+
+.hs-button:hover,
+.hs-button:focus-visible {
+  border-color: #ffffff;
+  background: rgb(255 255 255 / 12%);
+}
+
+.hs-button--primary {
+  border-color: var(--hs-accent);
+  background: var(--hs-accent);
+}
+
+.hs-button--primary:hover,
+.hs-button--primary:focus-visible {
+  border-color: #f06a3d;
+  background: #f06a3d;
+}
+
+.hs-button--block {
+  display: flex;
+  width: 100%;
+  margin-top: 14px;
+}
+
+/* ----- 유리 카드·칩·막대 ----- */
+
+.hs-card,
+.hs-panel {
+  padding: 22px 24px;
+  border: 1px solid var(--hs-line);
+  border-radius: 20px;
+  background: var(--hs-glass);
+  backdrop-filter: blur(6px);
+}
+
+.hs-chip {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 14%);
+  color: rgb(255 255 255 / 88%);
+  font-size: 11.5px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.hs-chip--hot {
+  background: #e11d48;
+  color: #ffffff;
+}
+
+.hs-chip--ok {
+  background: rgb(52 211 153 / 20%);
+  color: #6ee7b7;
+}
+
+.hs-bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 16%);
+}
+
+.hs-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #f59e0b, #e11d48);
+}
+
+.hs-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  color: rgb(255 255 255 / 86%);
+  font-size: 14px;
+}
+
+.hs-meta--small {
+  margin-top: 8px;
+  color: rgb(255 255 255 / 66%);
+  font-size: 12.5px;
+}
+
+/* ----- A. 다음 경기 ----- */
+
+.hs--next,
+.hs--ticket {
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+}
+
+.hs-dday {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin: 14px 0 20px;
+}
+
+.hs-dday strong {
+  font-size: clamp(56px, 7vw, 84px);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.hs-dday span {
+  color: rgb(255 255 255 / 80%);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.hs-clock {
+  display: flex;
+  gap: 10px;
+}
+
+.hs-clock > div {
+  display: grid;
+  gap: 2px;
+  min-width: 64px;
+  padding: 10px 6px 8px;
+  border: 1px solid var(--hs-line);
+  border-radius: 12px;
+  background: var(--hs-glass);
+  text-align: center;
+}
+
+.hs-clock strong {
+  font-size: 26px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+.hs-clock span {
+  color: rgb(255 255 255 / 62%);
+  font-size: 11px;
+}
+
+.hs-versus {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.hs-versus__team {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.hs-versus__vs {
+  position: absolute;
+  top: 24px;
+  left: -14px;
+  color: rgb(255 255 255 / 55%);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.hs-versus__team .team-mark {
+  width: 64px;
+  height: 64px;
+}
+
+.hs-versus__team small {
+  color: rgb(255 255 255 / 58%);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+/* ----- B. 내 티켓 ----- */
+
+.hs-stats {
+  display: flex;
+  gap: 32px;
+  margin: 0;
+}
+
+.hs-stats dt {
+  order: 2;
+  color: rgb(255 255 255 / 64%);
+  font-size: 12px;
+}
+
+.hs-stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hs-stats dd {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+/* 종이 티켓처럼 보이는 흰 카드. 가운데 점선으로 좌석 부분을 나눈다. */
+.hs-paper {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  padding: 22px 26px;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 22px 44px -22px rgb(0 0 0 / 70%);
+  color: #1b2230;
+}
+
+.hs-paper__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #6b7280;
+  font-size: 12.5px;
+}
+
+.hs-paper__head b {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--hs-accent);
+  color: #ffffff;
+  font-size: 12px;
+}
+
+.hs-paper__match {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.hs-paper__match strong {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.hs-paper__match i {
+  color: #9ca3af;
+  font-size: 14px;
+  font-style: normal;
+}
+
+.hs-paper__info {
+  margin: 0;
+  color: #4b5563;
+  font-size: 13.5px;
+}
+
+.hs-paper__seat {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #d1d5db;
+}
+
+.hs-paper__seat small {
+  display: block;
+  color: #9ca3af;
+  font-size: 11px;
+}
+
+.hs-paper__seat b {
+  font-size: 15px;
+}
+
+.hs-paper__link {
+  justify-self: end;
+  color: var(--hs-accent);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.hs-paper__link:hover {
+  text-decoration: underline;
+}
+
+/* ----- C. 매진 임박 ----- */
+
+.hs--hot {
+  grid-template-columns: minmax(0, 1fr);
+  align-content: center;
+  gap: 0;
+}
+
+.hs-title--row {
+  margin-top: 12px;
+}
+
+.hs-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hs-hot {
+  padding: 18px 20px;
+}
+
+.hs-hot__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: rgb(255 255 255 / 76%);
+  font-size: 12.5px;
+}
+
+.hs-hot__teams {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  margin: 14px 0 6px;
+}
+
+.hs-hot__teams > div {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+
+.hs-hot__teams > span {
+  color: rgb(255 255 255 / 55%);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.hs-hot__stadium {
+  margin: 0 0 12px;
+  color: rgb(255 255 255 / 64%);
+  font-size: 12.5px;
+  text-align: center;
+}
+
+/* ----- D·E. 두 칸 패널 ----- */
+
+.hs--today,
+.hs--community {
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  align-items: stretch;
+  gap: 24px;
+}
+
+.hs-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.hs-panel > header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.hs-panel > header h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.hs-panel > header small,
+.hs-panel > header span {
+  color: rgb(255 255 255 / 62%);
+  font-size: 12.5px;
+}
+
+.hs-panel > header span,
+.hs-panel > header a {
+  margin-left: auto;
+}
+
+.hs-panel > header a {
+  color: #ffb199;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.hs-panel > .hs-button {
+  align-self: center;
+  margin-top: auto;
+}
+
+.hs-games,
+.hs-rank,
+.hs-feed {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hs-games li {
+  display: grid;
+  grid-template-columns: 44px 1fr 56px 1fr 62px;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid var(--hs-line);
+  font-size: 13.5px;
+}
+
+.hs-games time {
+  color: rgb(255 255 255 / 66%);
+  font-size: 12.5px;
+}
+
+.hs-games__team {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.hs-games__team--home {
+  justify-content: flex-end;
+}
+
+.hs-games b {
+  font-size: 15px;
+  text-align: center;
+}
+
+.hs-games .hs-chip {
+  justify-self: end;
+}
+
+.hs-games .team-mark,
+.hs-rank .team-mark,
+.hs-feed .team-mark {
+  width: 28px;
+  height: 28px;
+}
+
+.hs-rank li {
+  display: grid;
+  grid-template-columns: 22px 28px 1fr 46px 36px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid var(--hs-line);
+  font-size: 13.5px;
+}
+
+.hs-rank b {
+  font-size: 14px;
+  text-align: center;
+}
+
+.hs-rank small {
+  color: rgb(255 255 255 / 80%);
+  font-size: 12.5px;
+  text-align: right;
+}
+
+.hs-rank em {
+  color: rgb(255 255 255 / 56%);
+  font-size: 12px;
+  font-style: normal;
+  text-align: right;
+}
+
+.hs-feed a {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 4px;
+  border-top: 1px solid var(--hs-line);
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.hs-feed a:hover,
+.hs-feed a:focus-visible {
+  background: rgb(255 255 255 / 7%);
+}
+
+.hs-feed__body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.hs-feed__body b {
+  overflow: hidden;
+  font-size: 13.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hs-feed__body b .hs-chip {
+  margin-right: 8px;
+}
+
+.hs-feed__body small {
+  color: rgb(255 255 255 / 58%);
+  font-size: 12px;
+}
+
+.hs-feed__likes {
+  color: #fda4af;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.hs-feed__price {
+  display: grid;
+  justify-items: end;
+  color: rgb(255 255 255 / 60%);
+  font-size: 11px;
+}
+
+.hs-feed__price b {
+  color: #ffffff;
+  font-size: 13px;
+}
+
+/* ----- 좁은 화면: 한 줄로 쌓고, 칸이 넘치지 않게 줄 수를 줄인다. ----- */
+
+@media (max-width: 860px) {
+  .hs {
+    gap: 18px;
+    padding-inline: 52px;
+  }
+
+  .hs--next,
+  .hs--ticket,
+  .hs--today,
+  .hs--community {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hs-cards {
+    grid-template-columns: repeat(3, minmax(220px, 1fr));
+    overflow-x: auto;
+  }
+
+  .hs-games li:nth-child(n + 4),
+  .hs-rank li:nth-child(n + 4),
+  .hs-feed li:nth-child(n + 3) {
+    display: none;
+  }
+
+  .hs-games li {
+    grid-template-columns: 38px 1fr 44px 1fr 56px;
+    gap: 4px;
+    font-size: 12.5px;
+  }
+
+  .hs-stats {
+    gap: 20px;
+  }
+
+  .hs-clock > div {
+    min-width: 54px;
+  }
+
+  .hs-dday strong {
+    font-size: 52px;
+  }
+}
+
+@media (max-width: 560px) {
+  .hs {
+    padding-inline: 44px;
+  }
+
+  .hs-paper,
+  .hs-card,
+  .hs-panel {
+    padding: 16px 16px;
+  }
+
+  .hs-versus__team .team-mark {
+    width: 48px;
+    height: 48px;
+  }
+
+  .hs-versus {
+    gap: 8px;
+  }
+}
+

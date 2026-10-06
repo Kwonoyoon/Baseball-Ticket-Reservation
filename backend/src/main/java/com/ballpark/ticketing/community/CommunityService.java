@@ -14,6 +14,7 @@ import com.ballpark.ticketing.community.dto.LikeResponse;
 import com.ballpark.ticketing.community.dto.PostCreateRequest;
 import com.ballpark.ticketing.community.dto.PostDetailResponse;
 import com.ballpark.ticketing.community.dto.PostPageResponse;
+import com.ballpark.ticketing.community.dto.HotPostResponse;
 import com.ballpark.ticketing.community.dto.PostSummaryResponse;
 import com.ballpark.ticketing.community.dto.ReportRequest;
 import com.ballpark.ticketing.community.dto.TeamPostCountResponse;
@@ -67,6 +68,12 @@ public class CommunityService {
         boolean hasMore = posts.size() > size;
         List<PostSummaryResponse> items = posts.stream().limit(size).map(PostSummaryResponse::from).toList();
         return new PostPageResponse(items, hasMore);
+    }
+
+    /** 모든 구단을 통틀어 좋아요가 많은 글. limit은 1~10으로 맞춘다. */
+    public List<HotPostResponse> listHotPosts(int limit) {
+        int size = Math.min(Math.max(limit, 1), 10);
+        return postRepository.findHotPosts(PageRequest.of(0, size)).stream().map(HotPostResponse::from).toList();
     }
 
     /** 구단 게시판의 인기글. 좋아요가 많은 순으로 limit개(1~10)를 준다. */

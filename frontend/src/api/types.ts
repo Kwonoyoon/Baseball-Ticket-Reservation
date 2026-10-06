@@ -211,6 +211,71 @@ export type TransferWait = {
   game: GameSummary
 }
 
+/** 메인 슬라이드 "매진 임박": 판매 좌석 수 ÷ 전체 좌석 수가 예매율이다. */
+export type HotGame = {
+  game: GameSummary
+  soldSeats: number
+  totalSeats: number
+}
+
+/** 순위표 한 줄. 승률은 무승부를 뺀 승 ÷ (승 + 패), 승차는 선두와의 차이다. */
+export type Standing = {
+  rank: number
+  team: Team
+  wins: number
+  losses: number
+  draws: number
+  winPct: number
+  gamesBehind: number
+}
+
+/** 메인 슬라이드 "지금 뜨는 커뮤니티"의 글 한 줄 */
+export type HotPost = {
+  id: number
+  team: Team
+  category: PostCategory | null
+  title: string
+  likeCount: number
+  commentCount: number
+}
+
+/** 메인 슬라이드 "방금 올라온 티켓 양도"의 한 줄. 판매자 정보는 없다. */
+export type RecentTransfer = {
+  id: number
+  price: number
+  game: GameSummary
+  seatCount: number
+  sectionName: string | null
+}
+
+/** 분실물 상태: 접수 → 보관 중 → 수령 완료 / 폐기 */
+export type LostStatus = 'REPORTED' | 'KEEPING' | 'CLAIMED' | 'DISCARDED'
+
+export type LostProperty = {
+  id: number
+  title: string
+  description: string
+  stadiumName: string
+  specificLocation: string | null
+  category: string
+  imageUrl: string | null
+  /** 보관 장소. 관리자가 정하기 전에는 null */
+  storageLocation: string | null
+  status: LostStatus
+  lostOrFoundDate: string | null
+  createdAt: string
+}
+
+export type LostPropertyInput = {
+  title: string
+  description: string
+  stadiumName: string
+  specificLocation?: string
+  category: string
+  imageUrl?: string
+  lostOrFoundDate?: string
+}
+
 /** 공지가 뜨는 자리: 헤더 메뉴의 전체 공지 / 커뮤니티 게시판 맨 위 */
 export type NoticeScope = 'GLOBAL' | 'COMMUNITY'
 
@@ -232,15 +297,6 @@ export type NoticeInput = {
   category: NoticeCategory
   title: string
   content: string
-}
-
-/** 메인 슬라이드 끝에 보여 주는 KBO 뉴스. 본문은 없고 제목·출처·원문 링크뿐이다. imageUrl은 없을 수 있다. */
-export type NewsItem = {
-  title: string
-  link: string
-  source: string
-  imageUrl: string | null
-  publishedAt: string | null
 }
 
 export type TeamPostCount = {
