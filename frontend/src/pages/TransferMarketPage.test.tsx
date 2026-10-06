@@ -28,11 +28,19 @@ const transfer = (overrides: Partial<Transfer>): Transfer => ({
   sellerName: '홍**',
   game,
   seats: ['네이비석 3번 3열 7번', '네이비석 3번 3열 8번'],
+  exclusiveUntil: null,
+  exclusiveForMe: false,
   ...overrides,
 })
 
 function renderPage(handler: (url: string, init?: RequestInit) => Response) {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => handler(String(input), init))
+  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input)
+    // 대기 섹션이 부르는 API는 각 테스트가 신경 쓰지 않아도 되게 기본 응답을 둔다.
+    if (url === '/api/transfer-waits/me' && !init?.method) return jsonResponse(200, [])
+    if (url.startsWith('/api/games?')) return jsonResponse(200, [])
+    return handler(url, init)
+  })
   vi.stubGlobal('fetch', fetchMock)
   const router = createMemoryRouter([{ path: '/transfers', element: <TransferMarketPage /> }], {
     initialEntries: ['/transfers'],
@@ -116,5 +124,60 @@ describe('TransferMarketPage', () => {
     await userEvent.click(await screen.findByRole('button', { name: '구매하기' }))
 
     expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith('/buy'))).toBe(false)
+  })
+
+  it('다른 대기자의 우선 구매 시간에는 구매 버튼이 잠기고 끝나는 시각을 알려 준다', async () => {
+    renderPage((url) => {
+      if (url === '/api/transfers') {
+        return jsonResponse(200, [transfer({ id: 1, exclusiveUntil: '2026-10-05T12:10:00', exclusiveForMe: false })])
+      }
+      if (url === '/api/transfers/me') return jsonResponse(200, [])
+      return jsonResponse(404, { code: 'NOT_FOUND', message: '없음' })
+    })
+
+    const button = await screen.findByRole('button', { name: '대기자 우선 구매 중 · 12:10까지' })
+    expect(button).toBeDisabled()
+  })
+
+  it('내 우선 구매 시간에는 안내가 보이고 구매할 수 있다', async () => {
+    renderPage((url) => {
+      if (url === '/api/transfers') {
+        return jsonResponse(200, [transfer({ id: 1, exclusiveUntil: '2026-10-05T12:10:00', exclusiveForMe: true })])
+      }
+      if (url === '/api/transfers/me') return jsonResponse(200, [])
+      return jsonResponse(404, { code: 'NOT_FOUND', message: '없음' })
+    })
+
+    expect(await screen.findByText('내 우선 구매 시간 · 12:10까지')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '구매하기' })).toBeEnabled()
+  })
+
+  it('대기 섹션: 경기를 골라 대기 등록하면 내 순서를 알려 주고, 이미 대기 중인 경기는 막는다', async () => {
+    let waits: unknown[] = []
+    const upcoming = { ...game, id: 31, startAt: '2099-01-01T18:30:00' }
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url === '/api/games/31/transfer-waits' && init?.method === 'POST') {
+        waits = [{ id: 5, createdAt: '2099-01-01T10:00:00', position: 2, game: upcoming }]
+        return jsonResponse(201, waits[0])
+      }
+      if (url === '/api/transfer-waits/me') return jsonResponse(200, waits)
+      if (url.startsWith('/api/games?')) return jsonResponse(200, [upcoming])
+      if (url === '/api/transfers') return jsonResponse(200, [])
+      if (url === '/api/transfers/me') return jsonResponse(200, [])
+      return jsonResponse(404, { code: 'NOT_FOUND', message: '없음' })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const router = createMemoryRouter([{ path: '/transfers', element: <TransferMarketPage /> }], {
+      initialEntries: ['/transfers'],
+    })
+    render(<RouterProvider router={router} />)
+
+    await userEvent.click(await screen.findByRole('button', { name: '대기하기' }))
+
+    expect(await screen.findByText('대기 등록했어요. 현재 2번째예요.')).toBeInTheDocument()
+    expect(await screen.findByText('내 순서 2번째')).toBeInTheDocument()
+    // 이미 대기 중이면 같은 경기를 또 누를 수 없다.
+    expect(await screen.findByRole('button', { name: '대기 중' })).toBeDisabled()
   })
 })

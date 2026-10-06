@@ -2,16 +2,29 @@ package com.ballpark.ticketing.transfer;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import com.ballpark.ticketing.game.Game;
 import com.ballpark.ticketing.global.error.BusinessException;
 import com.ballpark.ticketing.global.error.ErrorCode;
 import com.ballpark.ticketing.member.Member;
 import com.ballpark.ticketing.member.MemberRepository;
+import com.ballpark.ticketing.notification.NotificationService;
+import com.ballpark.ticketing.notification.NotificationType;
 import com.ballpark.ticketing.reservation.Reservation;
 import com.ballpark.ticketing.reservation.ReservationQuota;
 import com.ballpark.ticketing.reservation.ReservationRepository;
@@ -20,48 +33,55 @@ import com.ballpark.ticketing.reservation.payment.PaymentGateway;
 import com.ballpark.ticketing.reservation.payment.PaymentGateway.PaymentRequest;
 import com.ballpark.ticketing.reservation.payment.PaymentGateway.PaymentResult;
 import com.ballpark.ticketing.reservation.payment.PaymentMethod;
+import com.ballpark.ticketing.transfer.TransferPriority.Window;
 import com.ballpark.ticketing.transfer.dto.TransferResponse;
 
 /**
  * 정가 양도 마켓. 예매 한 건을 통째로 올리고 사 간다.
  * 좌석(sold_seats)과 예매번호는 그대로 두고, 예매의 소유자와 결제 정보만 구매자로 옮긴다.
  * 그래서 중복 판매 방어선과 예매 상태값은 건드리지 않으며, 캘린더·통계도 CONFIRMED 기준 그대로 동작한다.
+ *
+ * <p>같은 경기를 기다리던 대기자에게는 우선 구매 시간이 있다. (규칙은 {@link TransferPriority})
  */
 @Service
 @Transactional(readOnly = true)
 public class TicketTransferService {
 
+    private static final Logger log = LoggerFactory.getLogger(TicketTransferService.class);
+    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
+
     private final TicketTransferRepository transferRepository;
+    private final TransferWaitRepository waitRepository;
     private final ReservationRepository reservationRepository;
     private final MemberRepository memberRepository;
     private final ReservationQuota reservationQuota;
     private final PaymentGateway paymentGateway;
+    private final NotificationService notificationService;
     private final Clock clock;
 
-    public TicketTransferService(TicketTransferRepository transferRepository,
+    public TicketTransferService(TicketTransferRepository transferRepository, TransferWaitRepository waitRepository,
             ReservationRepository reservationRepository, MemberRepository memberRepository,
-            ReservationQuota reservationQuota, PaymentGateway paymentGateway, Clock clock) {
+            ReservationQuota reservationQuota, PaymentGateway paymentGateway,
+            NotificationService notificationService, Clock clock) {
         this.transferRepository = transferRepository;
+        this.waitRepository = waitRepository;
         this.reservationRepository = reservationRepository;
         this.memberRepository = memberRepository;
         this.reservationQuota = reservationQuota;
         this.paymentGateway = paymentGateway;
+        this.notificationService = notificationService;
         this.clock = clock;
     }
 
     public List<TransferResponse> listOpen(Long viewerId, Long teamId) {
-        return transferRepository.findOpen(LocalDateTime.now(clock), teamId).stream()
-                .map(transfer -> TransferResponse.from(transfer, viewerId))
-                .toList();
+        return toResponses(transferRepository.findOpen(LocalDateTime.now(clock), teamId), viewerId);
     }
 
     public List<TransferResponse> listMine(Long sellerId) {
-        return transferRepository.findAllBySellerId(sellerId).stream()
-                .map(transfer -> TransferResponse.from(transfer, sellerId))
-                .toList();
+        return toResponses(transferRepository.findAllBySellerId(sellerId), sellerId);
     }
 
-    /** 내 예매를 정가에 올린다. 확정된 예매이고 경기가 시작 전이어야 한다. */
+    /** 내 예매를 정가에 올린다. 확정된 예매이고 경기가 시작 전이어야 한다. 그 경기 대기자 앞쪽 몇 명에게 알린다. */
     @Transactional
     public TransferResponse register(Long sellerId, Long reservationId) {
         LocalDateTime now = LocalDateTime.now(clock);
@@ -78,7 +98,8 @@ public class TicketTransferService {
         } catch (DataIntegrityViolationException e) {
             throw new BusinessException(ErrorCode.ALREADY_LISTED);
         }
-        return TransferResponse.from(transfer, sellerId);
+        notifyWaitersAfterCommit(transfer);
+        return toResponses(List.of(transfer), sellerId).getFirst();
     }
 
     @Transactional
@@ -92,6 +113,7 @@ public class TicketTransferService {
     /**
      * 양도글을 산다. 구매자가 정가를 결제하고, 판매자의 원래 결제는 환불된다.
      * 양도글 행을 먼저 잠가 두 명이 동시에 사도 한 명만 성공하고 나머지는 이미 닫힌 글(409)을 본다.
+     * 대기자 우선 구매 시간에는 그 시간의 주인만 살 수 있다.
      */
     @Transactional
     public void buy(Long buyerId, Long transferId, PaymentMethod method) {
@@ -107,9 +129,11 @@ public class TicketTransferService {
 
         Reservation reservation = reservationRepository.findDetailById(transfer.getReservation().getId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_NOT_FOUND));
+        Game game = reservation.getGame();
         ensureTransferable(reservation, now);
+        ensurePriorityAllows(transfer, game.getId(), buyerId, now);
         // 양도받아도 한 경기에서 살 수 있는 좌석 수 한도는 그대로 적용된다.
-        reservationQuota.ensureWithinLimit(reservation.getGame().getId(), buyerId, reservation.getSeats().size());
+        reservationQuota.ensureWithinLimit(game.getId(), buyerId, reservation.getSeats().size());
 
         String oldTransactionId = reservation.getPaymentTransactionId();
         PaymentResult payment = paymentGateway.pay(new PaymentRequest(buyerId, reservation.getReservationNumber(),
@@ -124,6 +148,8 @@ public class TicketTransferService {
         Member buyer = memberRepository.getReferenceById(buyerId);
         reservation.transferTo(buyer, method, payment.transactionId());
         transfer.sell(buyer, now);
+        // 표를 구했으니 이 경기 대기에서는 빠진다.
+        waitRepository.deleteByMemberIdAndGameId(buyerId, game.getId());
     }
 
     /** 경기가 취소되면 그 경기의 판매 중인 양도글도 함께 닫는다. (예매는 따로 환불된다) */
@@ -144,5 +170,74 @@ public class TicketTransferService {
         if (reservation.getStatus() != ReservationStatus.CONFIRMED || !reservation.getGame().isBookable(now)) {
             throw new BusinessException(ErrorCode.TRANSFER_NOT_ALLOWED);
         }
+    }
+
+    private void ensurePriorityAllows(TicketTransfer transfer, Long gameId, Long buyerId, LocalDateTime now) {
+        List<TransferWait> waits = waitRepository.findAllByGameIds(List.of(gameId));
+        List<Long> queue = TransferPriority.queue(transfer.getCreatedAt(), transfer.getSeller().getId(), waits);
+        Window window = TransferPriority.current(transfer.getCreatedAt(), queue, now);
+        if (window != null && !window.holderId().equals(buyerId)) {
+            throw new BusinessException(ErrorCode.TRANSFER_PRIORITY,
+                    "대기자 우선 구매 시간입니다. " + window.until().format(TIME_FORMAT) + " 이후에 구매할 수 있어요.");
+        }
+    }
+
+    /** 응답을 만들 때 경기별 대기 줄을 한 번에 가져와 글마다 쿼리가 나가지 않게 한다. */
+    private List<TransferResponse> toResponses(Collection<TicketTransfer> transfers, Long viewerId) {
+        LocalDateTime now = LocalDateTime.now(clock);
+        Set<Long> gameIds = transfers.stream()
+                .map(transfer -> transfer.getReservation().getGame().getId())
+                .collect(Collectors.toSet());
+        Map<Long, List<TransferWait>> waitsByGame = gameIds.isEmpty() ? Map.of()
+                : waitRepository.findAllByGameIds(gameIds).stream()
+                        .collect(Collectors.groupingBy(wait -> wait.getGame().getId()));
+
+        return transfers.stream().map(transfer -> {
+            Window window = null;
+            if (transfer.getStatus() == TicketTransferStatus.OPEN) {
+                List<TransferWait> waits = waitsByGame.getOrDefault(transfer.getReservation().getGame().getId(),
+                        List.of());
+                List<Long> queue = TransferPriority.queue(transfer.getCreatedAt(), transfer.getSeller().getId(),
+                        waits);
+                window = TransferPriority.current(transfer.getCreatedAt(), queue, now);
+            }
+            return TransferResponse.from(transfer, viewerId, window == null ? null : window.until(),
+                    window != null && window.holderId().equals(viewerId));
+        }).toList();
+    }
+
+    /**
+     * 양도글이 올라온 걸 앞쪽 대기자에게 알린다. 각자의 우선 구매 시간대를 함께 알려 준다.
+     * 알림은 부가 작업이라 커밋 뒤에 보내고, 실패해도 등록은 그대로 성공한다. (ReservationService.notifyAfterCommit과 같은 이유)
+     */
+    private void notifyWaitersAfterCommit(TicketTransfer transfer) {
+        Game game = transfer.getReservation().getGame();
+        List<Long> queue = TransferPriority.queue(transfer.getCreatedAt(), transfer.getSeller().getId(),
+                waitRepository.findAllByGameIds(List.of(game.getId())));
+        if (queue.isEmpty()) {
+            return;
+        }
+        // 지연 로딩 필드는 커밋 뒤에 읽을 수 없어서, 지금 문자열로 만들어 둔다.
+        String matchup = game.getAwayTeam().getName() + " vs " + game.getHomeTeam().getName();
+        LocalDateTime listedAt = transfer.getCreatedAt();
+        Map<Long, String> messages = new LinkedHashMap<>();
+        for (int i = 0; i < queue.size(); i++) {
+            messages.put(queue.get(i), matchup + " 양도글이 올라왔어요. 내 우선 구매 시간은 "
+                    + TransferPriority.startOf(listedAt, i).format(TIME_FORMAT) + "~"
+                    + TransferPriority.endOf(listedAt, i).format(TIME_FORMAT) + "예요.");
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                messages.forEach((memberId, message) -> {
+                    try {
+                        notificationService.create(memberId, NotificationType.TRANSFER_AVAILABLE,
+                                "기다리던 양도글이 올라왔어요", message, null);
+                    } catch (RuntimeException e) {
+                        log.warn("양도 대기 알림을 보내지 못했습니다. memberId={}", memberId, e);
+                    }
+                });
+            }
+        });
     }
 }

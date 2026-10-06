@@ -195,6 +195,108 @@ class TicketTransferIntegrationTest {
                 .andExpect(jsonPath("$[?(@.id == " + transferId + ")].status").value(hasItem("CANCELED")));
     }
 
+    @Test
+    void 대기_등록은_중복을_막고_내_순서를_알려_주며_취소할_수_있다() throws Exception {
+        String first = signupAndLogin();
+        String second = signupAndLogin();
+
+        long firstWait = waitAndGetId(first);
+        waitAndGetId(second);
+        mockMvc.perform(post("/api/games/" + game.getId() + "/transfer-waits")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(first)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("ALREADY_WAITING"));
+
+        // 먼저 줄 선 사람이 1번, 다음이 2번
+        mockMvc.perform(get("/api/transfer-waits/me").header(HttpHeaders.AUTHORIZATION, bearer(first)))
+                .andExpect(jsonPath("$[0].position").value(1));
+        mockMvc.perform(get("/api/transfer-waits/me").header(HttpHeaders.AUTHORIZATION, bearer(second)))
+                .andExpect(jsonPath("$[0].position").value(2));
+
+        // 남의 대기는 취소할 수 없다.
+        mockMvc.perform(post("/api/transfer-waits/" + firstWait + "/cancel")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(second)))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(post("/api/transfer-waits/" + firstWait + "/cancel")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(first)))
+                .andExpect(status().isNoContent());
+        // 1번이 빠지면 2번이 1번이 된다.
+        mockMvc.perform(get("/api/transfer-waits/me").header(HttpHeaders.AUTHORIZATION, bearer(second)))
+                .andExpect(jsonPath("$[0].position").value(1));
+    }
+
+    @Test
+    void 이미_시작한_경기에는_대기_등록할_수_없다() throws Exception {
+        Team home = game.getHomeTeam();
+        Game past = gameRepository.save(new Game(home, game.getAwayTeam(), home.getStadium(),
+                LocalDateTime.now(clock).minusDays(1)));
+
+        mockMvc.perform(post("/api/games/" + past.getId() + "/transfer-waits")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(signupAndLogin())))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("BOOKING_CLOSED"));
+    }
+
+    @Test
+    void 양도글이_올라오면_대기자만_우선_구매하고_대기자에게_알림이_간다() throws Exception {
+        String seller = signupAndLogin();
+        String firstWaiter = signupAndLogin();
+        String secondWaiter = signupAndLogin();
+        String stranger = signupAndLogin();
+        long reservationId = reserve(seller);
+        waitAndGetId(firstWaiter);
+        waitAndGetId(secondWaiter);
+
+        long transferId = registerAndGetId(seller, reservationId);
+
+        // 대기자 두 명에게는 알림이 가고, 대기하지 않은 사람에게는 가지 않는다.
+        mockMvc.perform(get("/api/notifications").header(HttpHeaders.AUTHORIZATION, bearer(firstWaiter)))
+                .andExpect(jsonPath("$[?(@.type == 'TRANSFER_AVAILABLE')]").isNotEmpty());
+        mockMvc.perform(get("/api/notifications").header(HttpHeaders.AUTHORIZATION, bearer(secondWaiter)))
+                .andExpect(jsonPath("$[?(@.type == 'TRANSFER_AVAILABLE')]").isNotEmpty());
+        mockMvc.perform(get("/api/notifications").header(HttpHeaders.AUTHORIZATION, bearer(stranger)))
+                .andExpect(jsonPath("$[?(@.type == 'TRANSFER_AVAILABLE')]").isEmpty());
+
+        // 우선 구매 시간에는 1번 대기자의 것으로 표시된다.
+        mockMvc.perform(get("/api/transfers").header(HttpHeaders.AUTHORIZATION, bearer(firstWaiter)))
+                .andExpect(jsonPath("$[?(@.id == " + transferId + ")].exclusiveForMe").value(hasItem(true)))
+                .andExpect(jsonPath("$[?(@.id == " + transferId + ")].exclusiveUntil").isNotEmpty());
+        mockMvc.perform(get("/api/transfers").header(HttpHeaders.AUTHORIZATION, bearer(stranger)))
+                .andExpect(jsonPath("$[?(@.id == " + transferId + ")].exclusiveForMe").value(hasItem(false)));
+
+        // 대기하지 않은 사람과 2번 대기자는 아직 못 산다. (2번 차례는 10분 뒤)
+        buy(stranger, transferId)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("TRANSFER_PRIORITY"));
+        buy(secondWaiter, transferId)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("TRANSFER_PRIORITY"));
+
+        // 1번 대기자는 살 수 있고, 사고 나면 이 경기 대기에서 빠진다.
+        buy(firstWaiter, transferId).andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/transfer-waits/me").header(HttpHeaders.AUTHORIZATION, bearer(firstWaiter)))
+                .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
+    void 대기자가_없으면_바로_누구나_살_수_있다() throws Exception {
+        String seller = signupAndLogin();
+        String buyer = signupAndLogin();
+        long transferId = registerAndGetId(seller, reserve(seller));
+
+        mockMvc.perform(get("/api/transfers").header(HttpHeaders.AUTHORIZATION, bearer(buyer)))
+                .andExpect(jsonPath("$[?(@.id == " + transferId + ")].exclusiveUntil").value(hasItem(org.hamcrest.Matchers.nullValue())));
+        buy(buyer, transferId).andExpect(status().isNoContent());
+    }
+
+    private long waitAndGetId(String token) throws Exception {
+        String body = mockMvc.perform(post("/api/games/" + game.getId() + "/transfer-waits")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return ((Number) JsonPath.read(body, "$.id")).longValue();
+    }
+
     private long registerAndGetId(String token, long reservationId) throws Exception {
         String body = register(token, reservationId).andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();

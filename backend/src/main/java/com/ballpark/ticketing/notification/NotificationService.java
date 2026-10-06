@@ -57,7 +57,8 @@ public class NotificationService {
                     .save(new Notification(memberId, type, title, message, now));
             broadcaster.broadcast(memberId, NotificationResponse.from(notification));
         }
-        if (isEmailEnabled(memberId, type)) {
+        // 이메일 본문은 예매 정보로 만들기 때문에, 예매 정보가 없는 알림(양도 대기 등)은 이메일을 건너뛴다.
+        if (emailContent != null && isEmailEnabled(memberId, type)) {
             emailSender.sendReservationMail(memberId, type, emailContent);
         }
     }

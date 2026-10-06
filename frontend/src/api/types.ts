@@ -150,7 +150,7 @@ export type ReservedSeat = {
   price: number
 }
 
-export type NotificationType = 'RESERVATION_CONFIRMED' | 'RESERVATION_CANCELED' | 'GAME_CANCELED' | 'GENERAL'
+export type NotificationType = 'RESERVATION_CONFIRMED' | 'RESERVATION_CANCELED' | 'GAME_CANCELED' | 'TRANSFER_AVAILABLE' | 'GENERAL'
 
 export type Notification = {
   id: number
@@ -197,6 +197,50 @@ export type Transfer = {
   sellerName: string
   game: GameSummary
   seats: string[]
+  /** 지금이 대기자 우선 구매 시간이면 그 시간이 끝나는 때. 아니면 null */
+  exclusiveUntil: string | null
+  /** 우선 구매 시간의 주인이 나인지. 우선 구매 시간에 false이면 살 수 없다 */
+  exclusiveForMe: boolean
+}
+
+/** 양도 대기. position은 같은 경기 대기자 중 내 순서(1부터)다. */
+export type TransferWait = {
+  id: number
+  createdAt: string
+  position: number
+  game: GameSummary
+}
+
+/** 공지가 뜨는 자리: 헤더 메뉴의 전체 공지 / 커뮤니티 게시판 맨 위 */
+export type NoticeScope = 'GLOBAL' | 'COMMUNITY'
+
+/** 공지 종류: 시스템 업데이트 · 이벤트 · 점검 */
+export type NoticeCategory = 'UPDATE' | 'EVENT' | 'MAINTENANCE'
+
+export type Notice = {
+  id: number
+  scope: NoticeScope
+  category: NoticeCategory
+  title: string
+  content: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type NoticeInput = {
+  scope: NoticeScope
+  category: NoticeCategory
+  title: string
+  content: string
+}
+
+/** 메인 슬라이드 끝에 보여 주는 KBO 뉴스. 본문은 없고 제목·출처·원문 링크뿐이다. imageUrl은 없을 수 있다. */
+export type NewsItem = {
+  title: string
+  link: string
+  source: string
+  imageUrl: string | null
+  publishedAt: string | null
 }
 
 export type TeamPostCount = {

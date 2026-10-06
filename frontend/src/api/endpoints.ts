@@ -9,6 +9,10 @@ import type {
   LoginResult,
   Member,
   MemberRole,
+  NewsItem,
+  Notice,
+  NoticeInput,
+  NoticeScope,
   Notification,
   NotificationPreference,
   NotificationType,
@@ -16,6 +20,7 @@ import type {
   PostCategory,
   PostDetail,
   PostPage,
+  PostSummary,
   Report,
   Reservation,
   SeatPosition,
@@ -24,6 +29,7 @@ import type {
   Team,
   TeamPostCount,
   Transfer,
+  TransferWait,
 } from './types'
 
 export const api = {
@@ -179,6 +185,35 @@ export const api = {
 
   buyTransfer: (transferId: number, paymentMethod: PaymentMethod) =>
     request<void>(`/transfers/${transferId}/buy`, { method: 'POST', body: { paymentMethod } }),
+
+  getNotices: (scope?: NoticeScope, size?: number, signal?: AbortSignal) => {
+    const params = new URLSearchParams()
+    if (scope) params.set('scope', scope)
+    if (size) params.set('size', String(size))
+    const query = params.toString()
+    return request<Notice[]>(`/notices${query ? `?${query}` : ''}`, { signal })
+  },
+
+  createNotice: (body: NoticeInput) => request<Notice>('/admin/notices', { method: 'POST', body }),
+
+  updateNotice: (noticeId: number, body: NoticeInput) =>
+    request<Notice>(`/admin/notices/${noticeId}`, { method: 'PUT', body }),
+
+  deleteNotice: (noticeId: number) => request<void>(`/admin/notices/${noticeId}`, { method: 'DELETE' }),
+
+  getNews: (signal?: AbortSignal) => request<NewsItem[]>('/news', { signal }),
+
+  /** 구단 게시판의 인기글. 좋아요가 많은 순이고 좋아요가 없는 글은 빠진다. */
+  getPopularPosts: (teamId: number, limit = 3, signal?: AbortSignal) =>
+    request<PostSummary[]>(`/teams/${teamId}/posts/popular?limit=${limit}`, { signal }),
+
+  getMyTransferWaits: (signal?: AbortSignal) => request<TransferWait[]>('/transfer-waits/me', { signal }),
+
+  registerTransferWait: (gameId: number) =>
+    request<TransferWait>(`/games/${gameId}/transfer-waits`, { method: 'POST' }),
+
+  cancelTransferWait: (waitId: number) =>
+    request<void>(`/transfer-waits/${waitId}/cancel`, { method: 'POST' }),
 
   getNotifications: (signal?: AbortSignal) => request<Notification[]>('/notifications', { signal }),
 
