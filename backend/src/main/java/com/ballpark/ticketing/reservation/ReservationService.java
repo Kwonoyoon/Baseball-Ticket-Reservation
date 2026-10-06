@@ -12,9 +12,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.ballpark.ticketing.game.Game;
 import com.ballpark.ticketing.global.error.BusinessException;
@@ -24,10 +27,11 @@ import com.ballpark.ticketing.member.MemberRepository;
 import com.ballpark.ticketing.notification.NotificationService;
 import com.ballpark.ticketing.notification.NotificationType;
 import com.ballpark.ticketing.notification.ReservationEmailContent;
+import com.ballpark.ticketing.reservation.dto.PaymentAbandonResponse;
+import com.ballpark.ticketing.reservation.dto.PaymentConfirmRequest;
 import com.ballpark.ticketing.reservation.dto.ReservationRequest;
 import com.ballpark.ticketing.reservation.dto.ReservationResponse;
 import com.ballpark.ticketing.reservation.payment.PaymentGateway;
-import com.ballpark.ticketing.reservation.payment.PaymentGateway.PaymentRequest;
 import com.ballpark.ticketing.reservation.payment.PaymentGateway.PaymentResult;
 import com.ballpark.ticketing.seat.SeatHoldStore;
 import com.ballpark.ticketing.seat.SeatPosition;
@@ -53,13 +57,17 @@ public class ReservationService {
     private final PaymentGateway paymentGateway;
     private final NotificationService notificationService;
     private final TicketTransferService ticketTransferService;
+    private final ReservationProperties properties;
+    private final TransactionTemplate transaction;
+    private final TransactionTemplate readTransaction;
     private final Clock clock;
     private final SecureRandom random = new SecureRandom();
 
     public ReservationService(ReservationRepository reservationRepository, SoldSeatRepository soldSeatRepository,
             MemberRepository memberRepository, SeatService seatService, SeatHoldStore seatHoldStore,
             ReservationQuota reservationQuota, PaymentGateway paymentGateway,
-            NotificationService notificationService, TicketTransferService ticketTransferService, Clock clock) {
+            NotificationService notificationService, TicketTransferService ticketTransferService,
+            ReservationProperties properties, PlatformTransactionManager transactionManager, Clock clock) {
         this.reservationRepository = reservationRepository;
         this.soldSeatRepository = soldSeatRepository;
         this.memberRepository = memberRepository;
@@ -69,17 +77,22 @@ public class ReservationService {
         this.paymentGateway = paymentGateway;
         this.notificationService = notificationService;
         this.ticketTransferService = ticketTransferService;
+        this.properties = properties;
+        this.transaction = new TransactionTemplate(transactionManager);
+        this.readTransaction = new TransactionTemplate(transactionManager);
+        this.readTransaction.setReadOnly(true);
         this.clock = clock;
     }
 
     /**
-     * 예매 순서
+     * 결제 대기 예매를 만든다. (예매 1단계)
      * <ol>
      *   <li>요청 좌석이 모두 본인 선점 상태인지 Redis에서 확인한다.</li>
-     *   <li>예매와 판매 좌석을 저장하고 flush 한다. 동시 요청이 있어도 유니크 제약이 중복 판매를 막는다.</li>
-     *   <li>좌석 확보에 성공한 뒤에만 결제를 요청한다.</li>
-     *   <li>커밋 후 선점을 해제한다. (해제에 실패해도 TTL이 지나면 자동으로 풀린다)</li>
+     *   <li>예매(PENDING)와 판매 좌석을 저장하고 flush 한다. 동시 요청이 있어도 유니크 제약이 중복 판매를 막는다.</li>
+     *   <li>커밋 후 선점을 해제한다. 좌석은 이제 판매 좌석으로 잡혀 있다. (해제에 실패해도 TTL이 지나면 자동으로 풀린다)</li>
      * </ol>
+     * 돌려준 예매번호(주문번호)·금액으로 결제창을 열고, 결제창에서 인증하면 {@link #confirmPayment}로 확정한다.
+     * 결제 시간 안에 확정하지 않으면 정리 작업이 예매를 지우고 좌석을 푼다.
      */
     @Transactional
     public ReservationResponse reserve(Long memberId, ReservationRequest request) {
@@ -110,23 +123,113 @@ public class ReservationService {
             throw new BusinessException(ErrorCode.SEAT_ALREADY_SOLD);
         }
 
-        PaymentResult payment = paymentGateway.pay(new PaymentRequest(memberId,
-                reservation.getReservationNumber(), reservation.getTotalPrice(), request.paymentMethod()));
+        releaseHoldsAfterCommit(game.getId(), memberId, seats.keySet());
+        return ReservationResponse.from(reservation, now, reservation.paymentDeadline(properties.paymentTimeLimit()));
+    }
+
+    /**
+     * 결제창에서 인증을 마친 결제를 승인하고 예매를 확정한다. (예매 2단계)
+     * <ol>
+     *   <li>주문 확인: 내 결제 대기 예매인지, 결제 시간이 남았는지, 결제창에서 넘어온 금액이 주문 금액과 같은지 본다.
+     *       (결제창 쪽 금액은 조작될 수 있으므로 반드시 서버의 주문 금액과 비교한다)</li>
+     *   <li>PG 승인: 바깥 시스템 호출이므로 DB 트랜잭션 밖에서 부른다. 잠금을 쥔 채 PG를 기다리지 않는다.</li>
+     *   <li>확정: 예매를 잠그고 아직 결제 대기인지 다시 본 뒤 확정한다. 그사이 결제 시간이 지나 정리됐다면
+     *       방금 승인된 결제를 환불하고 실패로 돌려준다.</li>
+     * </ol>
+     * 같은 결제로 다시 요청하면(새로고침 등) 이미 확정된 예매를 그대로 돌려준다.
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public ReservationResponse confirmPayment(Long memberId, PaymentConfirmRequest request) {
+        String orderId = request.orderId();
+        String paymentKey = request.paymentKey();
+
+        // 1) 주문 확인
+        ReservationResponse alreadyConfirmed = readTransaction.execute(status -> {
+            // 결제 시간이 지나 정리된 주문도 여기서 걸린다. (남의 주문번호여도 같은 응답이라 존재 여부가 드러나지 않는다)
+            Reservation reservation = reservationRepository.findDetailByReservationNumber(orderId)
+                    .filter(found -> found.isOwnedBy(memberId))
+                    .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_EXPIRED));
+            if (reservation.getStatus() == ReservationStatus.CONFIRMED
+                    && paymentKey.equals(reservation.getPaymentTransactionId())) {
+                return ReservationResponse.from(reservation, LocalDateTime.now(clock));
+            }
+            if (!reservation.isPending() || reservation.isPaymentOverdue(LocalDateTime.now(clock),
+                    properties.paymentTimeLimit())) {
+                throw new BusinessException(ErrorCode.PAYMENT_EXPIRED);
+            }
+            if (reservation.getTotalPrice() != request.amount()) {
+                throw new BusinessException(ErrorCode.PAYMENT_AMOUNT_MISMATCH);
+            }
+            return null;
+        });
+        if (alreadyConfirmed != null) {
+            return alreadyConfirmed;
+        }
+
+        // 2) PG 승인 (트랜잭션 밖)
+        PaymentResult payment = paymentGateway.confirm(paymentKey, orderId, request.amount());
         if (!payment.approved()) {
             throw new BusinessException(ErrorCode.PAYMENT_FAILED,
                     payment.failureReason() == null ? ErrorCode.PAYMENT_FAILED.getMessage() : payment.failureReason());
         }
-        reservation.confirm(payment.transactionId());
 
-        notifyAfterCommit(memberId, NotificationType.RESERVATION_CONFIRMED, "예매가 완료되었습니다",
-                reservation.getReservationNumber() + " 예매가 정상적으로 완료되었습니다.", buildEmailContent(reservation));
-        releaseHoldsAfterCommit(game.getId(), memberId, seats.keySet());
-        return ReservationResponse.from(reservation, now);
+        // 3) 확정. 실패하면 방금 승인된 결제를 되돌린다.
+        try {
+            return transaction.execute(status -> {
+                Reservation reservation = reservationRepository.findForUpdateByReservationNumber(orderId)
+                        .filter(found -> found.isOwnedBy(memberId))
+                        .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_EXPIRED));
+                // 같은 결제로 동시에 두 번 요청하면 먼저 끝난 쪽이 이미 확정했다. 성공으로 돌려주고 환불하지 않는다.
+                if (reservation.getStatus() == ReservationStatus.CONFIRMED
+                        && payment.transactionId().equals(reservation.getPaymentTransactionId())) {
+                    return ReservationResponse.from(reservation, LocalDateTime.now(clock));
+                }
+                reservation.confirm(payment.transactionId());
+                notifyAfterCommit(memberId, NotificationType.RESERVATION_CONFIRMED, "예매가 완료되었습니다",
+                        reservation.getReservationNumber() + " 예매가 정상적으로 완료되었습니다.",
+                        buildEmailContent(reservation));
+                return ReservationResponse.from(reservation, LocalDateTime.now(clock));
+            });
+        } catch (RuntimeException e) {
+            refundQuietly(payment.transactionId(), request.amount(), orderId);
+            throw e;
+        }
     }
 
+    /**
+     * 결제창에서 결제를 그만두거나 실패했을 때. 결제 대기 예매를 지우고 좌석을 푼다.
+     * 이미 확정됐거나 정리된 예매면 아무것도 하지 않는다. 결제창을 다시 열 수 있도록 경기 ID를 돌려준다.
+     */
+    @Transactional
+    public PaymentAbandonResponse abandonPayment(Long memberId, String orderId) {
+        Reservation reservation = reservationRepository.findForUpdateByReservationNumber(orderId)
+                .filter(found -> found.isOwnedBy(memberId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_NOT_FOUND));
+        Long gameId = reservation.getGame().getId();
+        if (reservation.isPending()) {
+            deletePending(reservation);
+        }
+        return new PaymentAbandonResponse(gameId);
+    }
+
+    /** 결제 시간이 지난 결제 대기 예매를 지우고 좌석을 푼다. 지운 개수를 돌려준다. */
+    @Transactional
+    public int expireOverduePayments() {
+        LocalDateTime before = LocalDateTime.now(clock).minus(properties.paymentTimeLimit());
+        List<Reservation> overdue = reservationRepository.findAllForUpdateByStatusCreatedBefore(
+                ReservationStatus.PENDING, before);
+        overdue.forEach(this::deletePending);
+        if (!overdue.isEmpty()) {
+            log.info("결제 시간이 지난 결제 대기 예매 {}건을 정리했습니다.", overdue.size());
+        }
+        return overdue.size();
+    }
+
+    /** 예매내역에는 확정·취소된 예매만 보여 준다. (결제 대기는 결제창이 열려 있는 동안의 임시 상태다) */
     public List<ReservationResponse> getMyReservations(Long memberId) {
         LocalDateTime now = LocalDateTime.now(clock);
         return reservationRepository.findAllByMemberId(memberId).stream()
+                .filter(reservation -> !reservation.isPending())
                 .map(reservation -> ReservationResponse.from(reservation, now))
                 .toList();
     }
@@ -160,6 +263,9 @@ public class ReservationService {
     public void cancelAllForGame(Game game) {
         LocalDateTime now = LocalDateTime.now(clock);
         ticketTransferService.cancelAllForGame(game.getId());
+        // 결제창이 열려 있던 결제 대기 예매는 지운다. (그사이 결제가 승인되면 확정 단계에서 환불된다)
+        reservationRepository.findAllForUpdateByGameIdAndStatus(game.getId(), ReservationStatus.PENDING)
+                .forEach(this::deletePending);
         // 회원의 개별 취소와 겹쳐도 환불이 두 번 나가지 않게 잠그고 읽는다.
         List<Reservation> reservations = reservationRepository.findAllForUpdateByGameIdAndStatus(game.getId(),
                 ReservationStatus.CONFIRMED);
@@ -214,6 +320,22 @@ public class ReservationService {
         return reservationRepository.findDetailById(reservationId)
                 .filter(reservation -> reservation.isOwnedBy(memberId))
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_NOT_FOUND));
+    }
+
+    /** 결제 대기 예매를 지운다. 판매 좌석도 함께 지워 다른 사람이 살 수 있게 된다. */
+    private void deletePending(Reservation reservation) {
+        soldSeatRepository.deleteByReservationId(reservation.getId());
+        reservationRepository.delete(reservation);
+    }
+
+    /** 승인 뒤 확정에 실패했을 때 결제를 되돌린다. 환불마저 실패하면 기록만 남긴다(수동 확인 필요). */
+    private void refundQuietly(String paymentKey, int amount, String orderId) {
+        try {
+            paymentGateway.cancel(paymentKey, amount);
+        } catch (RuntimeException e) {
+            log.error("승인된 결제를 되돌리지 못했습니다. 수동 환불이 필요합니다. orderId={}, paymentKey={}",
+                    orderId, paymentKey, e);
+        }
     }
 
     private void releaseHoldsAfterCommit(long gameId, long memberId, Set<SeatPosition> seats) {

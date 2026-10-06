@@ -1,5 +1,7 @@
 package com.ballpark.ticketing.reservation;
 
+import java.util.List;
+
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,12 +28,13 @@ public class ReservationQuota {
         return properties.maxSeatsPerGame();
     }
 
-    /** 회원이 이 경기에서 이미 예매한 좌석 수 (취소분 제외) */
+    /** 회원이 이 경기에서 이미 예매한 좌석 수. 취소분은 빼고, 결제 대기 중인 좌석은 센다(결제창을 여러 개 열어 한도를 넘지 못하게). */
     public int countReservedSeats(Long gameId, Long memberId) {
         if (memberId == null) {
             return 0;
         }
-        return (int) reservationSeatRepository.countSeats(gameId, memberId, ReservationStatus.CONFIRMED);
+        return (int) reservationSeatRepository.countSeats(gameId, memberId,
+                List.of(ReservationStatus.CONFIRMED, ReservationStatus.PENDING));
     }
 
     /** 좌석을 더 담을 수 있는지 확인한다. 한도를 넘으면 남은 수량을 알려주며 거절한다. */

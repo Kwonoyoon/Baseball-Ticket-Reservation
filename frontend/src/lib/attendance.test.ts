@@ -23,6 +23,7 @@ function reservation(
     paymentMethod: 'CARD',
     createdAt: '2026-08-01T10:00:00',
     canceledAt: null,
+    paymentDeadline: null,
     cancelable: false,
     game: {
       id,

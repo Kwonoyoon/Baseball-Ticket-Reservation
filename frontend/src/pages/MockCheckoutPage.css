@@ -1,0 +1,259 @@
+/* ---------- 가짜 PG 결제창 (pages/MockCheckoutPage.tsx) ----------
+   사이트와 다른 회사 화면처럼 보이도록 사이트 강조색 대신 결제창 전용 색을 쓴다. */
+
+.mockpg {
+  --pg-color: #1b64da;
+  --pg-color-strong: #154ea9;
+
+  display: grid;
+  place-items: start center;
+  min-height: 100vh;
+  padding: 48px 16px;
+  background: rgb(15 23 42 / 55%);
+}
+
+.mockpg__window {
+  width: 100%;
+  max-width: 440px;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 24px 64px rgb(15 23 42 / 35%);
+  color: #191f28;
+}
+
+.mockpg__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid #e5e8eb;
+}
+
+.mockpg__brand {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.mockpg__brand span {
+  color: var(--pg-color);
+}
+
+.mockpg__badge {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #fff4e5;
+  color: #b25e09;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.mockpg__order {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 18px 22px;
+  background: #f9fafb;
+}
+
+.mockpg__order div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 14px;
+}
+
+.mockpg__order dt {
+  color: #6b7684;
+}
+
+.mockpg__order dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+
+.mockpg__amount dd {
+  color: var(--pg-color);
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.mockpg__timer {
+  margin: 0;
+  padding: 8px 22px;
+  border-bottom: 1px solid #e5e8eb;
+  color: #6b7684;
+  font-size: 13px;
+  text-align: right;
+}
+
+.mockpg__timer.is-urgent {
+  color: #e42939;
+  font-weight: 700;
+}
+
+.mockpg__form {
+  display: grid;
+  gap: 16px;
+  padding: 20px 22px;
+}
+
+.mockpg__methods {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.mockpg__methods legend {
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.mockpg__method {
+  display: grid;
+  place-items: center;
+  padding: 12px 6px;
+  border: 1px solid #d1d6db;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+}
+
+.mockpg__method input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mockpg__method.is-selected {
+  border-color: var(--pg-color);
+  background: #e8f3ff;
+  color: var(--pg-color);
+}
+
+.mockpg__method:has(input:focus-visible) {
+  outline: 3px solid var(--pg-color);
+  outline-offset: 2px;
+}
+
+.mockpg__card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.mockpg__card .mockpg__hint {
+  grid-column: 1 / -1;
+}
+
+.mockpg__field {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.mockpg__field select {
+  padding: 10px;
+  border: 1px solid #d1d6db;
+  border-radius: 8px;
+  background: #ffffff;
+  font: inherit;
+  font-weight: 500;
+}
+
+.mockpg__test {
+  padding: 12px;
+  border: 1px dashed #f0b35f;
+  border-radius: 10px;
+  background: #fffaf2;
+}
+
+.mockpg__hint {
+  margin: 0;
+  color: #6b7684;
+  font-size: 12px;
+}
+
+.mockpg__agree {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.mockpg__error {
+  margin: 0;
+  padding: 18px 22px;
+  color: #e42939;
+  font-size: 14px;
+}
+
+.mockpg__form .mockpg__error {
+  padding: 0;
+}
+
+.mockpg__actions {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 8px;
+}
+
+.mockpg__cancel,
+.mockpg__pay {
+  padding: 14px;
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mockpg__cancel {
+  background: #f2f4f6;
+  color: #4e5968;
+}
+
+.mockpg__pay {
+  background: var(--pg-color);
+  color: #ffffff;
+}
+
+.mockpg__pay:hover:not(:disabled) {
+  background: var(--pg-color-strong);
+}
+
+.mockpg__pay:disabled,
+.mockpg__cancel:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.mockpg__notice {
+  margin: 0;
+  padding: 12px 22px 18px;
+  color: #8b95a1;
+  font-size: 11px;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .mockpg {
+    padding: 0;
+    background: #ffffff;
+  }
+
+  .mockpg__window {
+    border-radius: 0;
+    box-shadow: none;
+  }
+}

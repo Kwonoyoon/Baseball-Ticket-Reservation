@@ -32,6 +32,7 @@ import com.ballpark.ticketing.stadium.SeatSection;
 import com.ballpark.ticketing.stadium.SeatSectionRepository;
 import com.ballpark.ticketing.team.Team;
 import com.ballpark.ticketing.team.TeamRepository;
+import com.ballpark.ticketing.support.PaymentTestSupport;
 import com.jayway.jsonpath.JsonPath;
 
 /**
@@ -79,7 +80,8 @@ class NotificationFlowIntegrationTest {
     void 예매와_취소가_커밋되면_알림이_저장된다() throws Exception {
         String token = signupAndLogin();
         hold(token).andExpect(status().isOk());
-        String body = reserve(token).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        String pending = reserve(token).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        String body = PaymentTestSupport.payAndConfirm(mockMvc, token, pending);
         long reservationId = ((Number) JsonPath.read(body, "$.id")).longValue();
 
         mockMvc.perform(post("/api/reservations/" + reservationId + "/cancel")
@@ -103,8 +105,9 @@ class NotificationFlowIntegrationTest {
         String token = signupAndLogin();
         hold(token).andExpect(status().isOk());
 
-        reserve(token)
-                .andExpect(status().isCreated())
+        String pending = reserve(token).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        PaymentTestSupport.confirm(mockMvc, token, pending)
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CONFIRMED"));
 
         mockMvc.perform(get("/api/reservations/me").header(HttpHeaders.AUTHORIZATION, bearer(token)))
