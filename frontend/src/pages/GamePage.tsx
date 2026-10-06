@@ -23,7 +23,7 @@ import {
   seatKey,
 } from '../lib/format'
 import { scrollPanelIntoView } from '../lib/panelScroll'
-import { hasStadiumMap } from '../lib/stadiumMap'
+import { hasStadiumMap, stadiumLayout } from '../lib/stadiumMap'
 
 const SEAT_REFRESH_INTERVAL_MS = 10_000
 /** 결제 카드가 좌석표 아래로 내려가는 폭. index.css의 .booking 한 단 배치 기준과 같다. */
@@ -191,6 +191,8 @@ export function GamePage() {
 
   const bookable = game.status === 'SCHEDULED' && isBookable(game.startAt)
   const activeSection = activeSectionId === null ? undefined : sectionsById.get(activeSectionId)
+  // 구장마다 좌석 배치도가 다르다. 배치도가 없는 구장은 구역 목록(StadiumOverview)으로 고른다.
+  const layout = stadiumLayout(game.stadium.code)
   const quotaExhausted = isAuthenticated && remainingQuota === 0
 
   const handleSelectSection = (sectionId: number | null) => {
@@ -343,8 +345,9 @@ export function GamePage() {
           </section>
 
           <section className="panel" aria-label="구역 선택">
-            {hasStadiumMap(game.sections) ? (
+            {hasStadiumMap(layout, game.sections) ? (
               <StadiumMap
+                layout={layout}
                 sections={game.sections}
                 activeSectionId={activeSectionId}
                 remainingBySection={remainingBySection}

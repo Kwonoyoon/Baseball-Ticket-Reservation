@@ -46,6 +46,8 @@ export type Stadium = {
   id: number
   name: string
   city: string
+  /** 좌석 배치도를 고르는 구장 코드 (예: JAMSIL). 배치도가 없는 구장은 null */
+  code: string | null
 }
 
 export type GameStatus = 'SCHEDULED' | 'FINISHED' | 'CANCELED'
@@ -69,6 +71,10 @@ export type SeatGrade =
   | 'ORANGE'
   | 'RED'
   | 'NAVY'
+  | 'CHEER'
+  | 'SKY'
+  | 'GRASS'
+  | 'PARTY'
   | 'INFIELD'
   | 'OUTFIELD'
 

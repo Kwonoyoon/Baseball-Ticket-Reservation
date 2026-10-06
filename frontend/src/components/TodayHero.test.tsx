@@ -24,7 +24,7 @@ function game(id: number, date: string, home: Team, away: Team): GameSummary {
     startAt: `${date}T18:30:00`,
     homeTeam: home,
     awayTeam: away,
-    stadium: { id: id, name: `${home.shortName}구장`, city: '서울' },
+    stadium: { id: id, name: `${home.shortName}구장`, city: '서울', code: 'JAMSIL' },
     status: 'SCHEDULED',
     homeScore: null,
     awayScore: null,

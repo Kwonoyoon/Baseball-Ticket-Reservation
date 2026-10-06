@@ -2,22 +2,19 @@ import { useEffect, useRef, useState } from 'react'
 import type { ReservedSeat } from '../api/types'
 import { seatKey } from '../lib/format'
 import { scrollPanelIntoView } from '../lib/panelScroll'
-import {
-  FIELD_LINES,
-  FIELD_MARKS,
-  FIELD_SHAPES,
-  STADIUM_BLOCKS,
-  STADIUM_OUTLINE,
-  STADIUM_VIEW_BOX,
-} from '../lib/stadiumBlocks'
+import { stadiumLayout } from '../lib/stadiumMap'
+import { STADIUM_VIEW_BOX } from '../lib/stadiumMaps'
 import { BlockSeatGrid } from './BlockSeatGrid'
+import { StadiumGround } from './StadiumGround'
 
 type ReservedSeatMapProps = {
   seats: ReservedSeat[]
+  /** 예매한 경기의 구장 코드. 구장마다 배치도가 다르다. */
+  stadiumCode: string | null
 }
 
 /** 예매한 좌석이 구장 어디인지 보여준다. 고르는 화면이 아니라 읽기 전용이다. */
-export function ReservedSeatMap({ seats }: ReservedSeatMapProps) {
+export function ReservedSeatMap({ seats, stadiumCode }: ReservedSeatMapProps) {
   // 좌석을 누르면 블록 안 어디에 앉는지 아래에 펼친다.
   const [openSeat, setOpenSeat] = useState<ReservedSeat | null>(null)
   const gridRef = useRef<HTMLElement>(null)
@@ -39,9 +36,10 @@ export function ReservedSeatMap({ seats }: ReservedSeatMapProps) {
     else seatsByCode.set(seat.sectionCode, [seat])
   }
 
-  const mine = STADIUM_BLOCKS.filter((block) => seatsByCode.has(block.code))
-  // 배치도가 없는 구장이거나 블록 코드가 없는 예매라면 아무것도 그리지 않는다.
-  if (mine.length === 0) return null
+  const layout = stadiumLayout(stadiumCode)
+  const mine = layout?.blocks.filter((block) => seatsByCode.has(block.code)) ?? []
+  // 배치도가 없는 구장이거나, 지금 배치도에 없는 블록으로 예매한 경우(구장 배치도가 바뀌기 전 예매)는 그리지 않는다.
+  if (!layout || mine.length === 0) return null
 
   const label = mine
     .map((block) => {
@@ -85,27 +83,9 @@ export function ReservedSeatMap({ seats }: ReservedSeatMapProps) {
       </ul>
 
       <svg viewBox={STADIUM_VIEW_BOX} role="img" aria-label={`내 좌석 위치: ${label}`}>
-        <circle
-          cx={STADIUM_OUTLINE.cx}
-          cy={STADIUM_OUTLINE.cy}
-          r={STADIUM_OUTLINE.r}
-          fill="#FFFFFF"
-          stroke="#DDE2EA"
-          strokeWidth={6}
-        />
-        <g className="seat-location__field">
-          {FIELD_SHAPES.map((shape) => (
-            <path key={shape.d} d={shape.d} fill={shape.fill} />
-          ))}
-          {FIELD_LINES.map((d) => (
-            <path key={d} d={d} fill="none" stroke="#FFFFFF" strokeWidth={4} />
-          ))}
-          {FIELD_MARKS.map((mark) => (
-            <circle key={`${mark.cx}-${mark.cy}`} cx={mark.cx} cy={mark.cy} r={mark.r} fill={mark.fill} />
-          ))}
-        </g>
+        <StadiumGround layout={layout} fieldClassName="seat-location__field" />
 
-        {STADIUM_BLOCKS.map((block) => {
+        {layout.blocks.map((block) => {
           const group = seatsByCode.get(block.code)
           const isMine = group !== undefined
           const isOpen = isMine && openSeat?.sectionCode === block.code

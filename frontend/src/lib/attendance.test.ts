@@ -29,7 +29,7 @@ function reservation(
       startAt,
       homeTeam: home,
       awayTeam: away,
-      stadium: { id: 1, name: '잠실야구장', city: '서울' },
+      stadium: { id: 1, name: '잠실야구장', city: '서울', code: 'JAMSIL' },
       status: options.status ?? 'SCHEDULED',
       homeScore: options.homeScore ?? null,
       awayScore: options.awayScore ?? null,
