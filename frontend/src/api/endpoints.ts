@@ -26,6 +26,9 @@ import type {
   Transfer,
 } from './types'
 
+/** 커뮤니티 글 목록 한 쪽에 보여 주는 글 수 (백엔드 기본값과 같다) */
+export const POSTS_PER_PAGE = 10
+
 export const api = {
   signup: (body: { username: string; email: string; password: string; name: string }) =>
     request<Member>('/auth/signup', { method: 'POST', body }),
@@ -72,7 +75,7 @@ export const api = {
   /** category를 주면 그 분류만, 안 주면 모든 분류를 섞어 준다. keyword를 주면 제목·본문에서 찾는다. */
   getPosts: (teamId: number, page: number, signal?: AbortSignal, category?: PostCategory, keyword?: string) =>
     request<PostPage>(
-      `/teams/${teamId}/posts?page=${page}&size=20${category ? `&category=${category}` : ''}${
+      `/teams/${teamId}/posts?page=${page}&size=${POSTS_PER_PAGE}${category ? `&category=${category}` : ''}${
         keyword ? `&q=${encodeURIComponent(keyword)}` : ''
       }`,
       { signal },

@@ -27,7 +27,7 @@ const postPage = (totalPages = 1, page = 0) => ({
   ],
   hasMore: page + 1 < totalPages,
   page,
-  size: 20,
+  size: 10,
   totalCount: totalPages * 20,
   totalPages,
 })
