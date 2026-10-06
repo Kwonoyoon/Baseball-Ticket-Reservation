@@ -37,27 +37,34 @@ public class RedisSeatHoldStore implements SeatHoldStore {
     /** 구역 색인은 가장 늦게 만료되는 선점보다 조금 더 살려 둔다. */
     private static final long SECTION_INDEX_EXTRA_MILLIS = Duration.ofMinutes(1).toMillis();
 
-    /** KEYS[1]=회원 색인 / ARGV[1]=키 접두사, ARGV[2]=회원 ID, ARGV[3]=TTL(ms), ARGV[4]=만료 시각(ms), ARGV[5..]=좌석 ID */
+    /**
+     * KEYS[1]=회원 색인 / ARGV[1]=키 접두사, ARGV[2]=회원 ID, ARGV[3]=선점 TTL(ms), ARGV[4]=구역 색인 TTL(ms),
+     * ARGV[5]=만료 시각(ms), ARGV[6..]=좌석 ID
+     *
+     * <p>좌석 키는 선점 TTL만큼만 산다. 구역 색인(점수 = 만료 시각)만 조금 더 살려 두어, 만료된 좌석을 점수로 정리할 수 있게 한다.
+     * (좌석 키를 색인 TTL로 잡으면 화면에서는 빈자리로 보이는데 실제로는 1분 더 잡혀 있게 된다)
+     */
     private static final RedisScript<Long> HOLD_SCRIPT = RedisScript.of("""
             local prefix = ARGV[1]
             local memberId = ARGV[2]
-            local ttl = tonumber(ARGV[3])
-            local expiresAt = tonumber(ARGV[4])
-            for i = 5, #ARGV do
+            local holdTtl = tonumber(ARGV[3])
+            local indexTtl = tonumber(ARGV[4])
+            local expiresAt = tonumber(ARGV[5])
+            for i = 6, #ARGV do
               local owner = redis.call('GET', prefix .. 'seat:' .. ARGV[i])
               if owner and owner ~= memberId then
                 return 0
               end
             end
-            for i = 5, #ARGV do
+            for i = 6, #ARGV do
               local seatId = ARGV[i]
               local sectionId = string.match(seatId, '^(%d+)-')
-              redis.call('SET', prefix .. 'seat:' .. seatId, memberId, 'PX', ttl)
+              redis.call('SET', prefix .. 'seat:' .. seatId, memberId, 'PX', holdTtl)
               redis.call('ZADD', prefix .. 'section:' .. sectionId, expiresAt, seatId)
-              redis.call('PEXPIRE', prefix .. 'section:' .. sectionId, ttl + tonumber(ARGV[5 - 1]) * 0)
+              redis.call('PEXPIRE', prefix .. 'section:' .. sectionId, indexTtl)
               redis.call('SADD', KEYS[1], seatId)
             end
-            redis.call('PEXPIRE', KEYS[1], ttl)
+            redis.call('PEXPIRE', KEYS[1], holdTtl)
             return 1
             """, Long.class);
 
@@ -133,6 +140,7 @@ public class RedisSeatHoldStore implements SeatHoldStore {
         List<String> args = new ArrayList<>();
         args.add(prefix(gameId));
         args.add(String.valueOf(memberId));
+        args.add(String.valueOf(ttl.toMillis()));
         args.add(String.valueOf(ttl.toMillis() + SECTION_INDEX_EXTRA_MILLIS));
         args.add(String.valueOf(expiresAt));
         for (SeatPosition seat : seats) {
