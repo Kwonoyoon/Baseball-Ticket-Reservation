@@ -32,6 +32,16 @@ export function MegaphoneIcon() {
   )
 }
 
+/** 분실물센터(돋보기) */
+export function SearchIcon() {
+  return (
+    <svg {...commonProps}>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </svg>
+  )
+}
+
 export function MenuIcon() {
   return (
     <svg {...commonProps}>

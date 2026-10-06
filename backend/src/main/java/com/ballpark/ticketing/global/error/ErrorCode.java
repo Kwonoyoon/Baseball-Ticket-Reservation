@@ -24,6 +24,7 @@ public enum ErrorCode {
     CANNOT_MODIFY_SELF(HttpStatus.BAD_REQUEST, "본인 계정의 권한이나 잠금 상태는 바꿀 수 없습니다."),
     MEMBER_WITHDRAWN(HttpStatus.CONFLICT, "탈퇴한 회원입니다."),
     RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND, "예매 내역을 찾을 수 없습니다."),
+    LOST_PROPERTY_NOT_FOUND(HttpStatus.NOT_FOUND, "분실물을 찾을 수 없습니다."),
     NOTICE_NOT_FOUND(HttpStatus.NOT_FOUND, "공지를 찾을 수 없습니다."),
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다."),
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "댓글을 찾을 수 없습니다."),

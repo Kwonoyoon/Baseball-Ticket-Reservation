@@ -9,6 +9,7 @@ import {
   LogoutIcon,
   MegaphoneIcon,
   MessageIcon,
+  SearchIcon,
   TicketIcon,
   UserIcon,
   UsersIcon,
@@ -86,6 +87,10 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           <Link to="/notices" className="sidebar__item" onClick={onClose}>
             <MegaphoneIcon />
             <span>공지</span>
+          </Link>
+          <Link to="/lost-properties" className="sidebar__item" onClick={onClose}>
+            <SearchIcon />
+            <span>분실물센터</span>
           </Link>
           <Link to="/my/reservations" className="sidebar__item" onClick={onClose}>
             <TicketIcon />

@@ -15,6 +15,7 @@ import { GamePage } from './pages/GamePage'
 import { LoginPage } from './pages/LoginPage'
 import { MockCheckoutPage } from './pages/MockCheckoutPage'
 import { MyReservationsPage } from './pages/MyReservationsPage'
+import { LostPropertyPage } from './pages/LostPropertyPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { NoticesPage } from './pages/NoticesPage'
 import { NotificationSettingsPage } from './pages/NotificationSettingsPage'
@@ -81,6 +82,15 @@ const router = createBrowserRouter([
         element: (
           <RequireAuth>
             <MyReservationsPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        // 분실물센터: 로그인한 회원이 등록·조회하고, 보관 상태는 관리자가 바꾼다.
+        path: 'lost-properties',
+        element: (
+          <RequireAuth>
+            <LostPropertyPage />
           </RequireAuth>
         ),
       },

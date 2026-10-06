@@ -160,6 +160,16 @@ describe('Header 사이드바', () => {
     expect(within(sidebar).getByRole('link', { name: '공지' })).toHaveAttribute('href', '/notices')
   })
 
+  it('분실물센터는 사이드바에 있다', async () => {
+    await renderLoggedIn()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: '메뉴 열기' }))
+    const sidebar = screen.getByRole('complementary', { name: '사이드바' })
+
+    expect(within(sidebar).getByRole('link', { name: '분실물센터' })).toHaveAttribute('href', '/lost-properties')
+  })
+
   it('관리자는 사이드바에서 관리자 페이지로 갈 수 있다', async () => {
     await renderLoggedIn('ADMIN')
     const user = userEvent.setup()
