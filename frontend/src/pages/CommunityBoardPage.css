@@ -262,20 +262,9 @@
 }
 
 /* 이전 / 현재 쪽 / 다음 */
-.board-pager {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  margin-top: 24px;
-}
-
-.board-pager__page {
-  min-width: 2ch;
-  color: var(--text);
-  font-size: 15px;
-  font-weight: 700;
-  text-align: center;
+/* 쪽을 바꾸면 게시판 맨 위로 올라오는데, 붙어 있는 헤더에 가리지 않게 띄운다. */
+.team-board {
+  scroll-margin-top: 88px;
 }
 
 /* 글 목록: 카드를 한 장씩 띄우지 않고, 한 덩어리 안에서 가는 선으로 줄을 나눈다. */

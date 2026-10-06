@@ -86,6 +86,49 @@ class CommunityIntegrationTest {
     }
 
     @Test
+    void 목록은_전체_글_수와_쪽_수를_함께_주고_쪽_크기는_1에서_50으로_맞춘다() throws Exception {
+        String token = signup();
+        String tag = UUID.randomUUID().toString().substring(0, 8);
+        for (int i = 1; i <= 5; i++) {
+            createPost(token, "쪽나눔" + i + "-" + tag, "내용");
+        }
+
+        // 5개를 2개씩 나누면 3쪽이다. 첫 쪽은 최신 글부터 2개.
+        mockMvc.perform(get("/api/teams/" + TEAM_ID + "/posts").param("q", tag).param("size", "2"))
+                .andExpect(jsonPath("$.totalCount").value(5))
+                .andExpect(jsonPath("$.totalPages").value(3))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.hasMore").value(true))
+                .andExpect(jsonPath("$.items[*].title")
+                        .value(org.hamcrest.Matchers.contains("쪽나눔5-" + tag, "쪽나눔4-" + tag)));
+
+        // 마지막 쪽에는 1개만 있고 다음 쪽이 없다.
+        mockMvc.perform(get("/api/teams/" + TEAM_ID + "/posts").param("q", tag).param("size", "2").param("page", "2"))
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.hasMore").value(false));
+
+        // 없는 쪽은 빈 목록이지만 전체 수는 그대로 알려 준다.
+        mockMvc.perform(get("/api/teams/" + TEAM_ID + "/posts").param("q", tag).param("size", "2").param("page", "9"))
+                .andExpect(jsonPath("$.items").isEmpty())
+                .andExpect(jsonPath("$.totalPages").value(3));
+
+        // 쪽 크기는 1~50으로, 쪽 번호는 0 이상으로 맞춘다.
+        mockMvc.perform(get("/api/teams/" + TEAM_ID + "/posts").param("q", tag).param("size", "1000"))
+                .andExpect(jsonPath("$.size").value(50))
+                .andExpect(jsonPath("$.totalPages").value(1));
+        mockMvc.perform(get("/api/teams/" + TEAM_ID + "/posts").param("q", tag).param("size", "0").param("page", "-3"))
+                .andExpect(jsonPath("$.size").value(1))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.totalPages").value(5));
+
+        // 검색 결과가 없으면 0쪽이다.
+        mockMvc.perform(get("/api/teams/" + TEAM_ID + "/posts").param("q", "없는글-" + tag))
+                .andExpect(jsonPath("$.totalCount").value(0))
+                .andExpect(jsonPath("$.totalPages").value(0))
+                .andExpect(jsonPath("$.hasMore").value(false));
+    }
+
+    @Test
     void 분류별로_나눠_보고_목록에는_본문_미리보기가_온다() throws Exception {
         String token = signup();
         String tag = UUID.randomUUID().toString().substring(0, 8);
