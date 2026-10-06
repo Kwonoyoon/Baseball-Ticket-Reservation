@@ -12,10 +12,15 @@
   background: rgb(15 23 42 / 55%);
 }
 
+/* 결제 수단별 [결제하기] 색. 카드는 결제창 기본 파란색, 카카오페이는 노란색(검은 글자), 토스페이는 파란색. */
 .mockpg__window {
+  --pay-bg: var(--pg-color);
+  --pay-bg-hover: var(--pg-color-strong);
+  --pay-fg: #ffffff;
+
   width: 100%;
   max-width: 440px;
-  overflow: hidden;
+  /* 드롭다운 목록이 창 밖으로 펼쳐질 수 있게 내용을 자르지 않는다 */
   border-radius: 16px;
   background: #ffffff;
   box-shadow: 0 24px 64px rgb(15 23 42 / 35%);
@@ -23,6 +28,7 @@
 }
 
 .mockpg__header {
+  border-radius: 16px 16px 0 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -140,6 +146,44 @@
   color: var(--pg-color);
 }
 
+/* 카카오페이: 노란색 */
+.mockpg__method--kakao_pay {
+  border-color: #f5d800;
+  background: #fffbd6;
+  color: #3c1e1e;
+}
+
+.mockpg__method--kakao_pay.is-selected {
+  border-color: #fee500;
+  background: #fee500;
+  color: #191919;
+}
+
+/* 토스페이: 파란색 */
+.mockpg__method--toss_pay {
+  border-color: #9ec0ff;
+  background: #eef4ff;
+  color: #0050cc;
+}
+
+.mockpg__method--toss_pay.is-selected {
+  border-color: #0064ff;
+  background: #0064ff;
+  color: #ffffff;
+}
+
+.mockpg__window[data-method='KAKAO_PAY'] {
+  --pay-bg: #fee500;
+  --pay-bg-hover: #f5d800;
+  --pay-fg: #191919;
+}
+
+.mockpg__window[data-method='TOSS_PAY'] {
+  --pay-bg: #0064ff;
+  --pay-bg-hover: #0050cc;
+  --pay-fg: #ffffff;
+}
+
 .mockpg__method:has(input:focus-visible) {
   outline: 3px solid var(--pg-color);
   outline-offset: 2px;
@@ -155,20 +199,120 @@
   grid-column: 1 / -1;
 }
 
-.mockpg__field {
+/* ---------- 결제창 드롭다운 (components/PgSelect.tsx) ---------- */
+.pg-select {
+  position: relative;
   display: grid;
   gap: 6px;
+}
+
+.pg-select__label {
   font-size: 13px;
   font-weight: 600;
 }
 
-.mockpg__field select {
-  padding: 10px;
+.pg-select__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
   border: 1px solid #d1d6db;
-  border-radius: 8px;
+  border-radius: 10px;
   background: #ffffff;
+  color: #191f28;
   font: inherit;
+  font-size: 14px;
   font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.pg-select__toggle:hover:not(:disabled),
+.pg-select.is-open .pg-select__toggle {
+  border-color: var(--pg-color);
+}
+
+.pg-select.is-open .pg-select__toggle,
+.pg-select__toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(27 100 218 / 18%);
+}
+
+.pg-select__toggle:disabled {
+  background: #f2f4f6;
+  color: #8b95a1;
+  cursor: not-allowed;
+}
+
+.pg-select__arrow {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  border-right: 2px solid #8b95a1;
+  border-bottom: 2px solid #8b95a1;
+  transform: rotate(45deg);
+  transition: transform 0.15s;
+}
+
+.pg-select.is-open .pg-select__arrow {
+  margin-top: 4px;
+  border-color: var(--pg-color);
+  transform: rotate(-135deg);
+}
+
+.pg-select__list {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  z-index: 10;
+  max-height: 248px;
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  border: 1px solid #e5e8eb;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 12px 32px rgb(15 23 42 / 16%);
+  list-style: none;
+}
+
+.pg-select__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: #333d4b;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.pg-select__option.is-active {
+  background: #f2f4f6;
+}
+
+.pg-select__option.is-selected {
+  background: #e8f3ff;
+  color: var(--pg-color);
+  font-weight: 700;
+}
+
+/* 고른 항목에 체크 표시 */
+.pg-select__option.is-selected::after {
+  width: 5px;
+  height: 10px;
+  margin-right: 4px;
+  border-right: 2px solid var(--pg-color);
+  border-bottom: 2px solid var(--pg-color);
+  content: '';
+  transform: rotate(45deg) translateY(-2px);
 }
 
 .mockpg__test {
@@ -224,12 +368,12 @@
 }
 
 .mockpg__pay {
-  background: var(--pg-color);
-  color: #ffffff;
+  background: var(--pay-bg);
+  color: var(--pay-fg);
 }
 
 .mockpg__pay:hover:not(:disabled) {
-  background: var(--pg-color-strong);
+  background: var(--pay-bg-hover);
 }
 
 .mockpg__pay:disabled,

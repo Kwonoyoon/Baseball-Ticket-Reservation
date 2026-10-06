@@ -62,7 +62,9 @@ describe('MockCheckoutPage', () => {
     const pay = screen.getByRole('button', { name: '32,000원 결제하기' })
     expect(pay).toBeDisabled()
 
-    await userEvent.selectOptions(screen.getByLabelText('카드사'), '현대카드')
+    await userEvent.click(screen.getByRole('combobox', { name: '카드사' }))
+    await userEvent.click(screen.getByRole('option', { name: '현대카드' }))
+    expect(screen.getByRole('combobox', { name: '카드사' })).toHaveTextContent('현대카드')
     await userEvent.click(screen.getByLabelText('주문 내용을 확인했으며 결제 진행에 동의합니다.'))
     await userEvent.click(pay)
 
@@ -93,7 +95,8 @@ describe('MockCheckoutPage', () => {
     })
     renderCheckout()
 
-    await userEvent.selectOptions(await screen.findByLabelText('테스트 결과'), 'REJECT_LIMIT_EXCEEDED')
+    await userEvent.click(await screen.findByRole('combobox', { name: '테스트 결과' }))
+    await userEvent.click(screen.getByRole('option', { name: '카드 한도 초과' }))
     await userEvent.click(screen.getByLabelText('주문 내용을 확인했으며 결제 진행에 동의합니다.'))
     await userEvent.click(screen.getByRole('button', { name: '32,000원 결제하기' }))
 

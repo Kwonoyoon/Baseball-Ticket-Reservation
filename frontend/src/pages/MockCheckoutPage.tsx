@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router'
 import { ApiError, errorMessage } from '../api/client'
 import { api } from '../api/endpoints'
 import type { PaymentMethod } from '../api/types'
+import { PgSelect } from '../components/PgSelect'
 import { formatPrice, PAYMENT_METHOD_LABELS, PAYMENT_METHODS } from '../lib/format'
 import {
   CARD_COMPANIES,
@@ -140,7 +141,8 @@ export function MockCheckoutPage() {
 
   return (
     <div className="mockpg">
-      <section className="mockpg__window" aria-labelledby="mockpg-title">
+      {/* 고른 결제 수단에 따라 [결제하기] 색이 바뀐다 (카카오페이 노란색, 토스페이 파란색) */}
+      <section className="mockpg__window" aria-labelledby="mockpg-title" data-method={method}>
         <header className="mockpg__header">
           <h1 id="mockpg-title" className="mockpg__brand">
             SAFE<span>PAY</span>
@@ -173,7 +175,10 @@ export function MockCheckoutPage() {
           <fieldset className="mockpg__methods" disabled={paying}>
             <legend>결제 수단</legend>
             {PAYMENT_METHODS.map((value) => (
-              <label key={value} className={`mockpg__method${method === value ? ' is-selected' : ''}`}>
+              <label
+                key={value}
+                className={`mockpg__method mockpg__method--${value.toLowerCase()}${method === value ? ' is-selected' : ''}`}
+              >
                 <input
                   type="radio"
                   name="method"
@@ -191,30 +196,23 @@ export function MockCheckoutPage() {
 
           {method === 'CARD' ? (
             <div className="mockpg__card">
-              <label className="mockpg__field">
-                <span>카드사</span>
-                <select value={cardCompany} onChange={(event) => setCardCompany(event.target.value)} disabled={paying}>
-                  {CARD_COMPANIES.map((company) => (
-                    <option key={company} value={company}>
-                      {company}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="mockpg__field">
-                <span>할부</span>
-                <select
-                  value={installmentMonths}
-                  onChange={(event) => setInstallmentMonths(Number(event.target.value))}
-                  disabled={paying || !installmentAllowed}
-                >
-                  {INSTALLMENT_MONTHS.map((months) => (
-                    <option key={months} value={months}>
-                      {months === 0 ? '일시불' : `${months}개월`}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <PgSelect
+                label="카드사"
+                value={cardCompany}
+                options={CARD_COMPANIES.map((company) => ({ value: company, label: company }))}
+                disabled={paying}
+                onChange={setCardCompany}
+              />
+              <PgSelect
+                label="할부"
+                value={installmentMonths}
+                options={INSTALLMENT_MONTHS.map((months) => ({
+                  value: months,
+                  label: months === 0 ? '일시불' : `${months}개월`,
+                }))}
+                disabled={paying || !installmentAllowed}
+                onChange={setInstallmentMonths}
+              />
               {!installmentAllowed && <p className="mockpg__hint">할부는 5만 원 이상 결제할 때 고를 수 있어요.</p>}
             </div>
           ) : (
@@ -223,20 +221,9 @@ export function MockCheckoutPage() {
             </p>
           )}
 
-          <label className="mockpg__field mockpg__test">
-            <span>테스트 결과</span>
-            <select
-              value={outcome}
-              onChange={(event) => setOutcome(event.target.value as MockPgTestOutcome)}
-              disabled={paying}
-            >
-              {TEST_OUTCOMES.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="mockpg__test">
+            <PgSelect label="테스트 결과" value={outcome} options={TEST_OUTCOMES} disabled={paying} onChange={setOutcome} />
+          </div>
 
           <label className="mockpg__agree">
             <input type="checkbox" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} disabled={paying} />
