@@ -223,6 +223,13 @@ export type PostSummary = {
 export type PostPage = {
   items: PostSummary[]
   hasMore: boolean
+  /** 지금 쪽 (서버 기준 0부터) */
+  page: number
+  size: number
+  /** 분류·검색어 조건에 맞는 전체 글 수 */
+  totalCount: number
+  /** 전체 쪽 수. 글이 없으면 0 */
+  totalPages: number
 }
 
 export type PostDetail = {

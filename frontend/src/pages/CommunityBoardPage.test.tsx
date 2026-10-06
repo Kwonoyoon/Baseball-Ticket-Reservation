@@ -12,7 +12,8 @@ const teams = [
   { id: 3, code: 'HT', name: 'KIA 타이거즈', shortName: 'KIA', primaryColor: '#EA0029' },
 ]
 
-const postPage = (hasMore = false) => ({
+/** 서버 목록 한 쪽. page는 서버 기준(0부터), totalPages는 전체 쪽 수 */
+const postPage = (totalPages = 1, page = 0) => ({
   items: [
     {
       id: 10,
@@ -24,7 +25,11 @@ const postPage = (hasMore = false) => ({
       createdAt: '2026-09-29T10:00:00',
     },
   ],
-  hasMore,
+  hasMore: page + 1 < totalPages,
+  page,
+  size: 20,
+  totalCount: totalPages * 20,
+  totalPages,
 })
 
 /** 지금 주소를 화면에 적어 두어, 구단·분류를 고른 뒤 주소가 바뀌었는지 본다. */
@@ -104,7 +109,7 @@ describe('CommunityBoardPage', () => {
     expect(await screen.findByRole('link', { name: '글쓰기' })).toHaveAttribute('href', '/community/1/write')
   })
 
-  it('다음 쪽이 있으면 이전/다음 버튼이 보이고, 다음을 누르면 2쪽 글을 불러온다', async () => {
+  it('쪽 번호를 보여 주고, 번호나 다음·마지막을 누르면 그 쪽 글을 불러온다', async () => {
     const requested: string[] = []
     vi.stubGlobal(
       'fetch',
@@ -113,44 +118,64 @@ describe('CommunityBoardPage', () => {
         if (url === '/api/teams') return jsonResponse(200, teams)
         if (url.startsWith('/api/teams/1/posts')) {
           requested.push(url)
-          return jsonResponse(200, postPage(!url.includes('page=1')))
+          const serverPage = Number(new URL(url, 'http://test').searchParams.get('page'))
+          return jsonResponse(200, postPage(7, serverPage))
         }
         return jsonResponse(404, { code: 'NOT_FOUND', message: '없음' })
       }),
     )
     renderBoard()
 
+    // 7쪽 가운데 1~5쪽 번호가 보이고, 1쪽이 지금 쪽이다.
     const pager = await screen.findByRole('navigation', { name: '페이지 이동' })
-    expect(within(pager).getByRole('button', { name: '이전' })).toBeDisabled()
-    expect(within(pager).getByRole('button', { name: '다음' })).toBeEnabled()
+    expect(within(pager).getAllByRole('button', { name: /^\d+쪽$/ }).map((b) => b.textContent)).toEqual([
+      '1',
+      '2',
+      '3',
+      '4',
+      '5',
+    ])
+    expect(within(pager).getByRole('button', { name: '1쪽' })).toHaveAttribute('aria-current', 'page')
+    expect(within(pager).getByRole('button', { name: '처음 쪽' })).toBeDisabled()
+    expect(within(pager).getByRole('button', { name: '이전 쪽' })).toBeDisabled()
     // 더 보기 버튼으로 글을 이어 붙이던 방식은 없어졌다.
     expect(screen.queryByRole('button', { name: '더 보기' })).not.toBeInTheDocument()
 
-    await userEvent.click(within(pager).getByRole('button', { name: '다음' }))
+    await userEvent.click(within(pager).getByRole('button', { name: '3쪽' }))
 
-    // 화면은 1부터, 서버는 0부터. 2쪽이면 서버에는 page=1.
-    await waitFor(() => expect(screen.getByLabelText('현재 주소')).toHaveTextContent('/community/1?page=2'))
-    await waitFor(() => expect(requested.at(-1)).toContain('page=1'))
-    const second = await screen.findByRole('navigation', { name: '페이지 이동' })
-    expect(within(second).getByRole('button', { name: '이전' })).toBeEnabled()
-    // 마지막 쪽: 다음 쪽이 없다.
-    expect(within(second).getByRole('button', { name: '다음' })).toBeDisabled()
+    // 화면은 1부터, 서버는 0부터. 3쪽이면 서버에는 page=2.
+    await waitFor(() => expect(screen.getByLabelText('현재 주소')).toHaveTextContent('/community/1?page=3'))
+    await waitFor(() => expect(requested.at(-1)).toContain('page=2'))
+
+    // 마지막 쪽(7쪽)으로 가면 6~7쪽 묶음이 보이고 다음·마지막은 막힌다.
+    await userEvent.click(
+      within(await screen.findByRole('navigation', { name: '페이지 이동' })).getByRole('button', { name: '마지막 쪽' }),
+    )
+    await waitFor(() => expect(screen.getByLabelText('현재 주소')).toHaveTextContent('/community/1?page=7'))
+    const last = await screen.findByRole('navigation', { name: '페이지 이동' })
+    await waitFor(() =>
+      expect(within(last).getAllByRole('button', { name: /^\d+쪽$/ }).map((b) => b.textContent)).toEqual(['6', '7']),
+    )
+    expect(within(last).getByRole('button', { name: '7쪽' })).toHaveAttribute('aria-current', 'page')
+    expect(within(last).getByRole('button', { name: '다음 쪽' })).toBeDisabled()
+    expect(within(last).getByRole('button', { name: '마지막 쪽' })).toBeDisabled()
   })
 
-  it('글이 한 쪽에 다 들어가면 이전/다음을 보여 주지 않는다', async () => {
+  it('글이 한 쪽에 다 들어가면 1쪽만 보여 준다', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (input: RequestInfo | URL) => {
         const url = String(input)
         if (url === '/api/teams') return jsonResponse(200, teams)
-        if (url.startsWith('/api/teams/1/posts')) return jsonResponse(200, postPage(false))
+        if (url.startsWith('/api/teams/1/posts')) return jsonResponse(200, postPage(1))
         return jsonResponse(404, { code: 'NOT_FOUND', message: '없음' })
       }),
     )
     renderBoard()
 
-    await screen.findByText('첫 글입니다')
-    expect(screen.queryByRole('navigation', { name: '페이지 이동' })).not.toBeInTheDocument()
+    const pager = await screen.findByRole('navigation', { name: '페이지 이동' })
+    expect(within(pager).getAllByRole('button', { name: /^\d+쪽$/ })).toHaveLength(1)
+    expect(within(pager).getByRole('button', { name: '다음 쪽' })).toBeDisabled()
   })
 
   it('검색어를 넣으면 서버에 q로 보내고, 주소에 남기며 1쪽부터 다시 본다', async () => {
