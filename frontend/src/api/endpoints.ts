@@ -2,6 +2,7 @@ import { request } from './client'
 import type {
   AdminMember,
   Comment,
+  EntryTicket,
   GameDetail,
   GameSummary,
   HoldResult,
@@ -168,6 +169,10 @@ export const api = {
 
   cancelReservation: (reservationId: number) =>
     request<Reservation>(`/reservations/${reservationId}/cancel`, { method: 'POST' }),
+
+  /** 입장 QR 값(서버 서명)과 입장 시각. QR을 새로 그릴 때마다 받는다. */
+  issueEntryTicket: (reservationId: number, signal?: AbortSignal) =>
+    request<EntryTicket>(`/reservations/${reservationId}/entry-ticket`, { method: 'POST', signal }),
 
   /** 판매 중인 양도글. teamId를 주면 그 구단이 뛰는 경기만. */
   getTransfers: (signal?: AbortSignal, teamId?: number) =>
