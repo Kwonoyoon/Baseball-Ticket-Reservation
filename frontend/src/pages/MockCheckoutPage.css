@@ -8,6 +8,7 @@
   display: grid;
   place-items: start center;
   min-height: 100vh;
+  min-height: 100dvh;
   padding: 48px 16px;
   background: rgb(15 23 42 / 55%);
 }

@@ -26,12 +26,17 @@ export function ReservationTicket({ reservation, actions }: ReservationTicketPro
           <span className={`badge badge--${status}`}>{RESERVATION_STATUS_LABELS[reservation.status]}</span>
           <span className="ticket__number">예매번호 {reservation.reservationNumber}</span>
         </div>
+        {/* 좁은 화면에서 줄이 바뀌어도 구단 로고와 이름이 떨어지지 않게 구단별로 묶는다. */}
         <h3 className="ticket__matchup">
-          <TeamMark team={game.awayTeam} />
-          {game.awayTeam.name}
+          <span className="ticket__team">
+            <TeamMark team={game.awayTeam} />
+            {game.awayTeam.name}
+          </span>
           <span className="ticket__vs">vs</span>
-          {game.homeTeam.name}
-          <TeamMark team={game.homeTeam} />
+          <span className="ticket__team">
+            {game.homeTeam.name}
+            <TeamMark team={game.homeTeam} />
+          </span>
         </h3>
         <p className="ticket__info">
           {formatGameDate(game.startAt)} {formatTime(game.startAt)} · {game.stadium.name}
