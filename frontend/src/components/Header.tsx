@@ -43,7 +43,8 @@ export function Header() {
                   <path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4Z" />
                   <path d="M10 6v12" strokeDasharray="2 2" />
                 </svg>
-                내 티켓
+                {/* 아주 좁은 화면에서는 글자를 숨기고 아이콘만 보인다. (화면 낭독기는 그대로 읽는다) */}
+                <span className="site-header__ticket-label">내 티켓</span>
               </Link>
               <NotificationBell />
               <button
@@ -67,7 +68,7 @@ export function Header() {
               <Link className="button button--ghost button--sm" to="/login">
                 로그인
               </Link>
-              <Link className="button button--primary button--sm" to="/signup">
+              <Link className="button button--primary button--sm site-header__signup" to="/signup">
                 회원가입
               </Link>
             </>

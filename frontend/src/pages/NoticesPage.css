@@ -2,11 +2,14 @@
 
 .notices-page {
   display: grid;
+  /* 긴 공지 제목(한 줄 말줄임)이 칸 너비를 늘려 휴대폰에서 오른쪽이 잘리지 않게 */
+  grid-template-columns: minmax(0, 1fr);
   gap: 24px;
 }
 
 .notices-page__head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 16px;

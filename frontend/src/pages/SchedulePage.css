@@ -27,6 +27,7 @@
   --home-mono: ui-monospace, Menlo, Consolas, monospace;
 
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--home-bg);
   color: var(--home-ink);
 }

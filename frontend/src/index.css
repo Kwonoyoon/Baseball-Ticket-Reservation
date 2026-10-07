@@ -99,6 +99,8 @@ p {
 
 .app {
   min-height: 100vh;
+  /* 휴대폰 브라우저의 100vh는 주소창이 숨었을 때 높이라 화면보다 길어진다. 지금 보이는 높이를 쓴다. */
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -256,6 +258,11 @@ p {
 }
 
 .site-header__mypage {
+  /* 이름이 길어도 헤더를 밀어내지 않게 줄인다. */
+  max-width: 10em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   padding: 8px 12px;
   border-radius: var(--radius-sm);
   font-size: 14px;
@@ -284,6 +291,24 @@ p {
   stroke: currentColor;
   stroke-linejoin: round;
   stroke-width: 2;
+}
+
+/* 아주 좁은 휴대폰(360px 미만)에서는 [내 티켓]을 아이콘 버튼으로 줄인다. */
+@media (max-width: 359px) {
+  .site-header__ticket {
+    width: 40px;
+    padding-inline: 0;
+    justify-content: center;
+  }
+
+  .site-header__ticket-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }
 
 .icon-button {
@@ -471,6 +496,8 @@ p {
   color: var(--text);
   font-weight: 700;
   text-align: left;
+  /* 링크(<a>)로 된 항목도 버튼 항목처럼 밑줄 없이 */
+  text-decoration: none;
   cursor: pointer;
 }
 
@@ -1730,12 +1757,30 @@ p {
 
 .form {
   display: grid;
+  /* 칸 너비를 내용(입력칸의 기본 최소 너비)에 맞춰 늘리지 않는다. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
 }
 
 .field {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
+}
+
+/* 입력칸은 기본으로 "글자 20자" 만큼의 최소 너비를 갖는다. 휴대폰에서 글자 크기를 키우면(카카오톡 브라우저 등)
+   그 너비가 카드보다 넓어져 입력칸과 버튼이 카드 밖으로 밀려나므로, 언제나 칸 너비에 맞춘다. */
+input,
+select,
+textarea {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
 }
 
 .field__label {
@@ -1838,6 +1883,13 @@ p {
   margin-top: 14px;
   font-size: 20px;
   letter-spacing: -0.02em;
+}
+
+.ticket__team {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
 }
 
 .ticket__matchup .team-mark {
@@ -2072,9 +2124,36 @@ p {
     gap: 8px;
   }
 
-  /* 아주 좁은 화면에서는 로그인만 남기고 회원가입 버튼을 접어 헤더 줄바꿈을 막는다. */
-  .site-header__auth .button--primary {
+  /* 예매 카드의 경기 줄: 휴대폰 폭에서도 "원정 vs 홈"이 한 줄에 들어가게 조금 줄인다. */
+  .ticket__matchup {
+    gap: 6px;
+    font-size: 18px;
+  }
+
+  .ticket__team {
+    gap: 6px;
+  }
+
+  .ticket__matchup .team-mark {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* 휴대폰에서는 헤더가 넘치지 않게 비회원은 로그인만, 회원은 이름 링크를 접는다. (마이페이지는 메뉴에서 간다)
+     [내 티켓]은 입장할 때 바로 꺼내야 하므로 남긴다. */
+  .site-header__signup,
+  .site-header__mypage {
     display: none;
+  }
+
+  /* 알림 목록은 종 아래에 붙이면 왼쪽으로 넘치므로 화면 폭에 맞춰 띄운다.
+     (헤더에 backdrop-filter가 있어 fixed의 기준이 헤더라, 헤더 첫 줄 바로 아래가 된다) */
+  .notification-panel {
+    position: fixed;
+    top: 60px;
+    right: 16px;
+    left: 16px;
+    width: auto;
   }
 
   .stadium {
@@ -3397,4 +3476,24 @@ p {
 .pagination__page:focus-visible {
   outline: 3px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* ---------- 좁은 화면 덮어쓰기 ----------
+   위쪽에 "예매 상세: 내 좌석 위치" 묶음이 여러 번 들어가 있어(예전 머지) 앞쪽의 휴대폰 규칙을 뒤쪽이 덮는다.
+   파일 맨 끝에서 다시 정해 휴대폰에서는 좌석 목록 아래에 배치도를 크게 그린다. */
+@media (max-width: 960px) {
+  .seat-location {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .seat-location__list {
+    position: static;
+  }
+}
+
+/* 휴대폰에서 예매 상세의 좌석 목록 버튼을 손가락으로 누르기 쉬운 높이로 */
+@media (max-width: 560px) {
+  .seat-location__seat {
+    min-height: 36px;
+  }
 }
