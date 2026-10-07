@@ -29,10 +29,9 @@ const comments = [
 ]
 
 function renderPost() {
-  const router = createMemoryRouter(
-    [{ path: '/community/:teamId/posts/:postId', element: <CommunityPostPage /> }],
-    { initialEntries: ['/community/1/posts/10'] },
-  )
+  const router = createMemoryRouter([{ path: '/community/:teamId/posts/:postId', element: <CommunityPostPage /> }], {
+    initialEntries: ['/community/1/posts/10'],
+  })
   render(
     <AuthProvider>
       <RouterProvider router={router} />
@@ -110,6 +109,32 @@ describe('CommunityPostPage', () => {
 
     expect(await screen.findByRole('button', { name: '좋아요 2' })).toBeInTheDocument()
     expect(fetchMock.mock.calls.some((c) => c[0] === '/api/posts/10/like')).toBe(true)
+  })
+
+  it('비회원이 좋아요를 누르면 서버에 보내지 않고 로그인 안내를 띄운다', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url === '/api/posts/10') return jsonResponse(200, post())
+      if (url === '/api/posts/10/comments') return jsonResponse(200, [])
+      return jsonResponse(404, { code: 'NOT_FOUND', message: '없음' })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    renderPost()
+    const user = userEvent.setup()
+
+    const like = await screen.findByRole('button', { name: /좋아요 1/ })
+    // 비회원이어도 버튼은 눌러 볼 수 있다. (눌러지지 않아 헷갈리는 것보다 안내가 낫다)
+    expect(like).toBeEnabled()
+    await user.click(like)
+
+    expect(await screen.findByText(/좋아요는 로그인한 뒤에 누를 수 있어요/)).toBeInTheDocument()
+    // 로그인하면 이 글로 돌아오도록 주소를 넘긴다.
+    expect(screen.getByRole('link', { name: '로그인하기' })).toHaveAttribute(
+      'href',
+      '/login?redirect=%2Fcommunity%2F1%2Fposts%2F10',
+    )
+    expect(fetchMock.mock.calls.some((c) => String(c[0]).endsWith('/like'))).toBe(false)
+    expect(screen.getByRole('button', { name: /좋아요 1/ })).toBeInTheDocument()
   })
 
   it('신고 버튼을 누르면 사유 입력창이 열리고, 제출하면 서버로 보낸다', async () => {
