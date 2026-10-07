@@ -196,7 +196,7 @@
 .my-ticket__details {
   display: grid;
   gap: 14px;
-  margin: 22px 0 0;
+  margin: 18px 0 0;
   text-align: left;
 }
 
@@ -215,6 +215,160 @@
   margin: 0;
   font-size: 14px;
   font-weight: 800;
+}
+
+/* 좌석: 구역별로 묶고, 열·번 숫자를 크게. 구역 등급 색(--grade-color)을 왼쪽 띠와 칩에 쓴다. */
+.my-ticket__seats {
+  margin-top: 22px;
+  text-align: left;
+}
+
+.my-ticket__seats-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.my-ticket__seats-head h2 {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.my-ticket__seats-head h2 span {
+  margin-left: 4px;
+  color: var(--text);
+}
+
+.my-ticket__map-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--navy-700);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.my-ticket__map-toggle:hover,
+.my-ticket__map-toggle[aria-expanded='true'] {
+  border-color: var(--navy-700);
+  background: var(--surface-muted);
+}
+
+.my-ticket__map-toggle svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.my-ticket__seat-groups {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.my-ticket__seat-group {
+  padding: 2px 0 2px 12px;
+  border-left: 4px solid var(--grade-color, var(--navy-700));
+}
+
+.my-ticket__seat-section {
+  margin: 0 0 8px;
+  color: var(--grade-color, var(--text));
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.my-ticket__seat-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.my-ticket__seat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 14px;
+  border: 1px solid color-mix(in srgb, var(--grade-color, var(--navy-700)) 30%, var(--border));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--grade-color, var(--navy-700)) 7%, var(--surface));
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.my-ticket__seat strong {
+  margin-right: 2px;
+  color: var(--text);
+  font-size: 22px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+button.my-ticket__seat {
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
+}
+
+button.my-ticket__seat:hover {
+  background: color-mix(in srgb, var(--grade-color, var(--navy-700)) 14%, var(--surface));
+}
+
+button.my-ticket__seat:focus-visible {
+  outline: 3px solid var(--amber-400);
+  outline-offset: 2px;
+}
+
+button.my-ticket__seat.is-open {
+  border-color: var(--grade-color, var(--navy-700));
+  background: var(--grade-color, var(--navy-700));
+  color: rgb(255 255 255 / 85%);
+}
+
+button.my-ticket__seat.is-open strong {
+  color: #ffffff;
+}
+
+/* 펼친 구장 배치도: 티켓 폭이 좁아 목록 없이 배치도만 한 줄로 */
+.my-ticket__map {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: var(--radius);
+  background: var(--surface-muted);
+}
+
+.my-ticket__map .seat-location {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.my-ticket__map-hint {
+  margin: 10px 0 0;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  text-align: center;
 }
 
 /* 여러 장이면 좌우 화살표로 넘긴다 */

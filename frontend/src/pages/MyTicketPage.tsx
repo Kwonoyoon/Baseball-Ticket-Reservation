@@ -1,12 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import QRCode from 'qrcode'
 import { Link, useSearchParams } from 'react-router'
 import { errorMessage, isAbortError } from '../api/client'
 import { api } from '../api/endpoints'
-import type { EntryTicket, Reservation } from '../api/types'
+import type { EntryTicket, Reservation, ReservedSeat } from '../api/types'
+import { ReservedSeatMap } from '../components/ReservedSeatMap'
 import { ErrorMessage, Loading } from '../components/StatusView'
 import { TeamMark } from '../components/TeamMark'
-import { formatGameDate, formatTime } from '../lib/format'
+import { formatGameDate, formatTime, seatKey } from '../lib/format'
+import { stadiumLayout } from '../lib/stadiumMap'
 import './MyTicketPage.css'
 
 /** 서버가 주는 시각(시간대 없음)은 서울 시간이다. */
@@ -63,15 +65,20 @@ function entryStatus(ticket: Reservation, entry: EntryTicket, now: number): Entr
 /** 입장 상태가 바뀌는 다음 시각(입장 시작·경기 시작·경기 종료)에 맞춰 다시 그린다. 입장 정보를 받기 전에는 null */
 function useEntryStatus(ticket: Reservation, entry: EntryTicket | null): EntryStatus | null {
   const [now, setNow] = useState(() => Date.now())
+  // QR을 30초마다 새로 받아도 시각은 그대로라, 시각 값으로만 다시 잰다. (새 QR마다 타이머를 다시 걸면 영영 안 바뀐다)
+  const opensAt = entry?.entryOpensAt
+  const startsAt = entry?.gameStartsAt
+  const endsAt = entry?.gameEndsAt
 
   useEffect(() => {
-    if (!entry) return undefined
-    const next = [entry.entryOpensAt, entry.gameStartsAt, entry.gameEndsAt].map(seoulTime).find((time) => time > now)
+    if (!opensAt || !startsAt || !endsAt) return undefined
+    const next = [opensAt, startsAt, endsAt].map(seoulTime).find((time) => time > now)
     if (next === undefined) return undefined
-    // setTimeout은 약 24.8일보다 길게 기다리지 못하므로, 멀면 그때 다시 잰다.
-    const timer = window.setTimeout(() => setNow(Date.now()), Math.min(next - now + 50, 2 ** 31 - 1))
+    // 지금 시각에서 다음 경계까지 기다린다. setTimeout은 약 24.8일보다 길게 못 기다려서, 멀면 그때 다시 잰다.
+    const delay = Math.min(Math.max(next - Date.now(), 0) + 50, 2 ** 31 - 1)
+    const timer = window.setTimeout(() => setNow(Date.now()), delay)
     return () => window.clearTimeout(timer)
-  }, [entry, now])
+  }, [opensAt, startsAt, endsAt, now])
 
   if (ticket.game.status === 'CANCELED') return CANCELED_STATUS
   return entry ? entryStatus(ticket, entry, now) : null
@@ -109,7 +116,9 @@ function useEntryTicket(ticket: Reservation) {
           : null
         if (controller.signal.aborted) return
         // 기기 시계가 서버와 달라도 되도록, 유효 시간은 받은 때부터 센다.
-        const expiresAt = entry.token && entry.expiresInSeconds ? Date.now() + entry.expiresInSeconds * 1000 : 0
+        const receivedAt = Date.now()
+        const expiresAt = entry.token && entry.expiresInSeconds ? receivedAt + entry.expiresInSeconds * 1000 : 0
+        setNow(receivedAt)
         setState({ entry, image, expiresAt, error: null })
       })
       .catch((cause: unknown) => {
@@ -144,13 +153,129 @@ function useEntryTicket(ticket: Reservation) {
   return { ...state, secondsLeft, refresh }
 }
 
+type SeatGroup = { sectionId: number; sectionName: string; grade: string; seats: ReservedSeat[] }
+
+/** 한 예매에 여러 구역이 섞일 수 있어 구역별로 묶는다. */
+function groupBySection(seats: ReservedSeat[]): SeatGroup[] {
+  const groups = new Map<number, SeatGroup>()
+  for (const seat of seats) {
+    const group = groups.get(seat.sectionId)
+    if (group) {
+      group.seats.push(seat)
+    } else {
+      groups.set(seat.sectionId, {
+        sectionId: seat.sectionId,
+        sectionName: seat.sectionName,
+        grade: seat.grade,
+        seats: [seat],
+      })
+    }
+  }
+  return [...groups.values()]
+}
+
+/**
+ * 티켓의 좌석: 구역별로 묶어 열·번을 크게 보여 준다.
+ * 구장 배치도가 있으면 [좌석 위치 보기]로 예매 상세의 "내 좌석 위치"와 같은 배치도를 펼치고,
+ * 좌석을 누르면 그 블록 안 어디에 앉는지 함께 보여 준다. (배치도의 블록을 눌러도 같은 좌석이 골라진다)
+ */
+function TicketSeats({ ticket }: { ticket: Reservation }) {
+  const [mapOpen, setMapOpen] = useState(false)
+  const [openSeat, setOpenSeat] = useState<ReservedSeat | null>(null)
+  const titleId = useId()
+  const mapId = useId()
+  const layout = stadiumLayout(ticket.game.stadium.code)
+  const hasMap =
+    layout !== null && ticket.seats.some((seat) => layout.blocks.some((block) => block.code === seat.sectionCode))
+
+  const pickSeat = (seat: ReservedSeat) => {
+    const isOpen = mapOpen && openSeat !== null && seatKey(openSeat) === seatKey(seat)
+    setMapOpen(true)
+    setOpenSeat(isOpen ? null : seat)
+  }
+
+  return (
+    <section className="my-ticket__seats" aria-labelledby={titleId}>
+      <div className="my-ticket__seats-head">
+        <h2 id={titleId}>
+          좌석 <span>{ticket.seats.length}석</span>
+        </h2>
+        {hasMap && (
+          <button
+            type="button"
+            className="my-ticket__map-toggle"
+            aria-expanded={mapOpen}
+            aria-controls={mapId}
+            onClick={() => setMapOpen((open) => !open)}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9 4 3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4Zm0 0v13m6-10.5v13" />
+            </svg>
+            {mapOpen ? '좌석 위치 닫기' : '좌석 위치 보기'}
+          </button>
+        )}
+      </div>
+      <ul className="my-ticket__seat-groups">
+        {groupBySection(ticket.seats).map((group) => (
+          <li key={group.sectionId} className={`my-ticket__seat-group grade--${group.grade.toLowerCase()}`}>
+            <p className="my-ticket__seat-section">{group.sectionName}</p>
+            <ul className="my-ticket__seat-list">
+              {group.seats.map((seat) => {
+                const numbers = (
+                  <>
+                    <span>
+                      <strong>{seat.rowNo}</strong>열
+                    </span>
+                    <span>
+                      <strong>{seat.seatNo}</strong>번
+                    </span>
+                  </>
+                )
+                const isOpen = mapOpen && openSeat !== null && seatKey(openSeat) === seatKey(seat)
+                return (
+                  <li key={seatKey(seat)}>
+                    {hasMap && seat.sectionCode !== null ? (
+                      <button
+                        type="button"
+                        className={`my-ticket__seat${isOpen ? ' is-open' : ''}`}
+                        aria-pressed={isOpen}
+                        aria-label={`${seat.sectionName} ${seat.rowNo}열 ${seat.seatNo}번 위치 보기`}
+                        onClick={() => pickSeat(seat)}
+                      >
+                        {numbers}
+                      </button>
+                    ) : (
+                      <span className="my-ticket__seat">{numbers}</span>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          </li>
+        ))}
+      </ul>
+      {hasMap && mapOpen && (
+        <div id={mapId} className="my-ticket__map">
+          <ReservedSeatMap
+            seats={ticket.seats}
+            stadiumCode={ticket.game.stadium.code}
+            openSeat={openSeat}
+            onOpenSeatChange={setOpenSeat}
+            showList={false}
+          />
+          <p className="my-ticket__map-hint">색칠된 블록이나 위의 좌석을 누르면 블록 안 자리가 보여요.</p>
+        </div>
+      )}
+    </section>
+  )
+}
+
 function TicketCard({ ticket, direction }: { ticket: Reservation; direction: 'next' | 'previous' | null }) {
   const { entry, image, error, secondsLeft, refresh } = useEntryTicket(ticket)
   const status = useEntryStatus(ticket, entry)
   // 끝났거나 취소된 경기는 서버가 QR 값을 주지 않는다.
   const closed = entry !== null && entry.token === null
   const { game } = ticket
-  const seatLabel = ticket.seats.map((seat) => `${seat.sectionName} ${seat.rowNo}열 ${seat.seatNo}번`).join(', ')
 
   return (
     <article className={`my-ticket__card${direction ? ` is-sliding-${direction}` : ''}`} aria-label="QR 티켓">
@@ -208,14 +333,11 @@ function TicketCard({ ticket, direction }: { ticket: Reservation; direction: 'ne
             </>
           )}
         </div>
+        <TicketSeats ticket={ticket} />
         <dl className="my-ticket__details">
           <div>
             <dt>예매번호</dt>
             <dd>{ticket.reservationNumber}</dd>
-          </div>
-          <div>
-            <dt>좌석</dt>
-            <dd>{seatLabel}</dd>
           </div>
         </dl>
       </div>
