@@ -126,7 +126,7 @@ describe('MyTicketPage', () => {
     // 가장 가까운 다가오는 경기(2번)가 먼저 나온다. 취소된 3번은 티켓이 아니다.
     expect(await screen.findByText('BP2')).toBeInTheDocument()
     expect(screen.getByText('1 / 3 티켓')).toBeInTheDocument()
-    expect(screen.getByText('네이비석 3번 3열 2번')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '네이비석 3번 3열 2번 위치 보기' })).toBeInTheDocument()
 
     expect((await findQr()).getAttribute('src')).toMatch(/^data:image\/png/)
     expect(toDataURL).toHaveBeenLastCalledWith('signed-2-1')
@@ -154,10 +154,10 @@ describe('MyTicketPage', () => {
     expect(entryStatus()).toHaveTextContent('16:00부터 입장')
 
     await act(async () => vi.advanceTimersByTime(2 * 60_000))
-    expect(entryStatus()).toHaveTextContent('입장 가능')
+    await waitFor(() => expect(entryStatus()).toHaveTextContent('입장 가능'))
 
     await act(async () => vi.advanceTimersByTime(2 * HOUR))
-    expect(entryStatus()).toHaveTextContent('경기 중 · 입장 가능')
+    await waitFor(() => expect(entryStatus()).toHaveTextContent('경기 중 · 입장 가능'))
 
     // 서버가 준 gameEndsAt(시작 4시간 뒤)부터는 끝난 경기
     await act(async () => vi.advanceTimersByTime(4 * HOUR))
@@ -212,6 +212,50 @@ describe('MyTicketPage', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('결제가 완료된 예매만 입장 QR을 받을 수 있습니다.')
     expect(screen.queryByRole('img', { name: '입장 확인용 QR 코드' })).not.toBeInTheDocument()
+  })
+
+  it('좌석은 구역별로 열·번을 보여 주고, 누르면 구장 배치도에서 블록 안 위치까지 보여 준다', async () => {
+    const user = userEvent.setup()
+    const base = reservation(1, '2099-05-01T18:30:00')
+    renderTickets([{ ...base, seats: [base.seats[0], { ...base.seats[0], seatNo: 8 }] }])
+    await screen.findByText('BP1')
+    expect(screen.getByRole('heading', { name: '좌석 2석' })).toBeInTheDocument()
+    expect(screen.getByText('네이비석 3번')).toBeInTheDocument()
+
+    // 처음에는 배치도를 접어 둔다.
+    const toggle = screen.getByRole('button', { name: '좌석 위치 보기' })
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByRole('img', { name: /내 좌석 위치/ })).not.toBeInTheDocument()
+
+    // 좌석을 누르면 배치도를 펼치고 그 블록 안 자리를 짚어 준다.
+    const eighth = screen.getByRole('button', { name: '네이비석 3번 3열 8번 위치 보기' })
+    await user.click(eighth)
+    expect(screen.getByRole('img', { name: '내 좌석 위치: 네이비석 3번 3열 1번, 3열 8번' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: /네이비석 3번 10열 22석 중 내 좌석/ })).toBeInTheDocument()
+    expect(eighth).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: '좌석 위치 닫기' })).toHaveAttribute('aria-expanded', 'true')
+
+    // 같은 좌석을 다시 누르면 블록 안 좌석표만 접힌다.
+    await user.click(eighth)
+    expect(screen.queryByRole('group', { name: /10열 22석 중 내 좌석/ })).not.toBeInTheDocument()
+    expect(eighth).toHaveAttribute('aria-pressed', 'false')
+
+    // 배치도의 블록을 눌러도 위쪽 좌석 선택이 따라온다.
+    await user.click(screen.getByRole('button', { name: '네이비석 3번 좌석표 보기' }))
+    expect(screen.getByRole('button', { name: '네이비석 3번 3열 1번 위치 보기' })).toHaveAttribute('aria-pressed', 'true')
+
+    await user.click(screen.getByRole('button', { name: '좌석 위치 닫기' }))
+    expect(screen.queryByRole('img', { name: /내 좌석 위치/ })).not.toBeInTheDocument()
+  })
+
+  it('배치도가 없는 구장이면 좌석만 적고 위치 보기 버튼은 없다', async () => {
+    const base = reservation(1, '2099-05-01T18:30:00')
+    renderTickets([{ ...base, game: { ...base.game, stadium: { ...base.game.stadium, code: null } } }])
+    await screen.findByText('BP1')
+
+    expect(screen.getByText('네이비석 3번')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '좌석 위치 보기' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /위치 보기/ })).not.toBeInTheDocument()
   })
 
   it('주소의 reservationId로 처음 볼 티켓을 고른다 (예매 상세의 QR 티켓 보기)', async () => {
