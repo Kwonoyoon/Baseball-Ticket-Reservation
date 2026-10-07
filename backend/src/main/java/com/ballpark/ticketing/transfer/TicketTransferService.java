@@ -96,7 +96,9 @@ public class TicketTransferService {
     public TransferResponse register(Long sellerId, Long reservationId) {
         LocalDateTime now = LocalDateTime.now(clock);
         // 남의 예매는 존재 여부도 드러내지 않도록 404 (ReservationService.findOwnedReservation과 같은 정책)
-        Reservation reservation = reservationRepository.findDetailById(reservationId)
+        // 예매 행을 잠가 입장 게이트와 엇갈리지 않게 한다. 입장 확인도 이 행을 잠그고 판단하므로,
+        // 입장한 예매가 양도글로 올라가거나 양도 중인 예매가 입장하는 일이 없다.
+        Reservation reservation = reservationRepository.findForUpdateById(reservationId)
                 .filter(found -> found.isOwnedBy(sellerId))
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_NOT_FOUND));
         ensureTransferable(reservation, now);

@@ -27,6 +27,8 @@ public class EntryTokenCodec {
     private static final String CLAIM_TYPE = "typ";
     private static final String ENTRY_TYPE = "entry";
     private static final String CLAIM_RESERVATION_NUMBER = "rno";
+    /** 발급할 때의 예매 주인(회원 번호). 양도로 주인이 바뀌면 이전 주인이 받아 둔 QR은 쓸 수 없다. */
+    private static final String CLAIM_OWNER = "own";
 
     private final SecretKey key;
     private final EntryTicketProperties properties;
@@ -43,12 +45,13 @@ public class EntryTokenCodec {
         this.clock = clock;
     }
 
-    public IssuedToken issue(Long reservationId, String reservationNumber) {
+    public IssuedToken issue(Long reservationId, String reservationNumber, Long ownerId) {
         Instant now = clock.instant();
         String token = Jwts.builder()
                 .subject(String.valueOf(reservationId))
                 .claim(CLAIM_TYPE, ENTRY_TYPE)
                 .claim(CLAIM_RESERVATION_NUMBER, reservationNumber)
+                .claim(CLAIM_OWNER, ownerId)
                 .id(UUID.randomUUID().toString())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plus(properties.tokenValidity())))
@@ -67,10 +70,13 @@ public class EntryTokenCodec {
                     .parseSignedClaims(token)
                     .getPayload();
             String reservationNumber = claims.get(CLAIM_RESERVATION_NUMBER, String.class);
-            if (!ENTRY_TYPE.equals(claims.get(CLAIM_TYPE, String.class)) || reservationNumber == null) {
+            Long ownerId = claims.get(CLAIM_OWNER, Long.class);
+            if (!ENTRY_TYPE.equals(claims.get(CLAIM_TYPE, String.class)) || reservationNumber == null
+                    || ownerId == null) {
                 return ParseResult.INVALID;
             }
-            return new ParseResult(new EntryClaims(Long.valueOf(claims.getSubject()), reservationNumber), false);
+            return new ParseResult(
+                    new EntryClaims(Long.valueOf(claims.getSubject()), reservationNumber, ownerId), false);
         } catch (ExpiredJwtException e) {
             return ParseResult.EXPIRED;
         } catch (JwtException | IllegalArgumentException | NullPointerException e) {
@@ -82,7 +88,8 @@ public class EntryTokenCodec {
     public record IssuedToken(String token, long expiresInSeconds) {
     }
 
-    public record EntryClaims(Long reservationId, String reservationNumber) {
+    /** @param ownerId QR을 발급할 때의 예매 주인 */
+    public record EntryClaims(Long reservationId, String reservationNumber, Long ownerId) {
     }
 
     /** claims가 null이면 검증 실패. expired는 서명은 맞지만 유효 시간이 지난 경우 */

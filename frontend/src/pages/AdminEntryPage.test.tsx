@@ -209,6 +209,37 @@ describe('AdminEntryPage', () => {
     expect(within(resultPanel()).queryByText('예매번호')).not.toBeInTheDocument()
   })
 
+  it('양도 전 QR이나 양도 중인 티켓은 거부하고, 최근 확인에 이유를 짧게 남긴다', async () => {
+    renderEntryPage({
+      'sellers-old-qr': {
+        admitted: false,
+        result: 'OWNER_CHANGED',
+        message: '양도로 주인이 바뀐 티켓의 이전 QR입니다. 지금 주인의 QR을 보여 달라고 안내해 주세요.',
+        reservation: null,
+        entryOpensAt: null,
+        enteredAt: null,
+      },
+      'listed-ticket': {
+        admitted: false,
+        result: 'LISTED_FOR_TRANSFER',
+        message: '양도 중인 티켓입니다. 양도를 취소한 뒤 다시 QR을 보여 달라고 안내해 주세요.',
+        reservation,
+        entryOpensAt: '2026-10-07T17:00:00',
+        enteredAt: null,
+      },
+    })
+
+    await submitManually('sellers-old-qr')
+    await expectVerdict('입장 불가')
+    expect(resultPanel()).toHaveTextContent('양도로 주인이 바뀐 티켓의 이전 QR입니다.')
+
+    await submitManually('listed-ticket')
+    await waitFor(() => expect(resultPanel()).toHaveTextContent('양도 중인 티켓입니다.'))
+    const history = screen.getByRole('region', { name: '최근 확인' })
+    expect(history).toHaveTextContent('양도 전 QR')
+    expect(history).toHaveTextContent('양도 중')
+  })
+
   it('서버에 닿지 못하면 확인 실패를 알린다', async () => {
     renderEntryPage({ broken: 'fail' })
     await submitManually('broken')

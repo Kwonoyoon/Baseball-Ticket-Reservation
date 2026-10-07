@@ -17,6 +17,7 @@ import com.ballpark.ticketing.reservation.dto.ReservationResponse;
 import com.ballpark.ticketing.reservation.entry.EntryTokenCodec.EntryClaims;
 import com.ballpark.ticketing.reservation.entry.EntryTokenCodec.IssuedToken;
 import com.ballpark.ticketing.reservation.entry.EntryTokenCodec.ParseResult;
+import com.ballpark.ticketing.transfer.TicketTransferRepository;
 
 /**
  * 입장 QR을 발급하고(내 티켓 화면) 검증해 입장시킨다(입장 게이트).
@@ -28,13 +29,16 @@ import com.ballpark.ticketing.reservation.entry.EntryTokenCodec.ParseResult;
 public class EntryTicketService {
 
     private final ReservationRepository reservationRepository;
+    private final TicketTransferRepository transferRepository;
     private final EntryPolicy entryPolicy;
     private final EntryTokenCodec tokenCodec;
     private final Clock clock;
 
-    public EntryTicketService(ReservationRepository reservationRepository, EntryPolicy entryPolicy,
-            EntryTokenCodec tokenCodec, Clock clock) {
+    public EntryTicketService(ReservationRepository reservationRepository,
+            TicketTransferRepository transferRepository, EntryPolicy entryPolicy, EntryTokenCodec tokenCodec,
+            Clock clock) {
         this.reservationRepository = reservationRepository;
+        this.transferRepository = transferRepository;
         this.entryPolicy = entryPolicy;
         this.tokenCodec = tokenCodec;
         this.clock = clock;
@@ -52,7 +56,7 @@ public class EntryTicketService {
         LocalDateTime now = LocalDateTime.now(clock);
         boolean usable = game.getStatus() != GameStatus.CANCELED && !entryPolicy.isOver(game, now)
                 && !reservation.hasEntered();
-        IssuedToken issued = usable ? tokenCodec.issue(reservation.getId(), reservation.getReservationNumber()) : null;
+        IssuedToken issued = usable ? tokenCodec.issue(reservation.getId(), reservation.getReservationNumber(), memberId) : null;
         return new EntryTicketResponse(entryPolicy.entryOpensAt(game), game.getStartAt(),
                 entryPolicy.gameEndsAt(game),
                 issued == null ? null : issued.token(),
@@ -79,6 +83,10 @@ public class EntryTicketService {
                 .orElse(null);
         if (reservation == null) {
             return EntryVerifyResponse.rejected(EntryVerifyResult.INVALID_TOKEN);
+        }
+        // 판매자가 받아 둔 QR이 양도 직후 30초 안에 쓰이면, 돈을 낸 구매자가 못 들어온다.
+        if (!reservation.isOwnedBy(claims.ownerId())) {
+            return EntryVerifyResponse.rejected(EntryVerifyResult.OWNER_CHANGED);
         }
         LocalDateTime now = LocalDateTime.now(clock);
         Game game = reservation.getGame();
@@ -107,6 +115,12 @@ public class EntryTicketService {
         }
         if (reservation.hasEntered()) {
             return EntryVerifyResult.ALREADY_ENTERED;
+        }
+        // 양도글이 열린 채 입장하면 아무도 살 수 없는 글이 마켓에 남는다. 양도를 거둬야 들어온다.
+        // 양도글은 잠그지 않고 읽기만 한다. (구매는 양도글 → 예매 순으로 잠그므로, 여기서 양도글을 잠그면 서로 기다리다 멈출 수 있다)
+        // 예매 행은 이미 잠갔고 양도 등록도 같은 예매 행을 잠그므로, 등록과 입장이 엇갈려 둘 다 통과하지는 않는다.
+        if (transferRepository.existsByOpenReservationId(reservation.getId())) {
+            return EntryVerifyResult.LISTED_FOR_TRANSFER;
         }
         return EntryVerifyResult.ADMITTED;
     }
