@@ -1,7 +1,7 @@
 import { api } from '../api/endpoints'
 import type { GameSummary, HotGame, HotPost, RecentTransfer, Reservation, Standing } from '../api/types'
 import { attendanceStats, type AttendanceStats } from './attendance'
-import { attendedGames } from './calendar'
+import { attendedGames, countInMonth } from './calendar'
 import { addDays, parseSeoulDateTime, todayInSeoul } from './format'
 
 /** 다음 경기를 찾아볼 최대 일수. 휴식일(월요일)과 우천 취소를 건너뛰기에 충분하다. */
@@ -35,9 +35,16 @@ export type MyTicketInfo = {
 
 export type TodayInfo = { date: string; games: GameSummary[] }
 
+/** 직관 챌린지(사이트 자체 이벤트): 이번 달에 직관한 경기 수. 로그인하지 않았으면 null이다. */
+export type ChallengeInfo = { attendedThisMonth: number } | null
+
+/** 이번 달에 몇 경기를 직관하면 챌린지를 달성하는지 */
+export const CHALLENGE_GOAL = 3
+
 export type HeroData = {
   nextGame: NextGameInfo | null
   myTicket: MyTicketInfo | null
+  challenge: ChallengeInfo
   hotGames: HotGame[]
   today: TodayInfo | null
   standings: Standing[]
@@ -48,6 +55,7 @@ export type HeroData = {
 export const EMPTY_HERO_DATA: HeroData = {
   nextGame: null,
   myTicket: null,
+  challenge: null,
   hotGames: [],
   today: null,
   standings: [],
@@ -98,27 +106,40 @@ async function loadNextGame(
   return { game: found, soldSeats, totalSeats, forFavorite }
 }
 
-async function loadMyTicket(
+/** 로그인한 회원의 예매 목록을 한 번 받아 내 티켓 슬라이드와 직관 챌린지를 함께 만든다. */
+async function loadMemberData(
   favoriteTeamId: number | null,
   signal: AbortSignal,
   now: Date,
-): Promise<MyTicketInfo | null> {
+): Promise<{ myTicket: MyTicketInfo | null; challenge: ChallengeInfo }> {
   const reservations = await api.getMyReservations(signal)
+  const attended = attendedGames(reservations, now)
+  const challenge: ChallengeInfo = {
+    attendedThisMonth: countInMonth(
+      attended,
+      Number(todayInSeoul(now).slice(0, 4)),
+      Number(todayInSeoul(now).slice(5, 7)),
+    ),
+  }
+
   const upcoming = reservations
     .filter((reservation) => reservation.status === 'CONFIRMED' && parseSeoulDateTime(reservation.game.startAt) > now)
     .sort((a, b) => a.game.startAt.localeCompare(b.game.startAt))
-  if (upcoming.length === 0) return null
+  if (upcoming.length === 0) return { myTicket: null, challenge }
 
   const year = String(now.getFullYear())
   let attendedThisYear = 0
-  for (const [date, onDate] of attendedGames(reservations, now)) {
+  for (const [date, onDate] of attended) {
     if (date.startsWith(year)) attendedThisYear += onDate.length
   }
   return {
-    reservation: upcoming[0],
-    attendedThisYear,
-    stats: attendanceStats(reservations, favoriteTeamId),
-    heldSeats: upcoming.reduce((sum, reservation) => sum + reservation.seats.length, 0),
+    challenge,
+    myTicket: {
+      reservation: upcoming[0],
+      attendedThisYear,
+      stats: attendanceStats(reservations, favoriteTeamId),
+      heldSeats: upcoming.reduce((sum, reservation) => sum + reservation.seats.length, 0),
+    },
   }
 }
 
@@ -145,16 +166,25 @@ export async function loadHeroData(
   signal: AbortSignal,
   now: Date = new Date(),
 ): Promise<HeroData> {
-  const [nextGame, myTicket, hotGames, today, standings, hotPosts, transfers] = await Promise.all([
+  const [nextGame, member, hotGames, today, standings, hotPosts, transfers] = await Promise.all([
     safely(() => loadNextGame(favoriteTeamId, signal, now), null),
-    loggedIn ? safely(() => loadMyTicket(favoriteTeamId, signal, now), null) : Promise.resolve(null),
+    loggedIn ? safely(() => loadMemberData(favoriteTeamId, signal, now), null) : Promise.resolve(null),
     safely(() => api.getHotGames(HOT_GAME_COUNT, signal), [] as HotGame[]),
     safely(() => loadToday(signal, now), null),
     safely(() => api.getStandings(signal), [] as Standing[]),
     safely(() => api.getHotPosts(HOT_POST_COUNT, signal), [] as HotPost[]),
     safely(() => api.getRecentTransfers(RECENT_TRANSFER_COUNT, signal), [] as RecentTransfer[]),
   ])
-  return { nextGame, myTicket, hotGames, today, standings, hotPosts, transfers }
+  return {
+    nextGame,
+    myTicket: member?.myTicket ?? null,
+    challenge: member?.challenge ?? null,
+    hotGames,
+    today,
+    standings,
+    hotPosts,
+    transfers,
+  }
 }
 
 /** 경기까지 남은 시간. 이미 지났으면 모두 0이다. */

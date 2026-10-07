@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { Link } from 'react-router'
 import type { HotGame, HotPost, RecentTransfer, Standing } from '../../api/types'
 import {
   bookedPercent,
+  CHALLENGE_GOAL,
   dDayLabel,
   timeLeft,
+  type ChallengeInfo,
   type MyTicketInfo,
   type NextGameInfo,
   type TodayInfo,
@@ -13,6 +15,7 @@ import { formatMonthDay, formatPrice, formatTime, isBookable, weekdayLabel } fro
 import { postCategoryLabel } from '../../lib/postCategory'
 import { teamNameEn } from '../../lib/teamNames'
 import { TeamMark } from '../TeamMark'
+import { BallIllustration, EventIllustration, FieldIllustration } from './Illustrations'
 import './HeroSlides.css'
 
 const two = (value: number) => String(value).padStart(2, '0')
@@ -20,6 +23,16 @@ const two = (value: number) => String(value).padStart(2, '0')
 /** "10.08 (목) 18:30" */
 const shortDateTime = (startAt: string) =>
   `${formatMonthDay(startAt.slice(0, 10))} (${weekdayLabel(startAt.slice(0, 10))}) ${formatTime(startAt)}`
+
+/** 이 예매율(%) 이상인 경기가 있을 때만 "매진 임박"이라고 말한다. 예매가 거의 없는데 임박이라고 하면 거짓이 되기 때문이다. */
+export const SOLD_OUT_SOON_PERCENT = 70
+
+export function isSoldOutSoon(games: HotGame[]): boolean {
+  return games.some((hot) => bookedPercent(hot.soldSeats, hot.totalSeats) >= SOLD_OUT_SOON_PERCENT)
+}
+
+/** 팀 색 두 개를 카드에 넘긴다. 카드 위쪽 띠와 로고 테두리가 이 색을 쓴다. */
+const teamColors = (away: string, home: string) => ({ '--away': away, '--home': home }) as CSSProperties
 
 /** 매초 갱신되는 현재 시각. 카운트다운 한 곳에서만 쓰므로 슬라이드 전체가 아니라 이 컴포넌트만 다시 그려진다. */
 function useNow(intervalMs = 1000) {
@@ -34,7 +47,17 @@ function useNow(intervalMs = 1000) {
 function SoldBar({ percent }: { percent: number }) {
   return (
     <div className="hs-bar" role="img" aria-label={`예매율 ${percent}%`}>
-      <span style={{ width: `${percent}%` }} />
+      <span style={{ width: `${Math.max(percent, 2)}%` }} />
+    </div>
+  )
+}
+
+/** 슬라이드 뒤에 깔리는 은은한 경기장 무늬와 공. 모든 슬라이드가 같은 분위기를 갖게 한다. */
+function Backdrop() {
+  return (
+    <div className="hs-backdrop" aria-hidden="true">
+      <FieldIllustration className="hs-backdrop__field" />
+      <BallIllustration className="hs-backdrop__ball" />
     </div>
   )
 }
@@ -51,6 +74,7 @@ export function NextGameSlide({ info }: { info: NextGameInfo }) {
 
   return (
     <div className="hs hs--next">
+      <Backdrop />
       <div className="hs-next__main">
         <span className="hs-tag">{info.forFavorite ? '♥ 내 관심 구단' : 'KBO 다음 경기'}</span>
         <div className="hs-dday">
@@ -82,7 +106,7 @@ export function NextGameSlide({ info }: { info: NextGameInfo }) {
         </div>
       </div>
 
-      <div className="hs-card hs-next__card">
+      <div className="hs-card hs-next__card" style={teamColors(game.awayTeam.primaryColor, game.homeTeam.primaryColor)}>
         <div className="hs-versus">
           {(
             [
@@ -99,7 +123,7 @@ export function NextGameSlide({ info }: { info: NextGameInfo }) {
           ))}
         </div>
         <div className="hs-meta">
-          <span>{shortDateTime(game.startAt)}</span>
+          <b>{shortDateTime(game.startAt)}</b>
           <span>{game.stadium.name}</span>
         </div>
         {info.totalSeats > 0 && (
@@ -127,6 +151,7 @@ export function MyTicketSlide({ info, name, now }: { info: MyTicketInfo; name: s
 
   return (
     <div className="hs hs--ticket">
+      <Backdrop />
       <div className="hs-ticket__main">
         <span className="hs-tag">MY TICKET</span>
         <h2 className="hs-title">
@@ -159,7 +184,7 @@ export function MyTicketSlide({ info, name, now }: { info: MyTicketInfo; name: s
         </div>
       </div>
 
-      <div className="hs-paper">
+      <div className="hs-paper" style={teamColors(game.awayTeam.primaryColor, game.homeTeam.primaryColor)}>
         <div className="hs-paper__head">
           <span>2026 KBO 정규시즌</span>
           <b>{dDay}</b>
@@ -193,22 +218,47 @@ export function MyTicketSlide({ info, name, now }: { info: MyTicketInfo; name: s
   )
 }
 
-/** C. 매진 임박: 예매율이 높은 경기 */
+/**
+ * C. 예매율이 높은 경기. 70% 이상이 있을 때만 "매진 임박"이고, 아니면 "이번 주 인기 경기"로 말한다.
+ * (샘플 데이터처럼 예매가 거의 없는데 "자리가 얼마 안 남았어요"라고 하면 사실과 다르기 때문이다)
+ */
 export function HotGamesSlide({ games }: { games: HotGame[] }) {
+  const soon = isSoldOutSoon(games)
   return (
     <div className="hs hs--hot">
-      <span className="hs-tag">🔥 매진 임박</span>
-      <h2 className="hs-title hs-title--row">
-        서두르세요, <em>자리가 얼마 안 남았어요</em>
-      </h2>
-      <p className="hs-sub">예매율이 높은 경기를 먼저 보여 드려요. 좌석은 선점한 뒤 결제까지 제한 시간이 있어요.</p>
+      <Backdrop />
+      <div className="hs-hot__head">
+        <span className="hs-tag">{soon ? '🔥 매진 임박' : '⚾ 이번 주 인기 경기'}</span>
+        <h2 className="hs-title hs-title--row">
+          {soon ? (
+            <>
+              서두르세요, <em>자리가 얼마 안 남았어요</em>
+            </>
+          ) : (
+            <>
+              지금 예매할 수 있는 <em>가까운 경기</em>예요
+            </>
+          )}
+        </h2>
+        <p className="hs-sub">
+          {soon ? '예매율이 높은 경기를 먼저 보여 드려요.' : '예매율이 높은 순서로 골랐어요.'} 좌석은 선점한 뒤 결제까지
+          제한 시간이 있어요.
+        </p>
+      </div>
       <ul className="hs-cards">
         {games.map(({ game, soldSeats, totalSeats }) => {
           const percent = bookedPercent(soldSeats, totalSeats)
+          const hot = percent >= SOLD_OUT_SOON_PERCENT
           return (
-            <li key={game.id} className="hs-card hs-hot">
+            <li
+              key={game.id}
+              className="hs-card hs-hot"
+              style={teamColors(game.awayTeam.primaryColor, game.homeTeam.primaryColor)}
+            >
               <div className="hs-hot__top">
-                <span className="hs-chip hs-chip--hot">잔여 {100 - percent}%</span>
+                <span className={`hs-chip ${hot ? 'hs-chip--hot' : 'hs-chip--ok'}`}>
+                  {hot ? '마감 임박' : '예매 중'}
+                </span>
                 <span>{shortDateTime(game.startAt)}</span>
               </div>
               <div className="hs-hot__teams">
@@ -239,6 +289,56 @@ export function HotGamesSlide({ games }: { games: HotGame[] }) {
   )
 }
 
+/**
+ * 사이트 자체 이벤트: 직관 챌린지. 이번 달에 3경기를 직관하면 '직관 요정' 뱃지를 준다는 설정이다.
+ * 로그인하면 이번 달에 몇 경기를 직관했는지(캘린더 기록 기준)를 공으로 채워 보여 주고, 아니면 참여를 안내한다.
+ */
+export function EventSlide({ challenge }: { challenge: ChallengeInfo }) {
+  const done = challenge ? Math.min(challenge.attendedThisMonth, CHALLENGE_GOAL) : 0
+  const complete = challenge !== null && challenge.attendedThisMonth >= CHALLENGE_GOAL
+
+  return (
+    <div className="hs hs--event">
+      <div className="hs-event__main">
+        <span className="hs-tag hs-tag--gold">🏆 SAFETICKET 이벤트</span>
+        <h2 className="hs-title">
+          직관 챌린지,
+          <br />
+          이번 달 <em>{CHALLENGE_GOAL}경기</em> 직관하면
+          <br />
+          <em>'직관 요정'</em> 뱃지!
+        </h2>
+        <p className="hs-sub">
+          경기를 예매하고 직관하면 캘린더에 기록돼요. 이번 달 안에 {CHALLENGE_GOAL}경기를 채워 보세요.
+        </p>
+        <div className="hs-balls" role="img" aria-label={`이번 달 직관 ${done} / ${CHALLENGE_GOAL}경기`}>
+          {Array.from({ length: CHALLENGE_GOAL }, (_, index) => (
+            <span key={index} className={index < done ? 'is-done' : undefined}>
+              <BallIllustration />
+            </span>
+          ))}
+          <b>
+            {challenge ? `${done} / ${CHALLENGE_GOAL}` : `0 / ${CHALLENGE_GOAL}`}
+            <small>{complete ? '달성! 🎉' : challenge ? '직관한 경기' : '로그인하고 참여'}</small>
+          </b>
+        </div>
+        <div className="hs-actions">
+          {challenge ? (
+            <a className="hs-button hs-button--primary" href="#schedule">
+              {complete ? '다음 경기 보러 가기' : '경기 예매하러 가기'}
+            </a>
+          ) : (
+            <Link className="hs-button hs-button--primary" to="/login">
+              로그인하고 참여하기
+            </Link>
+          )}
+        </div>
+      </div>
+      <EventIllustration className="hs-art" />
+    </div>
+  )
+}
+
 /** 경기 한 줄의 오른쪽 상태 표시 */
 function gameStatus(game: TodayInfo['games'][number]): string {
   if (game.status === 'FINISHED') return '종료'
@@ -254,6 +354,7 @@ export function TodaySlide({ today, standings }: { today: TodayInfo | null; stan
 
   return (
     <div className="hs hs--today">
+      <Backdrop />
       {today && (
         <section className="hs-panel" aria-label="오늘의 KBO">
           <header>
@@ -321,6 +422,7 @@ export function TodaySlide({ today, standings }: { today: TodayInfo | null; stan
 export function CommunitySlide({ posts, transfers }: { posts: HotPost[]; transfers: RecentTransfer[] }) {
   return (
     <div className="hs hs--community">
+      <Backdrop />
       <section className="hs-panel" aria-label="지금 뜨는 커뮤니티">
         <header>
           <h2>지금 뜨는 커뮤니티</h2>

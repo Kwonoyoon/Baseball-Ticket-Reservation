@@ -114,7 +114,7 @@ describe('TodayHero', () => {
     localStorage.clear()
   })
 
-  it('데이터가 있는 슬라이드만 순서대로 만든다: 다음 경기 → 매진 임박 → 오늘의 KBO → 커뮤니티·양도', async () => {
+  it('슬라이드를 순서대로 만든다: 다음 경기 → 매진 임박 → 직관 챌린지 이벤트 → 오늘의 KBO → 커뮤니티·양도', async () => {
     const today = todayInSeoul()
     stubGuest({
       schedule: { [TOMORROW]: [game(1, TOMORROW, LG, DOOSAN)], [today]: [game(5, today, KIA, NC)] },
@@ -128,6 +128,7 @@ describe('TodayHero', () => {
     expect(dots().map((dot) => dot.getAttribute('aria-label'))).toEqual([
       '다음 경기',
       '매진 임박',
+      '직관 챌린지 이벤트',
       '오늘의 KBO',
       '커뮤니티와 양도',
     ])
@@ -205,7 +206,8 @@ describe('TodayHero', () => {
     renderHero()
 
     const slide = (await screen.findAllByRole('group', { hidden: true }))[0]
-    expect(within(slide).getByText('잔여 8%')).toBeInTheDocument()
+    // 예매율 92%는 70% 이상이라 "마감 임박" 칩이 붙는다.
+    expect(within(slide).getAllByText('마감 임박').length).toBeGreaterThan(0)
     expect(within(slide).getByText('예매율 92%')).toBeInTheDocument()
     expect(within(slide).getAllByRole('link', { name: '예매하기' })[0]).toHaveAttribute('href', '/games/7')
   })
@@ -252,6 +254,8 @@ describe('TodayHero', () => {
     })
     renderHero()
 
+    // 이벤트 슬라이드가 앞에 있어서, 커뮤니티 슬라이드로 먼저 넘긴다.
+    await userEvent.click(await screen.findByRole('button', { name: '커뮤니티와 양도' }))
     const posts = await screen.findByRole('region', { name: '지금 뜨는 커뮤니티', hidden: true })
     expect(within(posts).getByRole('link', { name: /오늘 경기 후기/ })).toHaveAttribute('href', '/community/1/posts/3')
     expect(within(posts).getByText('♥ 12')).toBeInTheDocument()
@@ -267,19 +271,21 @@ describe('TodayHero', () => {
     // 매진 임박이 실패해도 다음 경기(와 같은 날 경기를 보여 주는 오늘의 KBO) 슬라이드는 그려진다.
     const slides = await waitFor(() => {
       const found = screen.getAllByRole('group', { hidden: true })
-      expect(found).toHaveLength(2)
+      expect(found).toHaveLength(3)
       return found
     })
     expect(within(slides[0]).getByText('D-1')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '매진 임박' })).not.toBeInTheDocument()
   })
 
-  it('보여 줄 것이 하나도 없으면 안내 문구를 보여 준다', async () => {
+  it('다른 데이터가 하나도 없어도 사이트 이벤트 슬라이드는 나오고, 슬라이드가 하나뿐이라 화살표는 없다', async () => {
     stubGuest({})
     renderHero()
 
-    expect(await screen.findByText('지금 보여 드릴 경기 소식이 없습니다.')).toBeInTheDocument()
-    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    const slides = await screen.findAllByRole('group', { hidden: true })
+    expect(slides).toHaveLength(1)
+    expect(within(slides[0]).getByText(/직관 챌린지/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '다음 슬라이드' })).not.toBeInTheDocument()
   })
 
   it('화면에 안 보이는 슬라이드는 보조기기와 키보드에서 숨긴다', async () => {
@@ -288,10 +294,10 @@ describe('TodayHero', () => {
 
     const slides = await waitFor(() => {
       const found = screen.getAllByRole('group', { hidden: true })
-      expect(found).toHaveLength(3)
+      expect(found).toHaveLength(4)
       return found
     })
-    expect(slides.map((slide) => slide.getAttribute('aria-hidden'))).toEqual(['false', 'true', 'true'])
+    expect(slides.map((slide) => slide.getAttribute('aria-hidden'))).toEqual(['false', 'true', 'true', 'true'])
     expect(slides[1]).toHaveAttribute('inert')
     expect(slides[0]).not.toHaveAttribute('inert')
   })
@@ -307,9 +313,12 @@ describe('TodayHero', () => {
     await user.click(screen.getByRole('button', { name: '다음 슬라이드' }))
     expect(second).toHaveAttribute('aria-current', 'true')
 
-    const third = screen.getByRole('button', { name: '오늘의 KBO' })
+    const third = screen.getByRole('button', { name: '직관 챌린지 이벤트' })
+    const fourth = screen.getByRole('button', { name: '오늘의 KBO' })
     await user.click(screen.getByRole('button', { name: '다음 슬라이드' }))
     expect(third).toHaveAttribute('aria-current', 'true')
+    await user.click(screen.getByRole('button', { name: '다음 슬라이드' }))
+    expect(fourth).toHaveAttribute('aria-current', 'true')
 
     // 마지막에서 다음을 누르면 처음으로 돌아온다.
     await user.click(screen.getByRole('button', { name: '다음 슬라이드' }))
@@ -317,15 +326,62 @@ describe('TodayHero', () => {
 
     // 처음에서 이전을 누르면 마지막으로 간다.
     await user.click(screen.getByRole('button', { name: '이전 슬라이드' }))
-    expect(third).toHaveAttribute('aria-current', 'true')
+    expect(fourth).toHaveAttribute('aria-current', 'true')
   })
 
-  it('슬라이드가 하나뿐이면 화살표를 보여 주지 않는다', async () => {
+  it('예매율이 낮으면 "매진 임박"이라고 하지 않고 "이번 주 인기 경기"로 보여 준다', async () => {
+    stubGuest({ hotGames: [hotGame(7, 100), hotGame(8, 50)] })
+    renderHero()
+
+    expect(
+      await screen.findByRole('heading', { name: /지금 예매할 수 있는 가까운 경기예요/, hidden: true }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '인기 경기' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '매진 임박' })).not.toBeInTheDocument()
+    expect(screen.queryByText(/자리가 얼마 안 남았어요/)).not.toBeInTheDocument()
+    // 예매 중 표시이고, 마감 임박 칩은 없다.
+    expect(screen.getAllByText('예매 중').length).toBeGreaterThan(0)
+    expect(screen.queryByText('마감 임박')).not.toBeInTheDocument()
+  })
+
+  it('직관 챌린지: 비회원에게는 참여 로그인 링크를, 이벤트 설명을 보여 준다', async () => {
     stubGuest({ hotGames: [hotGame(7, 920)] })
     renderHero()
 
-    await screen.findAllByRole('group', { hidden: true })
-    expect(screen.queryByRole('button', { name: '다음 슬라이드' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: '이전 슬라이드' })).not.toBeInTheDocument()
+    await userEvent.click(await screen.findByRole('button', { name: '직관 챌린지 이벤트' }))
+    const slide = screen.getAllByRole('group', { hidden: true })[1]
+    expect(within(slide).getByText(/직관 요정/)).toBeInTheDocument()
+    expect(within(slide).getByRole('link', { name: '로그인하고 참여하기' })).toHaveAttribute('href', '/login')
+    expect(within(slide).getByRole('img', { name: '이번 달 직관 0 / 3경기' })).toBeInTheDocument()
+  })
+
+  it('직관 챌린지: 로그인하면 이번 달에 직관한 경기 수만큼 공이 채워진다', async () => {
+    const month = todayInSeoul().slice(0, 8)
+    const attended = (id: number, day: string) =>
+      ({
+        id,
+        reservationNumber: 'BP' + id,
+        status: 'CONFIRMED',
+        totalPrice: 12000,
+        paymentMethod: 'CARD',
+        createdAt: '2026-09-01T10:00:00',
+        canceledAt: null,
+        cancelable: false,
+        game: game(id, month + day, LG, DOOSAN, { status: 'FINISHED', homeScore: 3, awayScore: 1 }),
+        seats: [],
+      }) as unknown as Reservation
+    // 이번 달 1일 새벽에 시작한 경기 둘은 이미 시작했으니 직관한 것으로 센다.
+    const reservations = [
+      { ...attended(21, '01'), game: { ...attended(21, '01').game, startAt: month + '01T00:10:00' } },
+      { ...attended(22, '01'), game: { ...attended(22, '01').game, startAt: month + '01T00:20:00' } },
+    ]
+    restoreSessionAs(testMember('MEMBER'), (url) => handler({ hotGames: [hotGame(7, 920)], reservations })(url))
+    renderHero()
+
+    await userEvent.click(await screen.findByRole('button', { name: '직관 챌린지 이벤트' }))
+    const slide = screen.getAllByRole('group', { hidden: true })[1]
+    expect(await within(slide).findByRole('img', { name: '이번 달 직관 2 / 3경기' })).toBeInTheDocument()
+    expect(within(slide).getByText('직관한 경기')).toBeInTheDocument()
+    expect(within(slide).getByRole('link', { name: '경기 예매하러 가기' })).toHaveAttribute('href', '#schedule')
   })
 })

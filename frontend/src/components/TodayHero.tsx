@@ -3,13 +3,21 @@ import { isAbortError } from '../api/client'
 import { useAuth } from '../auth/useAuth'
 import { EMPTY_HERO_DATA, loadHeroData, type HeroData } from '../lib/heroData'
 import { useAutoSlide } from '../lib/useAutoSlide'
-import { CommunitySlide, HotGamesSlide, MyTicketSlide, NextGameSlide, TodaySlide } from './hero/HeroSlides'
+import {
+  CommunitySlide,
+  EventSlide,
+  HotGamesSlide,
+  isSoldOutSoon,
+  MyTicketSlide,
+  NextGameSlide,
+  TodaySlide,
+} from './hero/HeroSlides'
 
 type Slide = { key: string; label: string; render: (visible: boolean) => ReactNode }
 
 /**
  * 메인 화면 맨 위 슬라이드. 3초마다 옆으로 넘어가고, 양옆 화살표와 아래 점으로 직접 넘길 수 있다.
- * 슬라이드는 데이터가 있을 때만 만든다: 다음 경기 D-day → 내 티켓(로그인) → 매진 임박 → 오늘의 KBO·순위 →
+ * 슬라이드는 데이터가 있을 때만 만든다: 다음 경기 D-day → 내 티켓(로그인) → 매진 임박·인기 경기 → 직관 챌린지 이벤트 → 오늘의 KBO·순위 →
  * 뜨는 커뮤니티·양도. 하나가 비거나 실패해도 나머지는 그대로 나온다.
  */
 export function TodayHero() {
@@ -57,8 +65,16 @@ export function TodayHero() {
     }
     if (data.hotGames.length > 0) {
       const games = data.hotGames
-      list.push({ key: 'hot', label: '매진 임박', render: () => <HotGamesSlide games={games} /> })
+      // 예매율이 높은 경기가 실제로 있을 때만 "매진 임박"이라고 부른다.
+      list.push({
+        key: 'hot',
+        label: isSoldOutSoon(games) ? '매진 임박' : '인기 경기',
+        render: () => <HotGamesSlide games={games} />,
+      })
     }
+    // 사이트 자체 이벤트(직관 챌린지)는 로그인 여부와 상관없이 항상 넣는다. 로그인하면 내 진행 상황이 나온다.
+    const challenge = data.challenge
+    list.push({ key: 'event', label: '직관 챌린지 이벤트', render: () => <EventSlide challenge={challenge} /> })
     if (data.today) {
       const today = data.today
       const standings = data.standings

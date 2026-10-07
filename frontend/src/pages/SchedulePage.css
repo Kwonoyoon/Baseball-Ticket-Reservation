@@ -68,42 +68,35 @@
 }
 
 .home-slide {
+  position: relative;
   display: flex;
   flex: 0 0 100%;
   align-items: center;
   justify-content: center;
   height: 100%;
   padding: 28px 0;
-  background:
-    radial-gradient(900px 420px at 12% -10%, rgb(225 87 42 / 24%), transparent 60%),
-    radial-gradient(760px 420px at 100% 110%, rgb(86 96 210 / 30%), transparent 60%),
-    linear-gradient(135deg, #0d1220, #1c1428 55%, #2a1620);
+  /* 반투명 빛 대신 깊은 남색 한 겹으로 깔고, 안쪽 카드(흰색)가 또렷하게 보이게 한다. */
+  background: linear-gradient(135deg, #0a1122 0%, #11203c 55%, #172b4d 100%);
   color: #ffffff;
 }
 
-/* 슬라이드마다 빛의 색만 살짝 달리해 넘어갈 때 변화가 느껴지게 한다. */
+/* 슬라이드마다 바탕 색만 달리해 넘어갈 때 변화가 느껴지게 한다. */
 .home-slide--ticket {
-  background:
-    radial-gradient(900px 420px at 88% -10%, rgb(86 96 210 / 34%), transparent 60%),
-    radial-gradient(760px 420px at 0% 110%, rgb(225 87 42 / 22%), transparent 60%),
-    linear-gradient(135deg, #0d1220, #1a1730 55%, #241628);
+  background: linear-gradient(135deg, #0d1226 0%, #1a2150 55%, #25306a 100%);
 }
 
 .home-slide--hot {
-  background:
-    radial-gradient(900px 420px at 50% -20%, rgb(225 29 72 / 28%), transparent 60%),
-    radial-gradient(760px 420px at 100% 110%, rgb(245 158 11 / 16%), transparent 60%),
-    linear-gradient(135deg, #140f16, #2a1220 55%, #1b1018);
+  background: linear-gradient(135deg, #1a0f1c 0%, #3a1426 55%, #5a1b2c 100%);
+}
+
+.home-slide--event {
+  background: linear-gradient(135deg, #0c2218 0%, #123a2a 55%, #1a5039 100%);
 }
 
 .home-slide--today,
 .home-slide--community {
-  background:
-    radial-gradient(900px 420px at 0% 0%, rgb(56 189 248 / 16%), transparent 60%),
-    radial-gradient(760px 420px at 100% 110%, rgb(86 96 210 / 28%), transparent 60%),
-    linear-gradient(135deg, #0b1220, #14192c 55%, #1f1428);
+  background: linear-gradient(135deg, #0a1426 0%, #12243f 55%, #1a3358 100%);
 }
-
 
 .home-slide--message {
   background: var(--home-hero-bg);
