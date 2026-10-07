@@ -175,7 +175,7 @@ export const api = {
   issueEntryTicket: (reservationId: number, signal?: AbortSignal) =>
     request<EntryTicket>(`/reservations/${reservationId}/entry-ticket`, { method: 'POST', signal }),
 
-  /** 입장 게이트(관리자)에서 읽은 QR 값을 검증한다. 입장 처리(재입장 막기)는 아직 하지 않는다. */
+  /** 입장 게이트(관리자)에서 읽은 QR 값을 검증하고, 입장할 수 있으면 서버가 바로 입장 처리한다. (재입장 불가) */
   verifyEntry: (token: string, signal?: AbortSignal) =>
     request<EntryVerification>('/admin/entry/verify', { method: 'POST', body: { token }, signal }),
 

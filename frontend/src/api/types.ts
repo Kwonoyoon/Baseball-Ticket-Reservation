@@ -301,9 +301,11 @@ export type EntryVerifyResult =
   | 'GAME_CANCELED'
   | 'NOT_YET_OPEN'
   | 'GAME_OVER'
+  | 'ALREADY_ENTERED'
 
 /**
  * 입장 게이트의 QR 검증 응답 (POST /api/admin/entry/verify). 입장 여부와 상관없이 200으로 온다.
+ * ADMITTED면 서버가 그 자리에서 입장 처리하고, 같은 예매는 다시 입장할 수 없다(ALREADY_ENTERED).
  * reservation·entryOpensAt은 서명이 맞고 예매를 찾았을 때만 값이 있다. 시각은 서울 시간이다.
  */
 export type EntryVerification = {
@@ -313,4 +315,6 @@ export type EntryVerification = {
   message: string
   reservation: Reservation | null
   entryOpensAt: string | null
+  /** 입장 확인된 시각. 이번에 입장했거나(ADMITTED) 이미 입장한 예매(ALREADY_ENTERED)일 때만 값이 있다. */
+  enteredAt: string | null
 }

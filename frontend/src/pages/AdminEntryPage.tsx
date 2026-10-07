@@ -18,6 +18,7 @@ const RESULT_LABELS: Record<EntryVerifyResult, string> = {
   GAME_CANCELED: '취소된 경기',
   NOT_YET_OPEN: '입장 시간 전',
   GAME_OVER: '끝난 경기',
+  ALREADY_ENTERED: '이미 입장',
 }
 
 const checkedClock = new Intl.DateTimeFormat('ko-KR', {
@@ -64,7 +65,7 @@ function ResultPanel({ check }: { check: Check | null }) {
     )
   }
 
-  const { admitted, result, message, reservation, entryOpensAt } = outcome.verification
+  const { admitted, result, message, reservation, entryOpensAt, enteredAt } = outcome.verification
   return (
     // key로 새 결과마다 다시 그려, 같은 결과가 연달아 나와도 깜빡임으로 새 확인임을 알 수 있게 한다.
     <section
@@ -79,6 +80,9 @@ function ResultPanel({ check }: { check: Check | null }) {
         <p className="entry-result__message">
           {formatGameDate(entryOpensAt)} {formatTime(entryOpensAt)}부터 입장할 수 있습니다.
         </p>
+      )}
+      {result === 'ALREADY_ENTERED' && enteredAt && (
+        <p className="entry-result__message">{formatTime(enteredAt)}에 입장했습니다.</p>
       )}
       {reservation && (
         <dl className="entry-result__details">
@@ -114,6 +118,7 @@ function ResultPanel({ check }: { check: Check | null }) {
 
 /**
  * 입장 게이트(관리자) 화면. 관람객의 내 티켓 QR을 카메라로 읽어 서버에 검증하고, 입장 가능 여부를 크게 보여 준다.
+ * 입장 확인되면 서버가 바로 입장 처리하므로, 같은 예매는 새 QR로도 다시 들어올 수 없다.
  * 카메라는 계속 켜 두고 다음 사람의 QR을 바로 읽는다. 카메라를 쓸 수 없으면 QR 값을 붙여 넣는다.
  * (QR 값은 서버가 서명하고 30초마다 바뀌어서, 캡처하거나 고쳐 만든 QR은 서버가 거부한다)
  */

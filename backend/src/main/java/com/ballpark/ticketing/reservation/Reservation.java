@@ -2,6 +2,7 @@ package com.ballpark.ticketing.reservation;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -65,6 +66,9 @@ public class Reservation {
 
     private LocalDateTime canceledAt;
 
+    /** 입장 게이트에서 입장 확인된 시각. 입장 전이면 null */
+    private LocalDateTime enteredAt;
+
     @OneToMany(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("id")
     private List<ReservationSeat> seats = new ArrayList<>();
@@ -115,7 +119,7 @@ public class Reservation {
      * (이후 취소하면 구매자가 낸 결제가 환불되어야 하므로 결제 번호도 같이 옮긴다)
      */
     public void transferTo(Member buyer, PaymentMethod method, String transactionId) {
-        if (status != ReservationStatus.CONFIRMED) {
+        if (status != ReservationStatus.CONFIRMED || hasEntered()) {
             throw new BusinessException(ErrorCode.TRANSFER_NOT_ALLOWED);
         }
         this.member = buyer;
@@ -123,8 +127,22 @@ public class Reservation {
         this.paymentTransactionId = transactionId;
     }
 
+    /** 입장한 예매는 경기 시작 전이어도 취소할 수 없다. */
     public boolean isCancelable(LocalDateTime now) {
-        return status == ReservationStatus.CONFIRMED && game.isBookable(now);
+        return status == ReservationStatus.CONFIRMED && !hasEntered() && game.isBookable(now);
+    }
+
+    /** 입장 게이트에서 입장시킨다. 입장 가능 여부(시간·상태)는 EntryTicketService가 판단한다. */
+    public void enter(LocalDateTime now) {
+        if (hasEntered()) {
+            throw new IllegalStateException("이미 입장한 예매입니다: " + id);
+        }
+        // 초 단위면 충분하다. (자르지 않으면 DB가 반올림해 저장해서, 이번 응답과 다음에 읽은 값이 달라진다)
+        this.enteredAt = now.truncatedTo(ChronoUnit.SECONDS);
+    }
+
+    public boolean hasEntered() {
+        return enteredAt != null;
     }
 
     public void cancel(LocalDateTime now) {
@@ -183,6 +201,10 @@ public class Reservation {
 
     public LocalDateTime getCanceledAt() {
         return canceledAt;
+    }
+
+    public LocalDateTime getEnteredAt() {
+        return enteredAt;
     }
 
     public List<ReservationSeat> getSeats() {

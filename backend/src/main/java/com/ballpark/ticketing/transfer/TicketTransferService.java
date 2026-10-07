@@ -105,7 +105,8 @@ public class TicketTransferService {
             throw new BusinessException(ErrorCode.CANNOT_BUY_OWN_TICKET);
         }
 
-        Reservation reservation = reservationRepository.findDetailById(transfer.getReservation().getId())
+        // 예매 행도 잠근다. 입장 게이트가 같은 예매를 입장 처리하는 중이면 끝날 때까지 기다렸다가 입장한 예매로 보고 거절한다.
+        Reservation reservation = reservationRepository.findForUpdateById(transfer.getReservation().getId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_NOT_FOUND));
         ensureTransferable(reservation, now);
         // 양도받아도 한 경기에서 살 수 있는 좌석 수 한도는 그대로 적용된다.
@@ -141,7 +142,8 @@ public class TicketTransferService {
     }
 
     private void ensureTransferable(Reservation reservation, LocalDateTime now) {
-        if (reservation.getStatus() != ReservationStatus.CONFIRMED || !reservation.getGame().isBookable(now)) {
+        if (reservation.getStatus() != ReservationStatus.CONFIRMED || reservation.hasEntered()
+                || !reservation.getGame().isBookable(now)) {
             throw new BusinessException(ErrorCode.TRANSFER_NOT_ALLOWED);
         }
     }

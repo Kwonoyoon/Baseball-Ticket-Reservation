@@ -19,8 +19,9 @@ import com.ballpark.ticketing.reservation.entry.EntryTokenCodec.IssuedToken;
 import com.ballpark.ticketing.reservation.entry.EntryTokenCodec.ParseResult;
 
 /**
- * 입장 QR을 발급하고(내 티켓 화면) 검증한다(입장 게이트).
+ * 입장 QR을 발급하고(내 티켓 화면) 검증해 입장시킨다(입장 게이트).
  * QR 값은 서버가 서명하고 30초만 유효해서, 화면을 캡처하거나 값을 고쳐 만든 QR로는 들어올 수 없다.
+ * 한 예매는 한 번만 입장한다. (일행이 여러 장을 한 예매로 샀으면 함께 들어온다)
  */
 @Service
 @Transactional(readOnly = true)
@@ -57,7 +58,11 @@ public class EntryTicketService {
                 issued == null ? null : issued.expiresInSeconds());
     }
 
-    /** 입장 게이트에서 읽은 QR 값을 검증한다. 입장 처리(재입장 막기)는 아직 하지 않는다. */
+    /**
+     * 입장 게이트에서 읽은 QR 값을 검증하고, 입장할 수 있으면 바로 입장 처리한다. 이미 입장한 예매는 거부한다.
+     * 예매 행을 잠그고 판단하므로 같은 예매의 QR을 두 게이트에서 동시에 읽어도 한 곳만 입장 확인된다.
+     */
+    @Transactional
     public EntryVerifyResponse verify(String token) {
         ParseResult parsed = tokenCodec.parse(token);
         if (parsed.expired()) {
@@ -67,7 +72,7 @@ public class EntryTicketService {
         if (claims == null) {
             return EntryVerifyResponse.rejected(EntryVerifyResult.INVALID_TOKEN);
         }
-        Reservation reservation = reservationRepository.findDetailById(claims.reservationId())
+        Reservation reservation = reservationRepository.findForUpdateById(claims.reservationId())
                 .filter(found -> found.getReservationNumber().equals(claims.reservationNumber()))
                 .orElse(null);
         if (reservation == null) {
@@ -76,8 +81,12 @@ public class EntryTicketService {
         LocalDateTime now = LocalDateTime.now(clock);
         Game game = reservation.getGame();
         LocalDateTime entryOpensAt = entryPolicy.entryOpensAt(game);
-        return EntryVerifyResponse.of(judge(reservation, game, entryOpensAt, now),
-                ReservationResponse.from(reservation, now), entryOpensAt);
+        EntryVerifyResult result = judge(reservation, game, entryOpensAt, now);
+        if (result == EntryVerifyResult.ADMITTED) {
+            reservation.enter(now);
+        }
+        return EntryVerifyResponse.of(result, ReservationResponse.from(reservation, now), entryOpensAt,
+                reservation.getEnteredAt());
     }
 
     private EntryVerifyResult judge(Reservation reservation, Game game, LocalDateTime entryOpensAt,
@@ -93,6 +102,9 @@ public class EntryTicketService {
         }
         if (now.isBefore(entryOpensAt)) {
             return EntryVerifyResult.NOT_YET_OPEN;
+        }
+        if (reservation.hasEntered()) {
+            return EntryVerifyResult.ALREADY_ENTERED;
         }
         return EntryVerifyResult.ADMITTED;
     }

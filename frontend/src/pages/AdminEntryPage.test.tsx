@@ -54,6 +54,16 @@ const admitted: EntryVerification = {
   message: '입장 확인되었습니다.',
   reservation,
   entryOpensAt: '2026-10-07T17:00:00',
+  enteredAt: '2026-10-07T17:42:10',
+}
+
+const alreadyEntered: EntryVerification = {
+  admitted: false,
+  result: 'ALREADY_ENTERED',
+  message: '이미 입장한 예매입니다. 재입장은 할 수 없습니다.',
+  reservation,
+  entryOpensAt: '2026-10-07T17:00:00',
+  enteredAt: '2026-10-07T17:42:10',
 }
 
 const notYetOpen: EntryVerification = {
@@ -62,6 +72,7 @@ const notYetOpen: EntryVerification = {
   message: '아직 입장 시간이 아닙니다.',
   reservation,
   entryOpensAt: '2026-10-07T17:00:00',
+  enteredAt: null,
 }
 
 const invalid: EntryVerification = {
@@ -70,6 +81,7 @@ const invalid: EntryVerification = {
   message: '올바른 입장 QR이 아닙니다.',
   reservation: null,
   entryOpensAt: null,
+  enteredAt: null,
 }
 
 /** QR 값별 검증 결과를 정해 둔 가짜 서버. 돌려준 fetch mock으로 검증 요청을 센다. */
@@ -174,6 +186,18 @@ describe('AdminEntryPage', () => {
     expect(resultPanel()).toHaveClass('is-rejected')
     expect(resultPanel()).toHaveTextContent('아직 입장 시간이 아닙니다.')
     expect(resultPanel()).toHaveTextContent('10월 7일 (수) 17:00부터 입장할 수 있습니다.')
+  })
+
+  it('이미 입장한 예매는 거부하고 입장한 시각을 알려 준다', async () => {
+    renderEntryPage({ again: alreadyEntered })
+    await submitManually('again')
+
+    await expectVerdict('입장 불가')
+    expect(resultPanel()).toHaveTextContent('이미 입장한 예매입니다. 재입장은 할 수 없습니다.')
+    expect(resultPanel()).toHaveTextContent('17:42에 입장했습니다.')
+    expect(within(resultPanel()).getByText('BP20261007-0007')).toBeInTheDocument()
+    const history = screen.getByRole('region', { name: '최근 확인' })
+    expect(within(history).getByText('이미 입장')).toBeInTheDocument()
   })
 
   it('예매를 알 수 없는 QR은 거부 이유만 보여 준다', async () => {

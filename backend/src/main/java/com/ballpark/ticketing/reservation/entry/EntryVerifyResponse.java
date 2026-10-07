@@ -10,21 +10,23 @@ import com.ballpark.ticketing.reservation.dto.ReservationResponse;
  * @param admitted     입장시켜도 되는지
  * @param reservation  서명이 맞고 예매를 찾았을 때만 값이 있다.
  * @param entryOpensAt 입장 시작 시각. 예매를 찾았을 때만 값이 있다.
+ * @param enteredAt    입장 확인된 시각. 이번 검증으로 입장했거나(ADMITTED) 이미 입장한 예매(ALREADY_ENTERED)일 때 값이 있다.
  */
 public record EntryVerifyResponse(
         boolean admitted,
         EntryVerifyResult result,
         String message,
         ReservationResponse reservation,
-        LocalDateTime entryOpensAt) {
+        LocalDateTime entryOpensAt,
+        LocalDateTime enteredAt) {
 
     static EntryVerifyResponse rejected(EntryVerifyResult result) {
-        return new EntryVerifyResponse(false, result, result.getMessage(), null, null);
+        return new EntryVerifyResponse(false, result, result.getMessage(), null, null, null);
     }
 
     static EntryVerifyResponse of(EntryVerifyResult result, ReservationResponse reservation,
-            LocalDateTime entryOpensAt) {
+            LocalDateTime entryOpensAt, LocalDateTime enteredAt) {
         return new EntryVerifyResponse(result == EntryVerifyResult.ADMITTED, result, result.getMessage(),
-                reservation, entryOpensAt);
+                reservation, entryOpensAt, enteredAt);
     }
 }

@@ -44,7 +44,7 @@ public enum ErrorCode {
     ENTRY_TICKET_UNAVAILABLE(HttpStatus.CONFLICT, "결제가 완료된 예매만 입장 QR을 받을 수 있습니다."),
     TRANSFER_NOT_FOUND(HttpStatus.NOT_FOUND, "양도글을 찾을 수 없습니다."),
     TRANSFER_CLOSED(HttpStatus.CONFLICT, "이미 판매되었거나 거둬들인 양도글입니다."),
-    TRANSFER_NOT_ALLOWED(HttpStatus.CONFLICT, "양도할 수 없는 예매입니다. 확정된 예매이고 경기가 시작되기 전이어야 합니다."),
+    TRANSFER_NOT_ALLOWED(HttpStatus.CONFLICT, "양도할 수 없는 예매입니다. 확정된 예매이고 입장 전, 경기가 시작되기 전이어야 합니다."),
     ALREADY_LISTED(HttpStatus.CONFLICT, "이미 양도 등록된 예매입니다."),
     CANNOT_BUY_OWN_TICKET(HttpStatus.BAD_REQUEST, "본인이 올린 양도글은 살 수 없습니다."),
     TRANSFER_LISTED(HttpStatus.CONFLICT, "양도 등록 중인 예매는 취소할 수 없습니다. 먼저 양도 등록을 취소해 주세요."),
