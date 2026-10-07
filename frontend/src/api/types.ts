@@ -291,3 +291,26 @@ export type EntryTicket = {
   /** token이 유효한 초. 지나면 새로 받는다. */
   expiresInSeconds: number | null
 }
+
+/** 입장 QR 검증 결과. ADMITTED일 때만 입장시킨다. */
+export type EntryVerifyResult =
+  | 'ADMITTED'
+  | 'INVALID_TOKEN'
+  | 'EXPIRED_TOKEN'
+  | 'NOT_CONFIRMED'
+  | 'GAME_CANCELED'
+  | 'NOT_YET_OPEN'
+  | 'GAME_OVER'
+
+/**
+ * 입장 게이트의 QR 검증 응답 (POST /api/admin/entry/verify). 입장 여부와 상관없이 200으로 온다.
+ * reservation·entryOpensAt은 서명이 맞고 예매를 찾았을 때만 값이 있다. 시각은 서울 시간이다.
+ */
+export type EntryVerification = {
+  admitted: boolean
+  result: EntryVerifyResult
+  /** 게이트 직원에게 보여 줄 안내 문구 */
+  message: string
+  reservation: Reservation | null
+  entryOpensAt: string | null
+}

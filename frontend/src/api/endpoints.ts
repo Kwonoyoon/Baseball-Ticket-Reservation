@@ -3,6 +3,7 @@ import type {
   AdminMember,
   Comment,
   EntryTicket,
+  EntryVerification,
   GameDetail,
   GameSummary,
   HoldResult,
@@ -173,6 +174,10 @@ export const api = {
   /** 입장 QR 값(서버 서명)과 입장 시각. QR을 새로 그릴 때마다 받는다. */
   issueEntryTicket: (reservationId: number, signal?: AbortSignal) =>
     request<EntryTicket>(`/reservations/${reservationId}/entry-ticket`, { method: 'POST', signal }),
+
+  /** 입장 게이트(관리자)에서 읽은 QR 값을 검증한다. 입장 처리(재입장 막기)는 아직 하지 않는다. */
+  verifyEntry: (token: string, signal?: AbortSignal) =>
+    request<EntryVerification>('/admin/entry/verify', { method: 'POST', body: { token }, signal }),
 
   /** 판매 중인 양도글. teamId를 주면 그 구단이 뛰는 경기만. */
   getTransfers: (signal?: AbortSignal, teamId?: number) =>
