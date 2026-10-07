@@ -190,14 +190,21 @@ export function AdminEntryPage() {
 
       <div className="admin-entry__layout">
         <div className="admin-entry__scanner">
-          {cameraOn && <QrCameraScanner onScan={handleScan} />}
-          <button
-            type="button"
-            className="button button--ghost button--sm"
-            onClick={() => setCameraOn((on) => !on)}
-          >
-            {cameraOn ? '카메라 끄기' : '카메라 켜기'}
-          </button>
+          {/* 휴대폰에서는 켜기·끄기 버튼을 카메라 화면 왼쪽 위에 얹고, 직접 넣는 칸을 카메라 위로 올린다. (AdminEntryPage.css) */}
+          <div className="admin-entry__camera">
+            {cameraOn ? (
+              <QrCameraScanner onScan={handleScan} />
+            ) : (
+              <p className="entry-camera entry-camera--off">카메라가 꺼져 있습니다.</p>
+            )}
+            <button
+              type="button"
+              className="button button--ghost button--sm admin-entry__camera-toggle"
+              onClick={() => setCameraOn((on) => !on)}
+            >
+              {cameraOn ? '카메라 끄기' : '카메라 켜기'}
+            </button>
+          </div>
 
           <form className="admin-entry__manual" onSubmit={handleManualSubmit}>
             <label className="field">

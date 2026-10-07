@@ -55,6 +55,24 @@
   text-align: center;
 }
 
+/* 카메라를 끈 동안 카메라 자리 */
+.entry-camera--off {
+  display: grid;
+  place-items: center;
+  margin: 0;
+  aspect-ratio: 4 / 3;
+  color: rgb(255 255 255 / 70%);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.admin-entry__camera {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+  width: 100%;
+}
+
 .entry-camera__error {
   width: 100%;
   margin: 0;
@@ -209,6 +227,38 @@
 @media (max-width: 760px) {
   .admin-entry__layout {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* 직접 넣는 칸을 카메라 위로 */
+  .admin-entry__manual {
+    order: -1;
+  }
+
+  /* 켜기·끄기 버튼을 카메라 화면 왼쪽 위에 얹는다. */
+  .admin-entry__camera {
+    position: relative;
+    display: block;
+  }
+
+  .admin-entry__camera .admin-entry__camera-toggle {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 1;
+    border-color: rgb(255 255 255 / 45%);
+    background: rgb(11 27 51 / 70%);
+    color: #ffffff;
+    backdrop-filter: blur(4px);
+  }
+
+  .admin-entry__camera .admin-entry__camera-toggle:hover {
+    background: rgb(11 27 51 / 85%);
+    color: #ffffff;
+  }
+
+  /* 카메라를 못 쓸 때 나오는 안내가 버튼에 가리지 않게 */
+  .admin-entry__camera .entry-camera__error {
+    padding-top: 56px;
   }
 
   .entry-result__verdict {
