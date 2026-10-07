@@ -43,6 +43,7 @@ public enum ErrorCode {
     PAYMENT_AMOUNT_MISMATCH(HttpStatus.BAD_REQUEST, "결제 금액이 주문 금액과 다릅니다."),
     PAYMENT_EXPIRED(HttpStatus.CONFLICT, "결제 시간이 지나 예매가 취소되었습니다. 좌석을 다시 선택해 주세요."),
     NOT_CANCELABLE(HttpStatus.CONFLICT, "취소할 수 없는 예매입니다."),
+    ENTRY_TICKET_UNAVAILABLE(HttpStatus.CONFLICT, "결제가 완료된 예매만 입장 QR을 받을 수 있습니다."),
     TRANSFER_NOT_FOUND(HttpStatus.NOT_FOUND, "양도글을 찾을 수 없습니다."),
     TRANSFER_CLOSED(HttpStatus.CONFLICT, "이미 판매되었거나 거둬들인 양도글입니다."),
     TRANSFER_NOT_ALLOWED(HttpStatus.CONFLICT, "양도할 수 없는 예매입니다. 확정된 예매이고 경기가 시작되기 전이어야 합니다."),

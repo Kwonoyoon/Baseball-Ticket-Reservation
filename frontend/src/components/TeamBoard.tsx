@@ -1,10 +1,11 @@
-import { useEffect, useState, type CSSProperties, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react'
 import { Link } from 'react-router'
 import { errorMessage, isAbortError } from '../api/client'
 import { api } from '../api/endpoints'
 import type { PostCategory, PostSummary, Team } from '../api/types'
 import { formatDateTime } from '../lib/format'
 import { POST_CATEGORIES, postCategoryLabel } from '../lib/postCategory'
+import { Pagination } from './Pagination'
 import { ErrorMessage } from './StatusView'
 
 type TeamBoardProps = {
@@ -40,7 +41,9 @@ export function TeamBoard({
   const [posts, setPosts] = useState<PostSummary[] | null>(null)
   // 첫 쪽 글만 하나씩 올라온다(더 보기로 붙는 글은 바로 보인다).
   const [riseCount, setRiseCount] = useState(0)
-  const [hasMore, setHasMore] = useState(false)
+  // 전체 쪽 수. 쪽 번호를 그린다. (글이 없으면 0)
+  const [totalPages, setTotalPages] = useState(0)
+  const rootRef = useRef<HTMLElement>(null)
   // 입력 중인 검색어. 누르기 전까지는 주소(keyword)에 올리지 않는다.
   const [draft, setDraft] = useState(keyword)
   const [error, setError] = useState<string | null>(null)
@@ -54,7 +57,7 @@ export function TeamBoard({
       .getPosts(teamId, page - 1, controller.signal, category, keyword || undefined)
       .then((result) => {
         setPosts(result.items)
-        setHasMore(result.hasMore)
+        setTotalPages(result.totalPages ?? 0)
         setRiseCount(result.items.length)
       })
       .catch((e: unknown) => {
@@ -71,7 +74,7 @@ export function TeamBoard({
   const label = postCategoryLabel(category)
 
   return (
-    <section className="team-board" aria-labelledby="team-board-title">
+    <section className="team-board" aria-labelledby="team-board-title" ref={rootRef}>
       {/* 구단 이름은 위쪽 구단 띠가 보여 주므로, 제목은 화면 낭독기에만 읽히게 둔다. */}
       <h1 id="team-board-title" className="sr-only">
         {team ? `${team.name} 게시판` : '게시판'}
@@ -198,29 +201,16 @@ export function TeamBoard({
           )}
         </div>
 
-        {/* 이전/다음만 둔다. 전체 글 수는 세지 않으므로(서버는 다음 쪽이 있는지만 안다) 숫자 쪽 번호는 없다. */}
-        {posts !== null && (page > 1 || hasMore) && (
-          <nav className="board-pager" aria-label="페이지 이동">
-            <button
-              type="button"
-              className="button button--ghost button--sm"
-              disabled={page <= 1}
-              onClick={() => onPageChange(page - 1)}
-            >
-              이전
-            </button>
-            <span className="board-pager__page" aria-current="page">
-              {page}
-            </span>
-            <button
-              type="button"
-              className="button button--ghost button--sm"
-              disabled={!hasMore}
-              onClick={() => onPageChange(page + 1)}
-            >
-              다음
-            </button>
-          </nav>
+        {/* 쪽 번호 이동. 서버가 같은 조건의 전체 글 수로 쪽 수를 알려 준다. 쪽을 바꾸면 게시판 맨 위로 올라간다. */}
+        {posts !== null && (
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onChange={(next) => {
+              onPageChange(next)
+              rootRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
+            }}
+          />
         )}
       </div>
     </section>

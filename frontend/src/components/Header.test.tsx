@@ -38,6 +38,7 @@ describe('Header', () => {
     expect(screen.getByRole('link', { name: '로그인' })).toHaveAttribute('href', '/login')
     expect(screen.getByRole('link', { name: '회원가입' })).toHaveAttribute('href', '/signup')
     expect(screen.queryByText('예매내역')).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: '내 티켓' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '로그아웃' })).not.toBeInTheDocument()
   })
 
@@ -46,6 +47,8 @@ describe('Header', () => {
 
     expect(screen.getByRole('link', { name: '야구팬님' })).toHaveAttribute('href', '/my/account')
     expect(screen.getByRole('link', { name: '예매내역' })).toHaveAttribute('href', '/my/reservations')
+    // 입장할 때 바로 꺼내도록 헤더에 [내 티켓]이 있다.
+    expect(screen.getByRole('link', { name: '내 티켓' })).toHaveAttribute('href', '/my/ticket')
     expect(screen.queryByRole('button', { name: '로그아웃' })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: '로그인' })).not.toBeInTheDocument()
   })

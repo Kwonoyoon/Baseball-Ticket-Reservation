@@ -41,6 +41,9 @@ public class CommunityService {
     private final MemberRepository memberRepository;
     private final Clock clock;
 
+    /** 게시글 목록 한 쪽에 담을 수 있는 최대 글 수 */
+    static final int MAX_PAGE_SIZE = 50;
+
     public CommunityService(CommunityPostRepository postRepository, CommunityCommentRepository commentRepository,
             PostLikeRepository postLikeRepository, CommunityReportRepository reportRepository,
             TeamRepository teamRepository, MemberRepository memberRepository, Clock clock) {
@@ -60,14 +63,23 @@ public class CommunityService {
                 .toList();
     }
 
-    /** category가 null이면 모든 분류를 섞어서, keyword가 비어 있으면 검색 없이 보여 준다. */
+    /**
+     * category가 null이면 모든 분류를 섞어서, keyword가 비어 있으면 검색 없이 보여 준다.
+     * 쪽 번호를 그릴 수 있게 같은 조건의 전체 글 수와 쪽 수도 함께 준다.
+     * 쪽 크기는 1~50으로, 쪽 번호는 0 이상으로 맞춘다. (아주 큰 크기로 한 번에 다 읽어 가는 것을 막는다)
+     */
     public PostPageResponse listPosts(Long teamId, PostCategory category, String keyword, int page, int size) {
-        // hasMore 판단을 위해 한 개 더 가져와서 잘라낸다.
-        List<CommunityPost> posts = postRepository.findByTeamId(teamId, category, likePattern(keyword),
-                PageRequest.of(page, size + 1));
-        boolean hasMore = posts.size() > size;
-        List<PostSummaryResponse> items = posts.stream().limit(size).map(PostSummaryResponse::from).toList();
-        return new PostPageResponse(items, hasMore);
+        int pageSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+        int pageIndex = Math.max(page, 0);
+        String pattern = likePattern(keyword);
+
+        long totalCount = postRepository.countByTeamId(teamId, category, pattern);
+        int totalPages = (int) ((totalCount + pageSize - 1) / pageSize);
+        List<PostSummaryResponse> items = totalCount == 0 ? List.of()
+                : postRepository.findByTeamId(teamId, category, pattern, PageRequest.of(pageIndex, pageSize)).stream()
+                        .map(PostSummaryResponse::from)
+                        .toList();
+        return new PostPageResponse(items, pageIndex + 1 < totalPages, pageIndex, pageSize, totalCount, totalPages);
     }
 
     /** 모든 구단을 통틀어 좋아요가 많은 글. limit은 1~10으로 맞춘다. */

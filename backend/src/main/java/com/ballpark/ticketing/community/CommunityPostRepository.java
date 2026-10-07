@@ -44,6 +44,18 @@ public interface CommunityPostRepository extends JpaRepository<CommunityPost, Lo
             """)
     List<CommunityPost> findHotPosts(Pageable pageable);
 
+    /** 목록 쪽 번호를 그리려고 같은 조건의 전체 글 수를 센다. (findByTeamId와 조건이 같아야 한다) */
+    @Query("""
+            select count(p) from CommunityPost p
+            where p.team.id = :teamId
+              and (:category is null or p.category = :category)
+              and (:pattern is null
+                   or lower(p.title) like :pattern escape '!'
+                   or lower(p.content) like :pattern escape '!')
+            """)
+    long countByTeamId(@Param("teamId") Long teamId, @Param("category") PostCategory category,
+            @Param("pattern") String pattern);
+
     @Query("""
             select p from CommunityPost p
             join fetch p.team

@@ -2,6 +2,7 @@ import { request } from './client'
 import type {
   AdminMember,
   Comment,
+  EntryTicket,
   GameDetail,
   GameSummary,
   HoldResult,
@@ -37,6 +38,9 @@ import type {
   Transfer,
   TransferWait,
 } from './types'
+
+/** 커뮤니티 글 목록 한 쪽에 보여 주는 글 수 (백엔드 기본값과 같다) */
+export const POSTS_PER_PAGE = 10
 
 export const api = {
   signup: (body: { username: string; email: string; password: string; name: string }) =>
@@ -84,7 +88,7 @@ export const api = {
   /** category를 주면 그 분류만, 안 주면 모든 분류를 섞어 준다. keyword를 주면 제목·본문에서 찾는다. */
   getPosts: (teamId: number, page: number, signal?: AbortSignal, category?: PostCategory, keyword?: string) =>
     request<PostPage>(
-      `/teams/${teamId}/posts?page=${page}&size=20${category ? `&category=${category}` : ''}${
+      `/teams/${teamId}/posts?page=${page}&size=${POSTS_PER_PAGE}${category ? `&category=${category}` : ''}${
         keyword ? `&q=${encodeURIComponent(keyword)}` : ''
       }`,
       { signal },
@@ -177,6 +181,10 @@ export const api = {
 
   cancelReservation: (reservationId: number) =>
     request<Reservation>(`/reservations/${reservationId}/cancel`, { method: 'POST' }),
+
+  /** 입장 QR 값(서버 서명)과 입장 시각. QR을 새로 그릴 때마다 받는다. */
+  issueEntryTicket: (reservationId: number, signal?: AbortSignal) =>
+    request<EntryTicket>(`/reservations/${reservationId}/entry-ticket`, { method: 'POST', signal }),
 
   /** 판매 중인 양도글. teamId를 주면 그 구단이 뛰는 경기만. */
   getTransfers: (signal?: AbortSignal, teamId?: number) =>
