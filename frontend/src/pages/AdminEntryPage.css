@@ -224,9 +224,74 @@
   overflow-wrap: anywhere;
 }
 
+/* 휴대폰: 게이트에서 한 손으로 들고 쓴다. 직접 입력 → 카메라 → 결과 순으로 세로로 쌓고,
+   결과의 판정(입장 확인/입장 불가)이 스크롤 없이 첫 화면에 보이도록 여백과 글자를 줄인다. */
 @media (max-width: 760px) {
+  .admin-entry .page-title {
+    margin-bottom: 12px;
+    font-size: 26px;
+  }
+
   .admin-entry__layout {
     grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .admin-entry__scanner {
+    gap: 10px;
+  }
+
+  /* 제목 줄을 아껴 결과가 첫 화면에 들어오게 한다. (칸 안 안내 문구가 같은 말을 하고, 화면 낭독기는 그대로 읽는다) */
+  .admin-entry__manual .field__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* iOS는 16px보다 작은 입력칸에 초점이 가면 화면을 확대하므로 16px로 둔다. */
+  .admin-entry__manual input {
+    font-size: 16px;
+  }
+
+  .admin-entry__manual .button {
+    height: 46px;
+  }
+
+  /* 맞출 네모를 조금 줄여 왼쪽 위 버튼·아래 안내 문구와 겹치지 않게 한다. */
+  .entry-camera__frame {
+    width: min(48%, 180px);
+  }
+
+  .entry-camera__hint {
+    bottom: 8px;
+    font-size: 13px;
+    text-shadow: 0 1px 3px rgb(0 0 0 / 60%);
+  }
+
+  .entry-result {
+    padding: 16px 18px;
+    border-width: 3px;
+  }
+
+  .entry-result__message {
+    font-size: 15px;
+  }
+
+  .entry-result__details {
+    margin-top: 12px;
+    padding-top: 12px;
+  }
+
+  .entry-result__details div {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  .entry-result__details dd {
+    font-size: 16px;
+    overflow-wrap: anywhere;
   }
 
   /* 직접 넣는 칸을 카메라 위로 */
@@ -262,7 +327,7 @@
   }
 
   .entry-result__verdict {
-    font-size: 34px;
+    font-size: 32px;
   }
 
   .admin-entry__history li {

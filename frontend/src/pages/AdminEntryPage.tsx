@@ -183,10 +183,6 @@ export function AdminEntryPage() {
   return (
     <div className="admin-entry">
       <h1 className="page-title">입장 확인</h1>
-      <p className="page-desc">
-        관람객의 내 티켓 QR을 카메라에 비추면 바로 입장 가능 여부를 보여 줍니다. QR은 30초마다 바뀌므로 캡처한 QR은
-        거부됩니다.
-      </p>
 
       <div className="admin-entry__layout">
         <div className="admin-entry__scanner">
@@ -213,7 +209,7 @@ export function AdminEntryPage() {
                 type="text"
                 autoComplete="off"
                 spellCheck={false}
-                placeholder="QR을 읽은 값을 붙여 넣으세요"
+                placeholder="QR 값을 직접 붙여 넣으세요"
                 value={manualToken}
                 onChange={(event) => setManualToken(event.target.value)}
               />
