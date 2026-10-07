@@ -29,6 +29,8 @@ export function CommunityPostPage() {
   const [submittingComment, setSubmittingComment] = useState(false)
   const [likeBusy, setLikeBusy] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
+  // 비회원이 좋아요를 눌렀을 때 띄우는 로그인 안내. 로그인하면 이 글로 돌아오게 주소를 함께 넘긴다.
+  const [loginPrompt, setLoginPrompt] = useState(false)
   const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null)
   const [reportReason, setReportReason] = useState('')
   const [reportError, setReportError] = useState<string | null>(null)
@@ -175,13 +177,18 @@ export function CommunityPostPage() {
           <button
             type="button"
             className={`button button--sm ${post.liked ? 'button--primary' : 'button--ghost'}`}
-            disabled={!member || likeBusy}
-            onClick={() => void toggleLike()}
+            // 비회원은 비활성화하지 않고 눌러 보게 한 뒤 로그인 안내를 띄운다. (서버는 어차피 비회원 좋아요를 막는다)
+            disabled={likeBusy}
+            onClick={() => (member ? void toggleLike() : setLoginPrompt(true))}
           >
             좋아요 {post.likeCount}
           </button>
           {member && !post.mine && (
-            <button type="button" className="button button--ghost button--sm" onClick={() => openReport({ type: 'post' })}>
+            <button
+              type="button"
+              className="button button--ghost button--sm"
+              onClick={() => openReport({ type: 'post' })}
+            >
               신고
             </button>
           )}
@@ -199,6 +206,12 @@ export function CommunityPostPage() {
         {notice && (
           <p className="notice" role="status">
             {notice}
+          </p>
+        )}
+        {loginPrompt && !member && (
+          <p className="notice" role="status">
+            좋아요는 로그인한 뒤에 누를 수 있어요.{' '}
+            <Link to={`/login?redirect=${encodeURIComponent(`/community/${teamId}/posts/${id}`)}`}>로그인하기</Link>
           </p>
         )}
         {reportTarget?.type === 'post' && (

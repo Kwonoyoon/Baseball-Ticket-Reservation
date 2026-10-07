@@ -3,7 +3,18 @@ import { createPortal } from 'react-dom'
 import { Link, useNavigate } from 'react-router'
 import { useAuth } from '../auth/useAuth'
 import { openCalendarWindow } from '../lib/calendarWindow'
-import { CalendarIcon, CloseIcon, LogoutIcon, MessageIcon, ScanIcon, TicketIcon, UserIcon, UsersIcon } from './icons'
+import {
+  CalendarIcon,
+  CloseIcon,
+  LogoutIcon,
+  MegaphoneIcon,
+  MessageIcon,
+  ScanIcon,
+  SearchIcon,
+  TicketIcon,
+  UserIcon,
+  UsersIcon,
+} from './icons'
 
 type SidebarProps = {
   open: boolean
@@ -73,6 +84,14 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           <Link to="/community" className="sidebar__item" onClick={onClose}>
             <MessageIcon />
             <span>커뮤니티</span>
+          </Link>
+          <Link to="/notices" className="sidebar__item" onClick={onClose}>
+            <MegaphoneIcon />
+            <span>공지</span>
+          </Link>
+          <Link to="/lost-properties" className="sidebar__item" onClick={onClose}>
+            <SearchIcon />
+            <span>분실물센터</span>
           </Link>
           <Link to="/my/reservations" className="sidebar__item" onClick={onClose}>
             <TicketIcon />

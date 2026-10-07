@@ -22,8 +22,11 @@ public class GameController {
 
     private final GameService gameService;
 
-    public GameController(GameService gameService) {
+    private final HotGameService hotGameService;
+
+    public GameController(GameService gameService, HotGameService hotGameService) {
         this.gameService = gameService;
+        this.hotGameService = hotGameService;
     }
 
     @GetMapping("/api/games")
@@ -31,6 +34,13 @@ public class GameController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) Long teamId) {
         return gameService.getSchedule(date, teamId);
+    }
+
+    /** 메인 화면 "매진 임박": 예매율이 높은 경기. {gameId}보다 구체적인 주소라 이쪽이 먼저 걸린다. */
+    @GetMapping("/api/games/hot")
+    public List<com.ballpark.ticketing.game.dto.HotGameResponse> getHotGames(
+            @RequestParam(defaultValue = "3") int limit) {
+        return hotGameService.getHotGames(limit);
     }
 
     @GetMapping("/api/games/{gameId}")

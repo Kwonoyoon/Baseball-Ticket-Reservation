@@ -18,3 +18,6 @@ ticketing:
     broadcast: local
   sample-data:
     enabled: false
+  news:
+    # 테스트가 외부 사이트에 요청하지 않게 끈다.
+    enabled: false

@@ -150,7 +150,7 @@ export type ReservedSeat = {
   price: number
 }
 
-export type NotificationType = 'RESERVATION_CONFIRMED' | 'RESERVATION_CANCELED' | 'GAME_CANCELED' | 'GENERAL'
+export type NotificationType = 'RESERVATION_CONFIRMED' | 'RESERVATION_CANCELED' | 'GAME_CANCELED' | 'TRANSFER_AVAILABLE' | 'GENERAL'
 
 export type Notification = {
   id: number
@@ -197,6 +197,106 @@ export type Transfer = {
   sellerName: string
   game: GameSummary
   seats: string[]
+  /** 지금이 대기자 우선 구매 시간이면 그 시간이 끝나는 때. 아니면 null */
+  exclusiveUntil: string | null
+  /** 우선 구매 시간의 주인이 나인지. 우선 구매 시간에 false이면 살 수 없다 */
+  exclusiveForMe: boolean
+}
+
+/** 양도 대기. position은 같은 경기 대기자 중 내 순서(1부터)다. */
+export type TransferWait = {
+  id: number
+  createdAt: string
+  position: number
+  game: GameSummary
+}
+
+/** 메인 슬라이드 "매진 임박": 판매 좌석 수 ÷ 전체 좌석 수가 예매율이다. */
+export type HotGame = {
+  game: GameSummary
+  soldSeats: number
+  totalSeats: number
+}
+
+/** 순위표 한 줄. 승률은 무승부를 뺀 승 ÷ (승 + 패), 승차는 선두와의 차이다. */
+export type Standing = {
+  rank: number
+  team: Team
+  wins: number
+  losses: number
+  draws: number
+  winPct: number
+  gamesBehind: number
+}
+
+/** 메인 슬라이드 "지금 뜨는 커뮤니티"의 글 한 줄 */
+export type HotPost = {
+  id: number
+  team: Team
+  category: PostCategory | null
+  title: string
+  likeCount: number
+  commentCount: number
+}
+
+/** 메인 슬라이드 "방금 올라온 티켓 양도"의 한 줄. 판매자 정보는 없다. */
+export type RecentTransfer = {
+  id: number
+  price: number
+  game: GameSummary
+  seatCount: number
+  sectionName: string | null
+}
+
+/** 분실물 상태: 접수 → 보관 중 → 수령 완료 / 폐기 */
+export type LostStatus = 'REPORTED' | 'KEEPING' | 'CLAIMED' | 'DISCARDED'
+
+export type LostProperty = {
+  id: number
+  title: string
+  description: string
+  stadiumName: string
+  specificLocation: string | null
+  category: string
+  imageUrl: string | null
+  /** 보관 장소. 관리자가 정하기 전에는 null */
+  storageLocation: string | null
+  status: LostStatus
+  lostOrFoundDate: string | null
+  createdAt: string
+}
+
+export type LostPropertyInput = {
+  title: string
+  description: string
+  stadiumName: string
+  specificLocation?: string
+  category: string
+  imageUrl?: string
+  lostOrFoundDate?: string
+}
+
+/** 공지가 뜨는 자리: 헤더 메뉴의 전체 공지 / 커뮤니티 게시판 맨 위 */
+export type NoticeScope = 'GLOBAL' | 'COMMUNITY'
+
+/** 공지 종류: 시스템 업데이트 · 이벤트 · 점검 */
+export type NoticeCategory = 'UPDATE' | 'EVENT' | 'MAINTENANCE'
+
+export type Notice = {
+  id: number
+  scope: NoticeScope
+  category: NoticeCategory
+  title: string
+  content: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type NoticeInput = {
+  scope: NoticeScope
+  category: NoticeCategory
+  title: string
+  content: string
 }
 
 export type TeamPostCount = {

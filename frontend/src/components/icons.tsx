@@ -21,6 +21,27 @@ export function BellIcon() {
   )
 }
 
+/** 공지(확성기). 알림 벨과 헷갈리지 않게 다른 모양을 쓴다. */
+export function MegaphoneIcon() {
+  return (
+    <svg {...commonProps}>
+      <path d="M3 11v2a1 1 0 0 0 1 1h2l8 4V6L6 10H4a1 1 0 0 0-1 1Z" />
+      <path d="M18 9a4 4 0 0 1 0 6" />
+      <path d="M7 14l1.5 5.5" />
+    </svg>
+  )
+}
+
+/** 분실물센터(돋보기) */
+export function SearchIcon() {
+  return (
+    <svg {...commonProps}>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </svg>
+  )
+}
+
 export function MenuIcon() {
   return (
     <svg {...commonProps}>

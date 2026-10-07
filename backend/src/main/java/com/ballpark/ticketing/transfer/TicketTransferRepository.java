@@ -51,6 +51,20 @@ public interface TicketTransferRepository extends JpaRepository<TicketTransfer, 
             """)
     List<TicketTransfer> findAllBySellerId(@Param("sellerId") Long sellerId);
 
+    /** 가장 최근에 올라온 판매 중인 양도글. 좌석은 불러오지 않고(페이지 제한과 함께 쓸 수 없어서) 필요할 때 읽는다. */
+    @Query("""
+            select t from TicketTransfer t
+            join fetch t.reservation r
+            join fetch r.game g
+            join fetch g.homeTeam
+            join fetch g.awayTeam
+            join fetch g.stadium
+            where t.status = com.ballpark.ticketing.transfer.TicketTransferStatus.OPEN
+              and g.startAt > :now
+            order by t.id desc
+            """)
+    List<TicketTransfer> findRecentOpen(@Param("now") LocalDateTime now, org.springframework.data.domain.Pageable pageable);
+
     /** 예매 취소를 막을지 판단할 때 쓴다. */
     boolean existsByOpenReservationId(Long reservationId);
 

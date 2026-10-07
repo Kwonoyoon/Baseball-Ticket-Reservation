@@ -24,6 +24,8 @@ public enum ErrorCode {
     CANNOT_MODIFY_SELF(HttpStatus.BAD_REQUEST, "본인 계정의 권한이나 잠금 상태는 바꿀 수 없습니다."),
     MEMBER_WITHDRAWN(HttpStatus.CONFLICT, "탈퇴한 회원입니다."),
     RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND, "예매 내역을 찾을 수 없습니다."),
+    LOST_PROPERTY_NOT_FOUND(HttpStatus.NOT_FOUND, "분실물을 찾을 수 없습니다."),
+    NOTICE_NOT_FOUND(HttpStatus.NOT_FOUND, "공지를 찾을 수 없습니다."),
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다."),
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "댓글을 찾을 수 없습니다."),
     ALREADY_REPORTED(HttpStatus.CONFLICT, "이미 신고한 게시글 또는 댓글입니다."),
@@ -47,6 +49,9 @@ public enum ErrorCode {
     TRANSFER_NOT_ALLOWED(HttpStatus.CONFLICT, "양도할 수 없는 예매입니다. 확정된 예매이고 입장 전, 경기가 시작되기 전이어야 합니다."),
     ALREADY_LISTED(HttpStatus.CONFLICT, "이미 양도 등록된 예매입니다."),
     CANNOT_BUY_OWN_TICKET(HttpStatus.BAD_REQUEST, "본인이 올린 양도글은 살 수 없습니다."),
+    ALREADY_WAITING(HttpStatus.CONFLICT, "이미 이 경기의 양도를 기다리는 중입니다."),
+    WAIT_NOT_FOUND(HttpStatus.NOT_FOUND, "양도 대기 내역을 찾을 수 없습니다."),
+    TRANSFER_PRIORITY(HttpStatus.CONFLICT, "대기자 우선 구매 시간입니다. 잠시 후 다시 시도해 주세요."),
     TRANSFER_LISTED(HttpStatus.CONFLICT, "양도 등록 중인 예매는 취소할 수 없습니다. 먼저 양도 등록을 취소해 주세요."),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
 

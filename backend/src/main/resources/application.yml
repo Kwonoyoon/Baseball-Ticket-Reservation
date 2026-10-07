@@ -95,3 +95,14 @@ ticketing:
   sample-data:
     enabled: ${SAMPLE_DATA_ENABLED:true}
     days: 14
+  news:
+    # 메인 슬라이드 끝에 보여 줄 KBO 뉴스. 언론사가 배포하는 RSS에서 제목·링크·사진 주소만 가져오고, 본문은 복사하지 않는다.
+    enabled: true
+    feed-url: https://www.yna.co.kr/rss/sports.xml
+    source-name: 연합뉴스
+    # 제목에 이 중 하나가 있는 기사만 쓴다. (스포츠 RSS에는 다른 종목 기사도 섞여 있다)
+    keywords:
+      - KBO
+      - 프로야구
+    max-items: 5
+    cache-ttl: 30m

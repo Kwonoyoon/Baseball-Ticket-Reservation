@@ -16,8 +16,10 @@ import { GamePage } from './pages/GamePage'
 import { LoginPage } from './pages/LoginPage'
 import { MockCheckoutPage } from './pages/MockCheckoutPage'
 import { MyReservationsPage } from './pages/MyReservationsPage'
+import { LostPropertyPage } from './pages/LostPropertyPage'
 import { MyTicketPage } from './pages/MyTicketPage'
 import { NotFoundPage } from './pages/NotFoundPage'
+import { NoticesPage } from './pages/NoticesPage'
 import { NotificationSettingsPage } from './pages/NotificationSettingsPage'
 import { PasswordChangePage } from './pages/PasswordChangePage'
 import { PaymentFailPage, PaymentSuccessPage } from './pages/PaymentResultPage'
@@ -53,6 +55,8 @@ const router = createBrowserRouter([
     element: <Layout />,
     children: [
       { path: 'games/:gameId', element: <GamePage /> },
+      // 전체 공지는 비회원도 읽는다. 쓰기·수정·삭제는 관리자만(화면과 서버 둘 다 막는다).
+      { path: 'notices', element: <NoticesPage /> },
       { path: 'login', element: <LoginPage /> },
       { path: 'signup', element: <SignupPage /> },
       // 커뮤니티 입구와 구단 게시판은 한 화면이다. (구단 줄 + 게시판) 입구는 관심 구단부터 보여 준다.
@@ -80,6 +84,15 @@ const router = createBrowserRouter([
         element: (
           <RequireAuth>
             <MyReservationsPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        // 분실물센터: 로그인한 회원이 등록·조회하고, 보관 상태는 관리자가 바꾼다.
+        path: 'lost-properties',
+        element: (
+          <RequireAuth>
+            <LostPropertyPage />
           </RequireAuth>
         ),
       },
