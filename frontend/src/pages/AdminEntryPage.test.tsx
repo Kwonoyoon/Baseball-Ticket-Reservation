@@ -270,6 +270,17 @@ describe('AdminEntryPage', () => {
     expect(items.map((item) => item.querySelector('strong')?.textContent)).toEqual(['입장 시간 전', '입장'])
   })
 
+  it('카메라를 잡은 뒤 화면 재생이 실패하면 오류를 알리고 카메라도 끈다', async () => {
+    const camera = fakeCamera()
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockRejectedValue(new Error('카메라 화면을 재생하지 못했습니다.'))
+    renderEntryPage()
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('카메라 화면을 재생하지 못했습니다.')
+    // 오류 안내만 남기고 카메라를 잡아 두면 표시등이 켜진 채 다른 앱이 카메라를 못 쓴다.
+    expect(camera.stop).toHaveBeenCalled()
+    expect(screen.queryByLabelText('QR 카메라 화면')).not.toBeInTheDocument()
+  })
+
   it('카메라를 끄면 카메라 스트림을 멈춘다', async () => {
     const camera = fakeCamera()
     renderEntryPage()

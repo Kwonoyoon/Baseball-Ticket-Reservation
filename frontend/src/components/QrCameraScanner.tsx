@@ -38,6 +38,13 @@ export function QrCameraScanner({ onScan }: { onScan: (value: string) => void })
     let stream: MediaStream | null = null
     let timer: number | undefined
 
+    /** 잡아 둔 카메라를 놓는다. 오류로 카메라 화면이 사라질 때도 불러야 표시등이 꺼지고 다른 앱이 카메라를 쓸 수 있다. */
+    const releaseCamera = () => {
+      stream?.getTracks().forEach((track) => track.stop())
+      stream = null
+      if (videoRef.current) videoRef.current.srcObject = null
+    }
+
     const start = async () => {
       try {
         // 휴대폰은 뒷면 카메라를 쓴다. 노트북처럼 한 대뿐이면 그 카메라가 켜진다.
@@ -49,7 +56,10 @@ export function QrCameraScanner({ onScan }: { onScan: (value: string) => void })
         }
         stream = media
         const video = videoRef.current
-        if (!video) return
+        if (!video) {
+          releaseCamera()
+          return
+        }
         video.srcObject = stream
         await video.play()
         const decode = await createQrDecoder()
@@ -66,6 +76,8 @@ export function QrCameraScanner({ onScan }: { onScan: (value: string) => void })
         }
         void scan()
       } catch (e) {
+        // 카메라를 잡은 뒤 재생이나 QR 해독기 준비가 실패해도 카메라를 놓는다.
+        releaseCamera()
         if (!stopped) setError(cameraErrorMessage(e))
       }
     }
@@ -74,7 +86,7 @@ export function QrCameraScanner({ onScan }: { onScan: (value: string) => void })
     return () => {
       stopped = true
       window.clearTimeout(timer)
-      stream?.getTracks().forEach((track) => track.stop())
+      releaseCamera()
     }
   }, [supported])
 
