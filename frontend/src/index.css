@@ -1757,12 +1757,30 @@ p {
 
 .form {
   display: grid;
+  /* 칸 너비를 내용(입력칸의 기본 최소 너비)에 맞춰 늘리지 않는다. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
 }
 
 .field {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
+}
+
+/* 입력칸은 기본으로 "글자 20자" 만큼의 최소 너비를 갖는다. 휴대폰에서 글자 크기를 키우면(카카오톡 브라우저 등)
+   그 너비가 카드보다 넓어져 입력칸과 버튼이 카드 밖으로 밀려나므로, 언제나 칸 너비에 맞춘다. */
+input,
+select,
+textarea {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
 }
 
 .field__label {

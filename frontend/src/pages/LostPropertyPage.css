@@ -2,11 +2,14 @@
 
 .lost-page {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 22px;
 }
 
 .lost-page__head {
   display: flex;
+  /* 좁은 휴대폰에서는 등록 버튼이 제목 아래로 내려간다 */
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 16px;

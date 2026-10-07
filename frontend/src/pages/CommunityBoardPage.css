@@ -291,6 +291,8 @@
   position: sticky;
   top: 20px;
   display: grid;
+  /* 좁은 화면에서 가로로 늘어놓은 분류 탭이 칸을 넓히지 않고 안에서 옆으로 넘기게 */
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
 }
 
@@ -410,6 +412,8 @@
 
 .popular-posts__list {
   display: grid;
+  /* 긴 글 제목(한 줄 말줄임)이 칸 너비를 늘려 휴대폰에서 좋아요 수가 잘리지 않게 */
+  grid-template-columns: minmax(0, 1fr);
   margin: 0;
   padding: 0;
   overflow: hidden;
@@ -597,7 +601,14 @@ a.post-card:focus-visible {
 
 .post-category-picker__options {
   display: flex;
+  /* 글자를 키운 휴대폰에서도 넘치지 않게 다음 줄로 */
+  flex-wrap: wrap;
   gap: 8px;
+}
+
+/* 숨긴 라디오 버튼이 자기 칸 안에 머물게 기준을 잡는다. (없으면 페이지 기준으로 놓여 오른쪽으로 삐져나간다) */
+.post-category-picker__option {
+  position: relative;
 }
 
 .post-category-picker__option input {
