@@ -22,20 +22,22 @@ class EntryTokenCodecTest {
     void 발급한_QR_값을_검증하면_예매를_알려준다() {
         EntryTokenCodec codec = codec(SECRET, Clock.fixed(NOW, ZoneId.of("Asia/Seoul")));
 
-        EntryTokenCodec.IssuedToken issued = codec.issue(7L, "BP2026100700");
+        EntryTokenCodec.IssuedToken issued = codec.issue(7L, "BP2026100700", 3L);
         ParseResult parsed = codec.parse(issued.token());
 
         assertThat(issued.expiresInSeconds()).isEqualTo(30);
         assertThat(parsed.expired()).isFalse();
         assertThat(parsed.claims().reservationId()).isEqualTo(7L);
         assertThat(parsed.claims().reservationNumber()).isEqualTo("BP2026100700");
+        // 발급할 때의 주인을 담아, 양도 뒤 이전 주인의 QR을 가려낸다.
+        assertThat(parsed.claims().ownerId()).isEqualTo(3L);
         // 같은 예매라도 매번 다른 값이다.
-        assertThat(codec.issue(7L, "BP2026100700").token()).isNotEqualTo(issued.token());
+        assertThat(codec.issue(7L, "BP2026100700", 3L).token()).isNotEqualTo(issued.token());
     }
 
     @Test
     void 유효_시간이_지난_QR은_만료로_알려준다() {
-        String token = codec(SECRET, Clock.fixed(NOW, ZoneId.of("Asia/Seoul"))).issue(7L, "BP1").token();
+        String token = codec(SECRET, Clock.fixed(NOW, ZoneId.of("Asia/Seoul"))).issue(7L, "BP1", 3L).token();
 
         ParseResult parsed = codec(SECRET, Clock.fixed(NOW.plusSeconds(31), ZoneId.of("Asia/Seoul"))).parse(token);
 
@@ -47,8 +49,8 @@ class EntryTokenCodecTest {
     void 다른_키로_서명했거나_고친_QR은_거부한다() {
         Clock clock = Clock.fixed(NOW, ZoneId.of("Asia/Seoul"));
         EntryTokenCodec codec = codec(SECRET, clock);
-        String forged = codec("another-entry-ticket-secret-0123456789abcd", clock).issue(7L, "BP1").token();
-        String token = codec.issue(7L, "BP1").token();
+        String forged = codec("another-entry-ticket-secret-0123456789abcd", clock).issue(7L, "BP1", 3L).token();
+        String token = codec.issue(7L, "BP1", 3L).token();
         String[] parts = token.split("\\.");
         String tampered = parts[0] + "." + parts[1].substring(0, parts[1].length() - 2) + "AA." + parts[2];
 

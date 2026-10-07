@@ -144,6 +144,56 @@ class EntryTicketIntegrationTest {
     }
 
     @Test
+    void 양도로_주인이_바뀌면_이전_주인이_받아_둔_QR로는_들어올_수_없다() throws Exception {
+        Game game = newGame(LocalDateTime.now(clock).plusMinutes(30));
+        String seller = signupAndLogin();
+        String buyer = signupAndLogin();
+        long reservationId = reserveAndPay(seller, game);
+        // 판매자가 게이트 앞에서 QR을 띄워 둔 채로 표가 팔린다.
+        String sellersQr = issueToken(seller, reservationId);
+        long transferId = listForTransfer(seller, reservationId);
+        mockMvc.perform(post("/api/transfers/" + transferId + "/buy")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(buyer))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"CARD\"}"))
+                .andExpect(status().isNoContent());
+
+        // 30초가 지나기 전이어도 판매자의 QR은 통하지 않고, 예매 정보도 알려 주지 않는다.
+        verify(adminToken, sellersQr)
+                .andExpect(jsonPath("$.admitted").value(false))
+                .andExpect(jsonPath("$.result").value("OWNER_CHANGED"))
+                .andExpect(jsonPath("$.reservation").doesNotExist());
+        // 판매자는 새 QR도 받을 수 없고, 돈을 낸 구매자는 들어올 수 있다.
+        issue(seller, reservationId).andExpect(status().isNotFound());
+        assertThat(verifyResult(issueToken(buyer, reservationId))).isEqualTo("ADMITTED");
+    }
+
+    @Test
+    void 양도_중인_티켓은_입장시키지_않고_양도를_거두면_들어온다() throws Exception {
+        Game game = newGame(LocalDateTime.now(clock).plusMinutes(30));
+        String alice = signupAndLogin();
+        long reservationId = reserveAndPay(alice, game);
+        long transferId = listForTransfer(alice, reservationId);
+
+        // 입장해 버리면 산 사람이 들어올 수 없으니, 양도글이 열려 있는 동안은 거부한다.
+        verify(adminToken, issueToken(alice, reservationId))
+                .andExpect(jsonPath("$.admitted").value(false))
+                .andExpect(jsonPath("$.result").value("LISTED_FOR_TRANSFER"))
+                .andExpect(jsonPath("$.enteredAt").doesNotExist());
+
+        mockMvc.perform(post("/api/transfers/" + transferId + "/cancel")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(alice)))
+                .andExpect(status().isNoContent());
+        assertThat(verifyResult(issueToken(alice, reservationId))).isEqualTo("ADMITTED");
+
+        // 입장한 예매는 다시 양도글로 올릴 수 없어, 아무도 살 수 없는 글이 마켓에 남지 않는다.
+        mockMvc.perform(post("/api/reservations/" + reservationId + "/transfer")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(alice)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("TRANSFER_NOT_ALLOWED"));
+    }
+
+    @Test
     void 같은_예매의_QR을_두_게이트에서_동시에_읽어도_한_곳만_입장_확인된다() throws Exception {
         Game game = newGame(LocalDateTime.now(clock).plusMinutes(30));
         String alice = signupAndLogin();
@@ -254,6 +304,15 @@ class EntryTicketIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         String confirmed = PaymentTestSupport.payAndConfirm(mockMvc, token, pending);
         return ((Number) JsonPath.read(confirmed, "$.id")).longValue();
+    }
+
+    /** 내 예매를 양도 마켓에 올리고 양도글 번호를 돌려준다. */
+    private long listForTransfer(String token, long reservationId) throws Exception {
+        String body = mockMvc.perform(post("/api/reservations/" + reservationId + "/transfer")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token)))
+                .andExpect(status().is2xxSuccessful())
+                .andReturn().getResponse().getContentAsString();
+        return ((Number) JsonPath.read(body, "$.id")).longValue();
     }
 
     private ResultActions issue(String token, long reservationId) throws Exception {

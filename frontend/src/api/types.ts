@@ -404,6 +404,10 @@ export type EntryVerifyResult =
   | 'NOT_YET_OPEN'
   | 'GAME_OVER'
   | 'ALREADY_ENTERED'
+  /** 양도로 주인이 바뀌기 전에 받아 둔 QR */
+  | 'OWNER_CHANGED'
+  /** 양도 마켓에 올라가 있는 티켓. 양도를 취소해야 입장할 수 있다. */
+  | 'LISTED_FOR_TRANSFER'
 
 /**
  * 입장 게이트의 QR 검증 응답 (POST /api/admin/entry/verify). 입장 여부와 상관없이 200으로 온다.

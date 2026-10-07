@@ -19,6 +19,8 @@ const RESULT_LABELS: Record<EntryVerifyResult, string> = {
   NOT_YET_OPEN: '입장 시간 전',
   GAME_OVER: '끝난 경기',
   ALREADY_ENTERED: '이미 입장',
+  OWNER_CHANGED: '양도 전 QR',
+  LISTED_FOR_TRANSFER: '양도 중',
 }
 
 const checkedClock = new Intl.DateTimeFormat('ko-KR', {
