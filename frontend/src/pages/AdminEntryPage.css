@@ -1,0 +1,231 @@
+/* ---------- 입장 확인 (pages/AdminEntryPage.tsx) ----------
+   게이트에서 휴대폰·노트북으로 쓴다. 결과는 멀리서도 보이게 크게, 입장은 초록·거부는 빨강으로 강조색과 상관없이 고정한다. */
+
+.admin-entry__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.admin-entry__scanner {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+
+/* 카메라 화면. 가운데 네모로 QR을 맞출 곳을 알려 준다. */
+.entry-camera {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: var(--navy-900);
+}
+
+.entry-camera__video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.entry-camera__frame {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(60%, 260px);
+  aspect-ratio: 1;
+  border: 3px solid rgb(255 255 255 / 85%);
+  border-radius: var(--radius);
+  box-shadow: 0 0 0 999px rgb(11 27 51 / 35%);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.entry-camera__hint {
+  position: absolute;
+  right: 0;
+  bottom: 10px;
+  left: 0;
+  margin: 0;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.entry-camera__error {
+  width: 100%;
+  margin: 0;
+  padding: 16px;
+  border-radius: var(--radius);
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.admin-entry__manual {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  width: 100%;
+}
+
+.admin-entry__manual .field {
+  flex: 1;
+  margin: 0;
+}
+
+.admin-entry__results {
+  display: grid;
+  gap: 16px;
+}
+
+/* 확인 결과. 새 결과가 나올 때마다 한 번 깜빡인다. */
+.entry-result {
+  padding: 24px;
+  border: 3px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  animation: entry-result-in 0.25s ease-out;
+}
+
+.entry-result__verdict {
+  margin: 0;
+  font-size: 40px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+
+.entry-result__message {
+  margin: 8px 0 0;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.entry-result__time {
+  margin: 12px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.entry-result.is-idle .entry-result__verdict,
+.entry-result.is-checking .entry-result__verdict {
+  color: var(--text-muted);
+}
+
+.entry-result.is-idle .entry-result__message {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.entry-result.is-admitted {
+  border-color: #2f9e5b;
+  background: #e3f6ea;
+  color: #155c33;
+}
+
+.entry-result.is-rejected,
+.entry-result.is-error {
+  border-color: #d93a3a;
+  background: #fde8e8;
+  color: #8f1d1d;
+}
+
+.entry-result__details {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid rgb(0 0 0 / 10%);
+}
+
+.entry-result__details div {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.entry-result__details dt {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.entry-result__details dd {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.entry-result__seats {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@keyframes entry-result-in {
+  from {
+    transform: scale(0.97);
+    opacity: 0.4;
+  }
+}
+
+/* 최근 확인 목록 */
+.admin-entry__history h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.admin-entry__history ol {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-entry__history li {
+  display: grid;
+  grid-template-columns: 72px 120px minmax(0, 1fr);
+  gap: 8px;
+  padding: 8px 12px;
+  border-left: 4px solid #d93a3a;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: 14px;
+}
+
+.admin-entry__history li.is-admitted {
+  border-left-color: #2f9e5b;
+}
+
+.admin-entry__history time,
+.admin-entry__history span {
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  .admin-entry__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .entry-result__verdict {
+    font-size: 34px;
+  }
+
+  .admin-entry__history li {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  .admin-entry__history span {
+    grid-column: 2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entry-result {
+    animation: none;
+  }
+}

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { Link, useNavigate } from 'react-router'
 import { useAuth } from '../auth/useAuth'
 import { openCalendarWindow } from '../lib/calendarWindow'
-import { CalendarIcon, CloseIcon, LogoutIcon, MessageIcon, TicketIcon, UserIcon, UsersIcon } from './icons'
+import { CalendarIcon, CloseIcon, LogoutIcon, MessageIcon, ScanIcon, TicketIcon, UserIcon, UsersIcon } from './icons'
 
 type SidebarProps = {
   open: boolean
@@ -112,6 +112,15 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               <span>
                 신고 관리
                 <small>커뮤니티</small>
+              </span>
+            </Link>
+          )}
+          {isAdmin && (
+            <Link to="/admin/entry" className="sidebar__item" onClick={onClose}>
+              <ScanIcon />
+              <span>
+                입장 확인
+                <small>QR 스캔</small>
               </span>
             </Link>
           )}

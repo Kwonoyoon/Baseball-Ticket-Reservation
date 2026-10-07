@@ -8,13 +8,15 @@ import java.time.LocalDateTime;
  * @param entryOpensAt     입장 시작 (평일 1시간 30분 전, 주말·공휴일 2시간 전)
  * @param gameStartsAt     경기 시작
  * @param gameEndsAt       이 시각부터 끝난 경기로 본다.
- * @param token            QR에 그대로 담을 서명 값. 경기가 끝났거나 취소됐으면 null
+ * @param token            QR에 그대로 담을 서명 값. 경기가 끝났거나 취소됐거나 이미 입장했으면 null
  * @param expiresInSeconds token이 유효한 초. token이 없으면 null
+ * @param enteredAt        입장 게이트에서 입장 확인된 시각. 입장 전이면 null
  */
 public record EntryTicketResponse(
         LocalDateTime entryOpensAt,
         LocalDateTime gameStartsAt,
         LocalDateTime gameEndsAt,
         String token,
-        Long expiresInSeconds) {
+        Long expiresInSeconds,
+        LocalDateTime enteredAt) {
 }

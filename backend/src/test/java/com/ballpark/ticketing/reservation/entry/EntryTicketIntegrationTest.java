@@ -1,5 +1,8 @@
 package com.ballpark.ticketing.reservation.entry;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -10,6 +13,11 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,6 +27,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
@@ -53,6 +62,9 @@ class EntryTicketIntegrationTest {
 
     @Autowired
     private Clock clock;
+
+    @MockitoSpyBean
+    private EntryPolicy entryPolicy;
 
     private Team home;
     private Team away;
@@ -89,7 +101,78 @@ class EntryTicketIntegrationTest {
                 .andExpect(jsonPath("$.admitted").value(true))
                 .andExpect(jsonPath("$.result").value("ADMITTED"))
                 .andExpect(jsonPath("$.reservation.id").value(reservationId))
-                .andExpect(jsonPath("$.reservation.seats.length()").value(1));
+                .andExpect(jsonPath("$.reservation.seats.length()").value(1))
+                .andExpect(jsonPath("$.enteredAt").exists());
+    }
+
+    @Test
+    void 한_번_입장한_예매는_새_QR로도_다시_입장할_수_없고_취소_양도도_막힌다() throws Exception {
+        Game game = newGame(LocalDateTime.now(clock).plusMinutes(30));
+        String alice = signupAndLogin();
+        long reservationId = reserveAndPay(alice, game);
+
+        String spare = issueToken(alice, reservationId);
+        String first = verify(adminToken, issueToken(alice, reservationId))
+                .andExpect(jsonPath("$.result").value("ADMITTED"))
+                .andReturn().getResponse().getContentAsString();
+        String enteredAt = JsonPath.read(first, "$.enteredAt");
+
+        // 입장한 뒤에는 내 티켓 화면에 QR 대신 입장 완료를 보여 주도록 QR 값 없이 입장 시각만 준다.
+        issue(alice, reservationId)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").doesNotExist())
+                .andExpect(jsonPath("$.expiresInSeconds").doesNotExist())
+                .andExpect(jsonPath("$.enteredAt").value(enteredAt));
+        // 입장 전에 받아 둔(캡처해 둔) 다른 QR이어도 같은 예매라 재입장할 수 없다.
+        verify(adminToken, spare)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.admitted").value(false))
+                .andExpect(jsonPath("$.result").value("ALREADY_ENTERED"))
+                .andExpect(jsonPath("$.enteredAt").value(enteredAt))
+                .andExpect(jsonPath("$.reservation.id").value(reservationId))
+                .andExpect(jsonPath("$.reservation.cancelable").value(false));
+
+        // 경기 시작 전이어도 입장한 뒤에는 환불받거나 남에게 넘길 수 없다.
+        mockMvc.perform(post("/api/reservations/" + reservationId + "/cancel")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(alice)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("NOT_CANCELABLE"));
+        mockMvc.perform(post("/api/reservations/" + reservationId + "/transfer")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(alice)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("TRANSFER_NOT_ALLOWED"));
+    }
+
+    @Test
+    void 같은_예매의_QR을_두_게이트에서_동시에_읽어도_한_곳만_입장_확인된다() throws Exception {
+        Game game = newGame(LocalDateTime.now(clock).plusMinutes(30));
+        String alice = signupAndLogin();
+        long reservationId = reserveAndPay(alice, game);
+        // 캡처해 친구에게 보낸 QR처럼, 두 사람이 서로 다른 QR(같은 예매)을 동시에 내민다.
+        String gateA = issueToken(alice, reservationId);
+        String gateB = issueToken(alice, reservationId);
+
+        // 첫 번째 게이트가 예매를 잠그고 판단하는 동안(커밋 전) 두 번째 게이트가 들어오게 만든다.
+        CountDownLatch firstJudging = new CountDownLatch(1);
+        doAnswer(invocation -> {
+            if (firstJudging.getCount() > 0) {
+                firstJudging.countDown();
+                Thread.sleep(300);
+            }
+            return invocation.callRealMethod();
+        }).when(entryPolicy).isOver(any(), any());
+
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            Future<String> first = pool.submit(() -> verifyResult(gateA));
+            assertThat(firstJudging.await(5, TimeUnit.SECONDS)).isTrue();
+            Future<String> second = pool.submit(() -> verifyResult(gateB));
+
+            assertThat(List.of(first.get(10, TimeUnit.SECONDS), second.get(10, TimeUnit.SECONDS)))
+                    .containsExactlyInAnyOrder("ADMITTED", "ALREADY_ENTERED");
+        } finally {
+            pool.shutdownNow();
+        }
     }
 
     @Test
@@ -176,6 +259,18 @@ class EntryTicketIntegrationTest {
     private ResultActions issue(String token, long reservationId) throws Exception {
         return mockMvc.perform(post("/api/reservations/" + reservationId + "/entry-ticket")
                 .header(HttpHeaders.AUTHORIZATION, bearer(token)));
+    }
+
+    private String issueToken(String token, long reservationId) throws Exception {
+        return JsonPath.read(issue(token, reservationId)
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(), "$.token");
+    }
+
+    private String verifyResult(String entryToken) throws Exception {
+        return JsonPath.read(verify(adminToken, entryToken)
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(), "$.result");
     }
 
     private ResultActions verify(String token, String entryToken) throws Exception {

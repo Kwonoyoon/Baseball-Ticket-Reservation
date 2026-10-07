@@ -5,6 +5,7 @@ import { Layout } from './components/Layout'
 import { TeamThemeApplier } from './components/TeamThemeApplier'
 import { AccountPage } from './pages/AccountPage'
 import { AdminCommunityReportsPage } from './pages/AdminCommunityReportsPage'
+import { AdminEntryPage } from './pages/AdminEntryPage'
 import { AdminMembersPage } from './pages/AdminMembersPage'
 import { CalendarPage } from './pages/CalendarPage'
 import { CommunityBoardPage } from './pages/CommunityBoardPage'
@@ -169,6 +170,15 @@ const router = createBrowserRouter([
         element: (
           <RequireAdmin>
             <AdminCommunityReportsPage />
+          </RequireAdmin>
+        ),
+      },
+      // 입장 게이트에서 관람객의 내 티켓 QR을 읽는다.
+      {
+        path: 'admin/entry',
+        element: (
+          <RequireAdmin>
+            <AdminEntryPage />
           </RequireAdmin>
         ),
       },
