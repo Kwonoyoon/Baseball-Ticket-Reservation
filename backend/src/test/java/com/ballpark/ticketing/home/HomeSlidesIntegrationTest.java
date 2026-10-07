@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -26,6 +27,8 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import com.ballpark.ticketing.game.Game;
 import com.ballpark.ticketing.game.GameRepository;
+import com.ballpark.ticketing.game.TeamRecord;
+import com.ballpark.ticketing.game.TeamRecordRepository;
 import com.ballpark.ticketing.stadium.SeatSection;
 import com.ballpark.ticketing.support.PaymentTestSupport;
 import com.ballpark.ticketing.stadium.SeatSectionRepository;
@@ -53,6 +56,9 @@ class HomeSlidesIntegrationTest {
 
     @Autowired
     private SeatSectionRepository seatSectionRepository;
+
+    @Autowired
+    private TeamRecordRepository teamRecordRepository;
 
     @Autowired
     private Clock clock;
@@ -99,7 +105,9 @@ class HomeSlidesIntegrationTest {
     }
 
     @Test
-    void 순위표는_결과가_입력된_경기로_계산하고_모든_구단이_나온다() throws Exception {
+    void 순위표는_공식_성적이_없으면_결과가_입력된_경기로_계산하고_모든_구단이_나온다() throws Exception {
+        // 마이그레이션이 넣어 둔 공식 성적이 있으면 그것을 쓰므로, 경기 결과 계산을 보려면 비워야 한다.
+        teamRecordRepository.deleteAll();
         String admin = JsonPath.read(login("rootadmin", "root-admin-password")
                 .andReturn().getResponse().getContentAsString(), "$.accessToken");
         // 홈팀이 4:1로 이긴 결과를 입력한다.
@@ -125,6 +133,30 @@ class HomeSlidesIntegrationTest {
         }
         // 선두의 승차는 0이다.
         mockMvc.perform(get("/api/standings")).andExpect(jsonPath("$[0].gamesBehind").value(0.0));
+    }
+
+    @Test
+    void 순위표는_공식_성적이_있으면_그것으로_승률_순에_승차까지_계산한다() throws Exception {
+        teamRecordRepository.deleteAll();
+        List<Team> teams = teamRepository.findAll();
+        // 일부러 id 순서와 다르게 넣는다: 두 번째 구단 10승 0패, 첫 번째 구단 5승 5패, 세 번째 구단 5승 5패 1무
+        LocalDate day = LocalDate.of(2026, 10, 6);
+        teamRecordRepository.save(new TeamRecord(teams.get(0).getId(), 5, 5, 0, day));
+        teamRecordRepository.save(new TeamRecord(teams.get(1).getId(), 10, 0, 0, day));
+        teamRecordRepository.save(new TeamRecord(teams.get(2).getId(), 5, 5, 1, day));
+
+        String body = mockMvc.perform(get("/api/standings")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        List<Integer> teamIds = JsonPath.read(body, "$[*].team.id");
+        // 1위는 10승 0패. 같은 승률(5승 5패)이면 승수가 같으니 id가 작은 구단이 앞이다.
+        assertThat(teamIds.get(0)).isEqualTo(teams.get(1).getId().intValue());
+        assertThat(teamIds.get(1)).isEqualTo(teams.get(0).getId().intValue());
+        assertThat(teamIds.get(2)).isEqualTo(teams.get(2).getId().intValue());
+        // 첫 구단: 승차 ((10-5)+(5-0))/2 = 5. 공식 성적이 없는 나머지 구단은 0승 0패다.
+        mockMvc.perform(get("/api/standings"))
+                .andExpect(jsonPath("$[1].gamesBehind").value(5.0))
+                .andExpect(jsonPath("$[2].draws").value(1))
+                .andExpect(jsonPath("$[3].wins").value(0));
     }
 
     @Test
