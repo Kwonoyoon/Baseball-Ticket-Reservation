@@ -183,21 +183,24 @@ export function AdminEntryPage() {
   return (
     <div className="admin-entry">
       <h1 className="page-title">입장 확인</h1>
-      <p className="page-desc">
-        관람객의 내 티켓 QR을 카메라에 비추면 바로 입장 가능 여부를 보여 줍니다. QR은 30초마다 바뀌므로 캡처한 QR은
-        거부됩니다.
-      </p>
 
       <div className="admin-entry__layout">
         <div className="admin-entry__scanner">
-          {cameraOn && <QrCameraScanner onScan={handleScan} />}
-          <button
-            type="button"
-            className="button button--ghost button--sm"
-            onClick={() => setCameraOn((on) => !on)}
-          >
-            {cameraOn ? '카메라 끄기' : '카메라 켜기'}
-          </button>
+          {/* 휴대폰에서는 켜기·끄기 버튼을 카메라 화면 왼쪽 위에 얹고, 직접 넣는 칸을 카메라 위로 올린다. (AdminEntryPage.css) */}
+          <div className="admin-entry__camera">
+            {cameraOn ? (
+              <QrCameraScanner onScan={handleScan} />
+            ) : (
+              <p className="entry-camera entry-camera--off">카메라가 꺼져 있습니다.</p>
+            )}
+            <button
+              type="button"
+              className="button button--ghost button--sm admin-entry__camera-toggle"
+              onClick={() => setCameraOn((on) => !on)}
+            >
+              {cameraOn ? '카메라 끄기' : '카메라 켜기'}
+            </button>
+          </div>
 
           <form className="admin-entry__manual" onSubmit={handleManualSubmit}>
             <label className="field">
@@ -206,7 +209,7 @@ export function AdminEntryPage() {
                 type="text"
                 autoComplete="off"
                 spellCheck={false}
-                placeholder="QR을 읽은 값을 붙여 넣으세요"
+                placeholder="QR 값을 직접 붙여 넣으세요"
                 value={manualToken}
                 onChange={(event) => setManualToken(event.target.value)}
               />
