@@ -67,6 +67,16 @@ export function TicketIcon() {
   )
 }
 
+/** 입장 QR 스캔: 네 모서리 틀 안의 QR 무늬 */
+export function ScanIcon() {
+  return (
+    <svg {...commonProps}>
+      <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" />
+      <path d="M8 8h3v3H8zM13 13h3v3h-3zM13 8h3M8 16h3" />
+    </svg>
+  )
+}
+
 export function MessageIcon() {
   return (
     <svg {...commonProps}>

@@ -77,6 +77,11 @@
   }
 }
 
+.my-ticket__status.is-entered {
+  background: var(--grass-100);
+  color: #1f6b41;
+}
+
 .my-ticket__status.is-checking,
 .my-ticket__status.is-past,
 .my-ticket__status.is-canceled {
@@ -186,6 +191,27 @@
   margin: 0;
   padding: 28px 0;
   color: var(--text-muted);
+  font-weight: 700;
+}
+
+/* 입장한 예매: QR 자리 대신 입장 완료와 입장 시각 */
+.my-ticket__qr-entered {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 28px 16px;
+  border-radius: var(--radius);
+  background: var(--grass-100);
+  color: #1f6b41;
+}
+
+.my-ticket__qr-entered strong {
+  font-size: 26px;
+  letter-spacing: -0.03em;
+}
+
+.my-ticket__qr-entered span {
+  font-size: 14px;
   font-weight: 700;
 }
 

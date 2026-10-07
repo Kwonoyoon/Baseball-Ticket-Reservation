@@ -9,6 +9,7 @@ import {
   LogoutIcon,
   MegaphoneIcon,
   MessageIcon,
+  ScanIcon,
   SearchIcon,
   TicketIcon,
   UserIcon,
@@ -130,6 +131,15 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               <span>
                 신고 관리
                 <small>커뮤니티</small>
+              </span>
+            </Link>
+          )}
+          {isAdmin && (
+            <Link to="/admin/entry" className="sidebar__item" onClick={onClose}>
+              <ScanIcon />
+              <span>
+                입장 확인
+                <small>QR 스캔</small>
               </span>
             </Link>
           )}

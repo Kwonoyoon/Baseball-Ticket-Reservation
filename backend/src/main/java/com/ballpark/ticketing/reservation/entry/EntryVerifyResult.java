@@ -8,7 +8,8 @@ public enum EntryVerifyResult {
     NOT_CONFIRMED("취소되었거나 확정되지 않은 예매입니다."),
     GAME_CANCELED("취소된 경기입니다."),
     NOT_YET_OPEN("아직 입장 시간이 아닙니다."),
-    GAME_OVER("이미 끝난 경기입니다.");
+    GAME_OVER("이미 끝난 경기입니다."),
+    ALREADY_ENTERED("이미 입장한 예매입니다. 재입장은 할 수 없습니다.");
 
     private final String message;
 
