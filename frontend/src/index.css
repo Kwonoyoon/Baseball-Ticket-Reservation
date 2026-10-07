@@ -403,39 +403,6 @@ p {
   animation-name: sidebar-slide-out;
 }
 
-/* 메뉴 항목은 살짝 늦게, 아래에서 떠오르듯 나타난다. */
-.sidebar-layer:not(.is-closing) .sidebar__item {
-  animation: sidebar-item-in 0.3s ease both;
-}
-
-.sidebar-layer:not(.is-closing) .sidebar__item:nth-child(1) {
-  animation-delay: 0.1s;
-}
-
-.sidebar-layer:not(.is-closing) .sidebar__item:nth-child(2) {
-  animation-delay: 0.16s;
-}
-
-.sidebar-layer:not(.is-closing) .sidebar__item:nth-child(3) {
-  animation-delay: 0.22s;
-}
-
-.sidebar-layer:not(.is-closing) .sidebar__item:nth-child(4) {
-  animation-delay: 0.28s;
-}
-
-@keyframes sidebar-item-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 @keyframes sidebar-slide-in {
   from {
     transform: translateX(100%);
@@ -826,8 +793,7 @@ p {
   }
 
   .sidebar,
-  .sidebar-backdrop,
-  .sidebar__item {
+  .sidebar-backdrop {
     animation-duration: 0.01s;
     animation-delay: 0s;
   }
