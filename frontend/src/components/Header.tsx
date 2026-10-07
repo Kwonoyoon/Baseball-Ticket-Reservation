@@ -37,6 +37,14 @@ export function Header() {
               <Link to="/my/account" className="site-header__mypage">
                 {member.name}님
               </Link>
+              {/* 입장할 때 바로 꺼낼 수 있게 늘 보이는 자리에 둔다. */}
+              <Link to="/my/ticket" className="button button--primary button--sm site-header__ticket">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4Z" />
+                  <path d="M10 6v12" strokeDasharray="2 2" />
+                </svg>
+                내 티켓
+              </Link>
               <NotificationBell />
               <button
                 ref={menuButtonRef}

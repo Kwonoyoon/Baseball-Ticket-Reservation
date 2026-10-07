@@ -11,12 +11,31 @@ type ReservedSeatMapProps = {
   seats: ReservedSeat[]
   /** 예매한 경기의 구장 코드. 구장마다 배치도가 다르다. */
   stadiumCode: string | null
+  /**
+   * 블록 안 좌석표를 펼친 좌석. 주면 바깥(QR 티켓의 좌석 목록 등)에서 고른 좌석과 함께 움직인다.
+   * 주지 않으면 이 컴포넌트가 스스로 정한다.
+   */
+  openSeat?: ReservedSeat | null
+  onOpenSeatChange?: (seat: ReservedSeat | null) => void
+  /** 왼쪽 좌석 목록을 그릴지. 바깥에서 좌석 목록을 따로 보여 줄 때 끈다. */
+  showList?: boolean
 }
 
 /** 예매한 좌석이 구장 어디인지 보여준다. 고르는 화면이 아니라 읽기 전용이다. */
-export function ReservedSeatMap({ seats, stadiumCode }: ReservedSeatMapProps) {
+export function ReservedSeatMap({
+  seats,
+  stadiumCode,
+  openSeat: controlledOpenSeat,
+  onOpenSeatChange,
+  showList = true,
+}: ReservedSeatMapProps) {
   // 좌석을 누르면 블록 안 어디에 앉는지 아래에 펼친다.
-  const [openSeat, setOpenSeat] = useState<ReservedSeat | null>(null)
+  const [ownOpenSeat, setOwnOpenSeat] = useState<ReservedSeat | null>(null)
+  const openSeat = controlledOpenSeat === undefined ? ownOpenSeat : controlledOpenSeat
+  const setOpenSeat = (seat: ReservedSeat | null) => {
+    if (controlledOpenSeat === undefined) setOwnOpenSeat(seat)
+    onOpenSeatChange?.(seat)
+  }
   const gridRef = useRef<HTMLElement>(null)
 
   // 좌석표가 배치도 아래에 있어 그냥 열면 화면 밖이다. 열릴 때 그쪽으로 내려간다.
@@ -49,38 +68,40 @@ export function ReservedSeatMap({ seats, stadiumCode }: ReservedSeatMapProps) {
     .join(' / ')
 
   return (
-    <div className="seat-location">
-      <ul className="seat-location__list">
-        {mine.map((block) => {
-          const group = seatsByCode.get(block.code) ?? []
-          return (
-            <li key={block.code} className={`grade--${block.grade.toLowerCase()}`}>
-              <p className="seat-location__name">
-                <span className="seat-location__chip" aria-hidden="true" />
-                <strong>{group[0].sectionName}</strong>
-              </p>
-              <ul className="seat-location__seats">
-                {group.map((seat) => {
-                  const isOpen = openSeat !== null && seatKey(openSeat) === seatKey(seat)
-                  return (
-                    <li key={`${seat.rowNo}-${seat.seatNo}`}>
-                      <button
-                        type="button"
-                        className={`seat-location__seat${isOpen ? " is-open" : ""}`}
-                        aria-expanded={isOpen}
-                        aria-controls="reserved-seat-grid"
-                        onClick={() => setOpenSeat(isOpen ? null : seat)}
-                      >
-                        {seat.rowNo}열 {seat.seatNo}번
-                      </button>
-                    </li>
-                  )
-                })}
-              </ul>
-            </li>
-          )
-        })}
-      </ul>
+    <div className={`seat-location${showList ? '' : ' seat-location--map-only'}`}>
+      {showList && (
+        <ul className="seat-location__list">
+          {mine.map((block) => {
+            const group = seatsByCode.get(block.code) ?? []
+            return (
+              <li key={block.code} className={`grade--${block.grade.toLowerCase()}`}>
+                <p className="seat-location__name">
+                  <span className="seat-location__chip" aria-hidden="true" />
+                  <strong>{group[0].sectionName}</strong>
+                </p>
+                <ul className="seat-location__seats">
+                  {group.map((seat) => {
+                    const isOpen = openSeat !== null && seatKey(openSeat) === seatKey(seat)
+                    return (
+                      <li key={`${seat.rowNo}-${seat.seatNo}`}>
+                        <button
+                          type="button"
+                          className={`seat-location__seat${isOpen ? " is-open" : ""}`}
+                          aria-expanded={isOpen}
+                          aria-controls="reserved-seat-grid"
+                          onClick={() => setOpenSeat(isOpen ? null : seat)}
+                        >
+                          {seat.rowNo}열 {seat.seatNo}번
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </li>
+            )
+          })}
+        </ul>
+      )}
 
       <svg viewBox={STADIUM_VIEW_BOX} role="img" aria-label={`내 좌석 위치: ${label}`}>
         <StadiumGround layout={layout} fieldClassName="seat-location__field" />

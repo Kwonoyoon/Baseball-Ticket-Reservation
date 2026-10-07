@@ -80,6 +80,18 @@ ticketing:
     max-seats-per-game: 4
     # 결제창에서 이 시간 안에 결제를 마치지 않으면 결제 대기 예매를 지우고 좌석을 푼다
     payment-time-limit: 10m
+  entry-ticket:
+    # 입장 QR 서명 키(32바이트 이상). 따로 주지 않으면 JWT_SECRET을 쓴다. (입장 QR과 로그인 토큰은 종류 값으로 구분한다)
+    secret: ${ENTRY_TICKET_SECRET:${JWT_SECRET:local-development-only-entry-ticket-key!!}}
+    # QR 하나가 유효한 시간. 화면은 이 간격으로 새 QR을 받는다.
+    token-validity: 30s
+    # 평일은 경기 1시간 30분 전, 주말·공휴일은 2시간 전부터 입장
+    weekday-gate-open: 90m
+    holiday-gate-open: 120m
+    # 경기 결과가 아직 기록되지 않아도 시작 4시간 뒤에는 끝난 경기로 본다.
+    game-length: 4h
+    # 공휴일 목록(PublicHolidays)에 없는 임시공휴일. 예: [2026-10-02]
+    extra-holidays: []
   sample-data:
     enabled: ${SAMPLE_DATA_ENABLED:true}
     days: 14

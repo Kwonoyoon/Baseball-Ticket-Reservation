@@ -15,6 +15,7 @@ import { GamePage } from './pages/GamePage'
 import { LoginPage } from './pages/LoginPage'
 import { MockCheckoutPage } from './pages/MockCheckoutPage'
 import { MyReservationsPage } from './pages/MyReservationsPage'
+import { MyTicketPage } from './pages/MyTicketPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { NotificationSettingsPage } from './pages/NotificationSettingsPage'
 import { PasswordChangePage } from './pages/PasswordChangePage'
@@ -86,6 +87,14 @@ const router = createBrowserRouter([
         element: (
           <RequireAuth>
             <TransferMarketPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'my/ticket',
+        element: (
+          <RequireAuth>
+            <MyTicketPage />
           </RequireAuth>
         ),
       },
