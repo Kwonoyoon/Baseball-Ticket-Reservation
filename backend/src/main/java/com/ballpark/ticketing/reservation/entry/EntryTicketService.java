@@ -40,7 +40,7 @@ public class EntryTicketService {
         this.clock = clock;
     }
 
-    /** 확정된 내 예매의 입장 정보와 QR 값을 준다. 끝났거나 취소된 경기는 QR 값 없이 시각만 준다. */
+    /** 확정된 내 예매의 입장 정보와 QR 값을 준다. 끝났거나 취소된 경기, 이미 입장한 예매는 QR 값 없이 시각만 준다. */
     public EntryTicketResponse issue(Long memberId, Long reservationId) {
         Reservation reservation = reservationRepository.findDetailById(reservationId)
                 .filter(found -> found.isOwnedBy(memberId))
@@ -50,12 +50,14 @@ public class EntryTicketService {
         }
         Game game = reservation.getGame();
         LocalDateTime now = LocalDateTime.now(clock);
-        boolean usable = game.getStatus() != GameStatus.CANCELED && !entryPolicy.isOver(game, now);
+        boolean usable = game.getStatus() != GameStatus.CANCELED && !entryPolicy.isOver(game, now)
+                && !reservation.hasEntered();
         IssuedToken issued = usable ? tokenCodec.issue(reservation.getId(), reservation.getReservationNumber()) : null;
         return new EntryTicketResponse(entryPolicy.entryOpensAt(game), game.getStartAt(),
                 entryPolicy.gameEndsAt(game),
                 issued == null ? null : issued.token(),
-                issued == null ? null : issued.expiresInSeconds());
+                issued == null ? null : issued.expiresInSeconds(),
+                reservation.getEnteredAt());
     }
 
     /**

@@ -279,7 +279,7 @@ export type Report = {
 
 /**
  * 내 티켓의 입장 정보 (POST /api/reservations/{id}/entry-ticket). 시각은 서울 시간이다.
- * token은 서버가 서명한 입장 QR 값으로, 화면은 그대로 QR로 그리기만 한다. 끝났거나 취소된 경기는 null.
+ * token은 서버가 서명한 입장 QR 값으로, 화면은 그대로 QR로 그리기만 한다. 끝났거나 취소된 경기, 이미 입장한 예매는 null.
  */
 export type EntryTicket = {
   /** 입장 시작 (평일 1시간 30분 전, 주말·공휴일 2시간 전) */
@@ -290,6 +290,8 @@ export type EntryTicket = {
   token: string | null
   /** token이 유효한 초. 지나면 새로 받는다. */
   expiresInSeconds: number | null
+  /** 입장 게이트에서 입장 확인된 시각. 입장 전이면 null (한 번 입장하면 다시 들어올 수 없다) */
+  enteredAt: string | null
 }
 
 /** 입장 QR 검증 결과. ADMITTED일 때만 입장시킨다. */

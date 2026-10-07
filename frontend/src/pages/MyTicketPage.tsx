@@ -43,7 +43,7 @@ const seoulClock = new Intl.DateTimeFormat('ko-KR', {
   hourCycle: 'h23',
 })
 
-type EntryStatus = { label: string; tone: 'waiting' | 'open' | 'live' | 'past' | 'canceled' }
+type EntryStatus = { label: string; tone: 'waiting' | 'open' | 'live' | 'entered' | 'past' | 'canceled' }
 
 const CANCELED_STATUS: EntryStatus = { label: '경기 취소', tone: 'canceled' }
 
@@ -56,6 +56,7 @@ function entryStatus(ticket: Reservation, entry: EntryTicket, now: number): Entr
   if (ticket.game.status === 'FINISHED' || now >= seoulTime(entry.gameEndsAt)) {
     return { label: '경기 종료', tone: 'past' }
   }
+  if (entry.enteredAt) return { label: '입장 완료', tone: 'entered' }
   if (now >= seoulTime(entry.gameStartsAt)) return { label: '경기 중 · 입장 가능', tone: 'live' }
   const opensAt = seoulTime(entry.entryOpensAt)
   if (now >= opensAt) return { label: '입장 가능', tone: 'open' }
@@ -273,7 +274,9 @@ function TicketSeats({ ticket }: { ticket: Reservation }) {
 function TicketCard({ ticket, direction }: { ticket: Reservation; direction: 'next' | 'previous' | null }) {
   const { entry, image, error, secondsLeft, refresh } = useEntryTicket(ticket)
   const status = useEntryStatus(ticket, entry)
-  // 끝났거나 취소된 경기는 서버가 QR 값을 주지 않는다.
+  // 이미 입장했거나, 끝났거나 취소된 경기는 서버가 QR 값을 주지 않는다.
+  // (게이트에서 입장 확인되면 늦어도 30초 뒤 새 QR을 받으러 갈 때 입장 완료로 바뀐다)
+  const enteredAt = entry?.enteredAt ?? null
   const closed = entry !== null && entry.token === null
   const { game } = ticket
 
@@ -302,7 +305,12 @@ function TicketCard({ ticket, direction }: { ticket: Reservation; direction: 'ne
         </div>
         <p className="my-ticket__stadium">{game.stadium.name}</p>
         <div className="my-ticket__qr-area">
-          {closed ? (
+          {enteredAt ? (
+            <p className="my-ticket__qr-entered">
+              <strong>입장 완료</strong>
+              <span>{formatTime(enteredAt)}에 입장했습니다. 재입장은 할 수 없습니다.</span>
+            </p>
+          ) : closed ? (
             <p className="my-ticket__qr-closed">
               {ticket.game.status === 'CANCELED' ? '취소된 경기라 입장 QR이 없습니다.' : '끝난 경기라 입장 QR이 없습니다.'}
             </p>

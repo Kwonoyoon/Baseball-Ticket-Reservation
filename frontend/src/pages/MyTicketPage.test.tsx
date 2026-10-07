@@ -60,14 +60,18 @@ const toSeoulString = (time: number) => new Date(time + 9 * HOUR).toISOString().
 /** 예매별로 입장 QR을 발급한 횟수 */
 let issued: Record<number, number> = {}
 
+/** 예매별 입장 시각. 테스트 중에 값을 넣으면 그 뒤로 받는 입장 정보는 입장한 예매가 된다. */
+let enteredAt: Record<number, string> = {}
+
 type ServerOptions = { entryOpensAt?: Record<number, string>; failIssue?: boolean }
 
 /**
  * 가짜 서버. 입장 시작은 기본으로 평일 규칙(1시간 30분 전)이고 entryOpensAt으로 바꿀 수 있다.
- * 끝났거나 취소된 경기는 QR 값을 주지 않는다.
+ * 끝났거나 취소된 경기, 입장한 예매(enteredAt)는 QR 값을 주지 않는다.
  */
 function renderTickets(reservations: Reservation[], url = '/my/ticket', options: ServerOptions = {}) {
   issued = {}
+  enteredAt = {}
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -84,7 +88,8 @@ function renderTickets(reservations: Reservation[], url = '/my/ticket', options:
       const ticket = reservations.find((r) => r.id === Number(match[1]))!
       const start = seoul(ticket.game.startAt)
       const ends = start + 4 * HOUR
-      const usable = ticket.game.status === 'SCHEDULED' && Date.now() < ends
+      const entered = enteredAt[ticket.id] ?? null
+      const usable = ticket.game.status === 'SCHEDULED' && Date.now() < ends && entered === null
       issued[ticket.id] = (issued[ticket.id] ?? 0) + 1
       return jsonResponse(200, {
         entryOpensAt: options.entryOpensAt?.[ticket.id] ?? toSeoulString(start - 1.5 * HOUR),
@@ -92,6 +97,7 @@ function renderTickets(reservations: Reservation[], url = '/my/ticket', options:
         gameEndsAt: toSeoulString(ends),
         token: usable ? `signed-${ticket.id}-${issued[ticket.id]}` : null,
         expiresInSeconds: usable ? 30 : null,
+        enteredAt: entered,
       })
     }),
   )
@@ -273,5 +279,23 @@ describe('MyTicketPage', () => {
 
     expect(await screen.findByRole('heading', { name: '예매 완료된 티켓이 없습니다.' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '경기 일정 보기' })).toHaveAttribute('href', '/')
+  })
+
+  it('게이트에서 입장 확인되면 다음에 받은 입장 정보로 QR 대신 입장 완료를 보여 준다', async () => {
+    // 30분 뒤 시작: 이미 입장 시간이다.
+    renderTickets([reservation(1, toSeoulString(Date.now() + 30 * 60_000))])
+    await findQr()
+    expect(entryStatus()).toHaveTextContent('입장 가능')
+
+    // 게이트에서 입장 확인된 뒤, 화면이 새 QR을 받으러 가면(30초마다 또는 새로고침) 입장 완료로 바뀐다.
+    enteredAt[1] = '2026-10-07T18:12:40'
+    await userEvent.setup().click(screen.getByRole('button', { name: '↻ 새로고침' }))
+
+    expect(await screen.findByText('입장 완료', { selector: 'strong' })).toBeInTheDocument()
+    expect(screen.getByText('18:12에 입장했습니다. 재입장은 할 수 없습니다.')).toBeInTheDocument()
+    expect(entryStatus()).toHaveTextContent('입장 완료')
+    expect(screen.queryByRole('img', { name: '입장 확인용 QR 코드' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '↻ 새로고침' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('timer')).not.toBeInTheDocument()
   })
 })

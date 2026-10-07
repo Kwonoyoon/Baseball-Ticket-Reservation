@@ -111,13 +111,20 @@ class EntryTicketIntegrationTest {
         String alice = signupAndLogin();
         long reservationId = reserveAndPay(alice, game);
 
+        String spare = issueToken(alice, reservationId);
         String first = verify(adminToken, issueToken(alice, reservationId))
                 .andExpect(jsonPath("$.result").value("ADMITTED"))
                 .andReturn().getResponse().getContentAsString();
         String enteredAt = JsonPath.read(first, "$.enteredAt");
 
-        // 내 티켓 화면은 30초마다 새 QR을 받지만, 새 QR이어도 같은 예매라 재입장할 수 없다.
-        verify(adminToken, issueToken(alice, reservationId))
+        // 입장한 뒤에는 내 티켓 화면에 QR 대신 입장 완료를 보여 주도록 QR 값 없이 입장 시각만 준다.
+        issue(alice, reservationId)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").doesNotExist())
+                .andExpect(jsonPath("$.expiresInSeconds").doesNotExist())
+                .andExpect(jsonPath("$.enteredAt").value(enteredAt));
+        // 입장 전에 받아 둔(캡처해 둔) 다른 QR이어도 같은 예매라 재입장할 수 없다.
+        verify(adminToken, spare)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.admitted").value(false))
                 .andExpect(jsonPath("$.result").value("ALREADY_ENTERED"))
