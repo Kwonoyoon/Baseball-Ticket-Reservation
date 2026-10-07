@@ -70,6 +70,11 @@ export function ReservationDetailPage() {
       )}
 
       <div className="page-actions">
+        {reservation.status === 'CONFIRMED' && (
+          <Link className="button button--primary" to={`/my/ticket?reservationId=${reservation.id}`}>
+            QR 티켓 보기
+          </Link>
+        )}
         <Link className="button button--ghost" to="/my/reservations">
           예매 내역 보기
         </Link>
