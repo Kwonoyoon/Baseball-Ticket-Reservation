@@ -1,25 +1,19 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState } from 'react'
 import { errorMessage, isAbortError } from '../api/client'
 import { api } from '../api/endpoints'
-import type { Notice, NoticeCategory, NoticeInput, NoticeScope } from '../api/types'
+import type { Notice } from '../api/types'
 import { useAuth } from '../auth/useAuth'
+import { NoticeForm } from '../components/NoticeForm'
 import { NoticeList } from '../components/NoticeList'
 import { EmptyState, ErrorMessage, Loading } from '../components/StatusView'
-import { NOTICE_CATEGORIES, NOTICE_CATEGORY_LABELS, NOTICE_SCOPE_LABELS, NOTICE_SCOPES } from '../lib/notice'
+import { NOTICE_SCOPE_LABELS } from '../lib/notice'
 import './NoticesPage.css'
 
 /** 목록에서 한 번에 받아 오는 공지 수. 서버가 허용하는 최대값이다. */
 const PAGE_SIZE = 50
 
-type Draft = NoticeInput & { id: number | null }
-
-const emptyDraft = (scope: NoticeScope = 'GLOBAL'): Draft => ({
-  id: null,
-  scope,
-  category: 'UPDATE',
-  title: '',
-  content: '',
-})
+/** 폼에 띄울 대상. 'new'는 새 공지 쓰기, 공지 객체는 그 공지 수정이다. */
+type Editing = Notice | 'new'
 
 /**
  * 전체 공지. 시스템 업데이트·이벤트·점검 안내를 모아 보여 준다.
@@ -31,9 +25,7 @@ export function NoticesPage() {
   const [communityNotices, setCommunityNotices] = useState<Notice[]>([])
   const [error, setError] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
-  const [draft, setDraft] = useState<Draft | null>(null)
-  const [saving, setSaving] = useState(false)
-  const [formError, setFormError] = useState<string | null>(null)
+  const [editing, setEditing] = useState<Editing | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
   useEffect(() => {
@@ -55,28 +47,10 @@ export function NoticesPage() {
 
   const reload = () => setReloadKey((key) => key + 1)
 
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault()
-    if (!draft) return
-    setSaving(true)
-    setFormError(null)
-    const body: NoticeInput = {
-      scope: draft.scope,
-      category: draft.category,
-      title: draft.title.trim(),
-      content: draft.content.trim(),
-    }
-    try {
-      if (draft.id === null) await api.createNotice(body)
-      else await api.updateNotice(draft.id, body)
-      setNotice(draft.id === null ? '공지를 올렸어요.' : '공지를 고쳤어요.')
-      setDraft(null)
-      reload()
-    } catch (e) {
-      setFormError(errorMessage(e, '공지를 저장하지 못했습니다.'))
-    } finally {
-      setSaving(false)
-    }
+  const handleSaved = (message: string) => {
+    setNotice(message)
+    setEditing(null)
+    reload()
   }
 
   const handleDelete = async (target: Notice) => {
@@ -98,7 +72,7 @@ export function NoticesPage() {
         className="button button--ghost button--sm"
         onClick={() => {
           setNotice(null)
-          setDraft({ ...target })
+          setEditing(target)
         }}
       >
         수정
@@ -113,13 +87,13 @@ export function NoticesPage() {
     <div className="notices-page">
       <div className="notices-page__head">
         <h1 className="page-title">공지</h1>
-        {isAdmin && !draft && (
+        {isAdmin && !editing && (
           <button
             type="button"
             className="button button--primary button--sm"
             onClick={() => {
               setNotice(null)
-              setDraft(emptyDraft())
+              setEditing('new')
             }}
           >
             공지 쓰기
@@ -134,70 +108,13 @@ export function NoticesPage() {
         </p>
       )}
 
-      {isAdmin && draft && (
-        <form className="notices-form" onSubmit={handleSubmit}>
-          <h2 className="notices-page__heading">{draft.id === null ? '공지 쓰기' : '공지 수정'}</h2>
-          <div className="notices-form__row">
-            <label className="field">
-              <span className="field__label">뜨는 자리</span>
-              <select
-                value={draft.scope}
-                onChange={(e) => setDraft({ ...draft, scope: e.target.value as NoticeScope })}
-              >
-                {NOTICE_SCOPES.map((scope) => (
-                  <option key={scope} value={scope}>
-                    {NOTICE_SCOPE_LABELS[scope]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="field">
-              <span className="field__label">종류</span>
-              <select
-                value={draft.category}
-                onChange={(e) => setDraft({ ...draft, category: e.target.value as NoticeCategory })}
-              >
-                {NOTICE_CATEGORIES.map((category) => (
-                  <option key={category} value={category}>
-                    {NOTICE_CATEGORY_LABELS[category]}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <label className="field">
-            <span className="field__label">제목</span>
-            <input
-              value={draft.title}
-              maxLength={100}
-              onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-              required
-            />
-          </label>
-          <label className="field">
-            <span className="field__label">내용</span>
-            <textarea
-              value={draft.content}
-              rows={6}
-              maxLength={4000}
-              onChange={(e) => setDraft({ ...draft, content: e.target.value })}
-              required
-            />
-          </label>
-          {formError && (
-            <p className="form__error" role="alert">
-              {formError}
-            </p>
-          )}
-          <div className="notices-form__actions">
-            <button type="submit" className="button button--primary button--sm" disabled={saving}>
-              {saving ? '저장 중…' : draft.id === null ? '올리기' : '저장'}
-            </button>
-            <button type="button" className="button button--ghost button--sm" onClick={() => setDraft(null)}>
-              취소
-            </button>
-          </div>
-        </form>
+      {isAdmin && editing && (
+        <NoticeForm
+          key={editing === 'new' ? 'new' : editing.id}
+          notice={editing === 'new' ? null : editing}
+          onSaved={handleSaved}
+          onCancel={() => setEditing(null)}
+        />
       )}
 
       {error ? (

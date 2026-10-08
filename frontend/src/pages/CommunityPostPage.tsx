@@ -19,7 +19,7 @@ export function CommunityPostPage() {
   const { teamId, postId } = useParams<{ teamId: string; postId: string }>()
   const id = Number(postId)
   const navigate = useNavigate()
-  const { member, loading: authLoading } = useAuth()
+  const { member, loading: authLoading, isAdmin } = useAuth()
 
   const [post, setPost] = useState<PostDetail | null>(null)
   const [comments, setComments] = useState<Comment[] | null>(null)
@@ -74,10 +74,15 @@ export function CommunityPostPage() {
     }
   }
 
-  const deletePost = async () => {
-    if (!window.confirm('이 글을 삭제할까요?\n되돌릴 수 없습니다.')) return
+  /** asAdmin: 본인 글이 아니어도 관리자 권한으로 지운다. (서버도 관리자만 허용한다) */
+  const deletePost = async (asAdmin = false) => {
+    const question = asAdmin
+      ? '관리자 권한으로 이 글을 삭제할까요?\n되돌릴 수 없습니다.'
+      : '이 글을 삭제할까요?\n되돌릴 수 없습니다.'
+    if (!window.confirm(question)) return
     try {
-      await api.deletePost(id)
+      if (asAdmin) await api.deletePostAsAdmin(id)
+      else await api.deletePost(id)
       navigate(`/community/${teamId}`)
     } catch (e) {
       setNotice(errorMessage(e, '삭제하지 못했습니다.'))
@@ -117,10 +122,11 @@ export function CommunityPostPage() {
     }
   }
 
-  const deleteComment = async (commentId: number) => {
-    if (!window.confirm('이 댓글을 삭제할까요?')) return
+  const deleteComment = async (commentId: number, asAdmin = false) => {
+    if (!window.confirm(asAdmin ? '관리자 권한으로 이 댓글을 삭제할까요?' : '이 댓글을 삭제할까요?')) return
     try {
-      await api.deleteComment(commentId)
+      if (asAdmin) await api.deleteCommentAsAdmin(commentId)
+      else await api.deleteComment(commentId)
       setComments((current) => current?.filter((c) => c.id !== commentId) ?? null)
       setPost((current) => (current ? { ...current, commentCount: Math.max(0, current.commentCount - 1) } : current))
     } catch (e) {
@@ -202,6 +208,12 @@ export function CommunityPostPage() {
               </button>
             </>
           )}
+          {/* 관리자는 남의 글도 신고 없이 바로 지울 수 있다. (서버도 관리자만 허용한다) */}
+          {isAdmin && !post.mine && (
+            <button type="button" className="button button--danger button--sm" onClick={() => void deletePost(true)}>
+              관리자 삭제
+            </button>
+          )}
         </div>
         {notice && (
           <p className="notice" role="status">
@@ -281,6 +293,15 @@ export function CommunityPostPage() {
                           신고
                         </button>
                       )
+                    )}
+                    {isAdmin && !comment.mine && (
+                      <button
+                        type="button"
+                        className="button button--danger button--sm"
+                        onClick={() => void deleteComment(comment.id, true)}
+                      >
+                        관리자 삭제
+                      </button>
                     )}
                   </div>
                 </div>

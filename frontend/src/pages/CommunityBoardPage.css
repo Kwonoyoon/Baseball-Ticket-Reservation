@@ -410,6 +410,29 @@
   letter-spacing: -0.015em;
 }
 
+/* 관리자에게만 보이는 "공지 올리기" 버튼을 제목 오른쪽에 둔다. */
+.community-notices__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.community-notices__head .community-section-title {
+  margin: 0;
+}
+
+.community-notices__empty {
+  margin: 0;
+  padding: 18px 16px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+  color: var(--text-muted);
+  font-size: 14px;
+  text-align: center;
+}
+
 .popular-posts__list {
   display: grid;
   /* 긴 글 제목(한 줄 말줄임)이 칸 너비를 늘려 휴대폰에서 좋아요 수가 잘리지 않게 */

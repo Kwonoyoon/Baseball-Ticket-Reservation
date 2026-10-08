@@ -9,7 +9,6 @@ import {
   LogoutIcon,
   MegaphoneIcon,
   MessageIcon,
-  ScanIcon,
   SearchIcon,
   TicketIcon,
   UserIcon,
@@ -121,25 +120,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               <UsersIcon />
               <span>
                 관리자 페이지
-                <small>회원 관리</small>
-              </span>
-            </Link>
-          )}
-          {isAdmin && (
-            <Link to="/admin/community/reports" className="sidebar__item" onClick={onClose}>
-              <MessageIcon />
-              <span>
-                신고 관리
-                <small>커뮤니티</small>
-              </span>
-            </Link>
-          )}
-          {isAdmin && (
-            <Link to="/admin/entry" className="sidebar__item" onClick={onClose}>
-              <ScanIcon />
-              <span>
-                입장 확인
-                <small>QR 스캔</small>
+                <small>대시보드·회원·신고·공지·입장</small>
               </span>
             </Link>
           )}
