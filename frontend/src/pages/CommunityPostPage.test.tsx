@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -61,6 +61,30 @@ describe('CommunityPostPage', () => {
     expect(screen.getByText('본문입니다')).toBeInTheDocument()
     expect(screen.getByText('자유')).toBeInTheDocument()
     expect(await screen.findByText('댓글입니다')).toBeInTheDocument()
+  })
+
+  it('신고 처리로 지운 댓글은 작성자·내용·버튼 없이 안내만 보여 준다', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url === '/api/posts/10') return jsonResponse(200, post())
+        if (url === '/api/posts/10/comments') {
+          return jsonResponse(200, [
+            ...comments,
+            { id: 101, authorId: null, authorName: null, content: null, mine: false, createdAt: '2026-09-29T12:00:00', deletedByReport: true },
+          ])
+        }
+        return jsonResponse(404, { code: 'NOT_FOUND', message: '없음' })
+      }),
+    )
+    renderPost()
+
+    const placeholder = await screen.findByText('신고 처리로 삭제된 댓글입니다.')
+    const item = placeholder.closest('li')!
+    expect(within(item).queryByRole('button')).not.toBeInTheDocument()
+    // 다른 댓글은 그대로 보인다.
+    expect(screen.getByText('댓글입니다')).toBeInTheDocument()
   })
 
   it('실제 오류일 때는 제대로 오류 화면을 보여 준다', async () => {

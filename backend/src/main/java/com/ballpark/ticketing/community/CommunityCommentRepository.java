@@ -15,4 +15,8 @@ public interface CommunityCommentRepository extends JpaRepository<CommunityComme
             order by c.id
             """)
     List<CommunityComment> findByPostId(@Param("postId") Long postId);
+
+    /** 글에 달린 댓글 번호만. 글을 지우기 전에 신고 처리에 쓴다. (엔티티를 불러오면 글 삭제와 엇갈린다) */
+    @Query("select c.id from CommunityComment c where c.post.id = :postId")
+    List<Long> findIdsByPostId(@Param("postId") Long postId);
 }
