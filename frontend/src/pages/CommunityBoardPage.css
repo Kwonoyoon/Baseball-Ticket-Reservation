@@ -289,7 +289,12 @@
 
 .team-board__side {
   position: sticky;
-  top: 20px;
+  /* 맨 위 헤더(.site-header)도 sticky라서, top이 헤더보다 작으면 목록 윗부분이 헤더 밑에 가려 잘린다.
+     헤더 높이(--site-header-h) 바로 아래에 20px 띄워 붙인다. */
+  top: calc(var(--site-header-h) + 20px);
+  /* 화면이 낮아도 목록 아래가 잘리지 않게, 넘치면 목록 안에서 스크롤한다. */
+  max-height: calc(100dvh - var(--site-header-h) - 40px);
+  overflow-y: auto;
   display: grid;
   /* 좁은 화면에서 가로로 늘어놓은 분류 탭이 칸을 넓히지 않고 안에서 옆으로 넘기게 */
   grid-template-columns: minmax(0, 1fr);
