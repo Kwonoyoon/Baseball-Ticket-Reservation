@@ -1326,8 +1326,67 @@ p {
   font-size: 13px;
 }
 
+/* 글 내용이 길어도 삭제 버튼을 밀어내지 않고 줄을 바꾼다. */
+.admin-report-list__body {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
 .admin-report-list__preview {
   margin-bottom: 6px;
+  overflow-wrap: anywhere;
+}
+
+/* [내용 보기]로 펼치는 신고 대상 전체 내용 */
+.admin-report-list__detail {
+  margin-bottom: 8px;
+}
+
+.admin-report-list__detail summary {
+  width: fit-content;
+  color: var(--accent, var(--navy-700));
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-report-list__content {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+}
+
+.admin-report-list__content-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.admin-report-list__context {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+/* 줄바꿈을 그대로 보여 주고, 아주 긴 글은 안에서 스크롤한다. */
+.admin-report-list__text {
+  max-height: 320px;
+  margin: 0;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.admin-report-list__open {
+  justify-self: start;
+  font-size: 13.5px;
+  font-weight: 700;
 }
 
 .admin-report-list__deleted {

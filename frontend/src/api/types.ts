@@ -393,13 +393,20 @@ export type LikeResult = {
 
 export type ReportTargetType = 'POST' | 'COMMENT'
 
+/** 신고 대상이 이미 지워졌으면 target·post 쪽 값은 모두 null이다. */
 export type Report = {
   id: number
   targetType: ReportTargetType
   targetId: number
-  /** 신고 대상이 이미 지워졌으면 null */
+  /** 목록 한 줄에 보여 줄 값. 글이면 제목, 댓글이면 댓글 내용 */
   targetPreview: string | null
   targetAuthorName: string | null
+  /** 펼쳐 볼 전체 내용. 글이면 본문, 댓글이면 댓글 내용 */
+  targetContent: string | null
+  /** 원래 글(댓글이면 그 댓글이 달린 글) */
+  postId: number | null
+  postTeamId: number | null
+  postTitle: string | null
   reporterName: string
   reason: string
   createdAt: string

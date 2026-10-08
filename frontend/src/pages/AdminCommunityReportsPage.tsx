@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router'
 import { errorMessage, isAbortError } from '../api/client'
 import { api } from '../api/endpoints'
 import type { Report } from '../api/types'
 import { EmptyState, ErrorMessage, Loading } from '../components/StatusView'
 import { formatDateTime } from '../lib/format'
 
-/** 관리자: 신고된 글·댓글 확인과 강제 삭제. 대상이 이미 지워졌으면 미리보기가 비어 있다. */
+/**
+ * 관리자: 신고된 글·댓글 확인과 강제 삭제. 대상이 이미 지워졌으면 미리보기가 비어 있다.
+ * [내용 보기]로 글 본문(댓글이면 어느 글에 달린 댓글인지와 전체 내용)을 펼쳐 보고 삭제할지 판단한다.
+ */
 export function AdminCommunityReportsPage() {
   const [reports, setReports] = useState<Report[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -82,6 +86,28 @@ export function AdminCommunityReportsPage() {
                     <p className="admin-report-list__preview">
                       {report.targetAuthorName} — {report.targetPreview}
                     </p>
+                    <details className="admin-report-list__detail">
+                      <summary>내용 보기</summary>
+                      <div className="admin-report-list__content">
+                        {report.targetType === 'POST' ? (
+                          <p className="admin-report-list__content-title">{report.postTitle}</p>
+                        ) : (
+                          <p className="admin-report-list__context">「{report.postTitle}」 글에 단 댓글</p>
+                        )}
+                        <p className="admin-report-list__text">{report.targetContent}</p>
+                        {report.postId !== null && report.postTeamId !== null && (
+                          // 목록을 그대로 두고 확인하도록 새 탭으로 연다.
+                          <Link
+                            to={`/community/${report.postTeamId}/posts/${report.postId}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="admin-report-list__open"
+                          >
+                            원래 글 열기 ↗
+                          </Link>
+                        )}
+                      </div>
+                    </details>
                   </>
                 )}
                 <p className="admin-report-list__reason">신고 사유: {report.reason}</p>

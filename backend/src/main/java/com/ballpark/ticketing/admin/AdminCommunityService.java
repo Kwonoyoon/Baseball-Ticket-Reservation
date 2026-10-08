@@ -1,14 +1,11 @@
 package com.ballpark.ticketing.admin;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ballpark.ticketing.community.CommunityComment;
 import com.ballpark.ticketing.community.CommunityCommentRepository;
-import com.ballpark.ticketing.community.CommunityPost;
 import com.ballpark.ticketing.community.CommunityPostRepository;
 import com.ballpark.ticketing.community.CommunityReport;
 import com.ballpark.ticketing.community.CommunityReportRepository;
@@ -43,15 +40,11 @@ public class AdminCommunityService {
     }
 
     private ReportResponse withPostPreview(CommunityReport report) {
-        Optional<CommunityPost> post = postRepository.findById(report.getTargetId());
-        return ReportResponse.of(report, post.map(CommunityPost::getTitle).orElse(null),
-                post.map(p -> p.getMember().getName()).orElse(null));
+        return ReportResponse.ofPost(report, postRepository.findById(report.getTargetId()).orElse(null));
     }
 
     private ReportResponse withCommentPreview(CommunityReport report) {
-        Optional<CommunityComment> comment = commentRepository.findById(report.getTargetId());
-        return ReportResponse.of(report, comment.map(CommunityComment::getContent).orElse(null),
-                comment.map(c -> c.getMember().getName()).orElse(null));
+        return ReportResponse.ofComment(report, commentRepository.findById(report.getTargetId()).orElse(null));
     }
 
     @Transactional
