@@ -5,6 +5,7 @@ import {
   formatDateTime,
   formatGameDate,
   formatPrice,
+  formatRate,
   isBookable,
   seatKey,
   secondsUntil,
@@ -35,6 +36,15 @@ describe('format', () => {
   it('서울 시각 기준으로 경기 시작 전에만 예매할 수 있다', () => {
     expect(isBookable('2026-09-15T18:30:00', new Date('2026-09-15T09:29:59Z'))).toBe(true)
     expect(isBookable('2026-09-15T18:30:00', new Date('2026-09-15T09:30:00Z'))).toBe(false)
+  })
+
+  it('예매율은 값이 작을수록 소수점을 더 보여 줘서 1% 미만이 0%로 뭉개지지 않는다', () => {
+    expect(formatRate(90)).toBe('90%')
+    expect(formatRate(12.4)).toBe('12%')
+    expect(formatRate(3.46)).toBe('3.5%')
+    expect(formatRate(0.04)).toBe('0.04%')
+    expect(formatRate(0.01)).toBe('0.01%')
+    expect(formatRate(0)).toBe('0%')
   })
 
   it('좌석 키와 선점 남은 시간을 계산한다', () => {

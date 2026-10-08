@@ -186,6 +186,44 @@ describe('CommunityPostPage', () => {
     expect(await screen.findByRole('link', { name: '수정' })).toBeInTheDocument()
   })
 
+  it('일반 회원에게는 남의 글에 관리자 삭제 버튼이 보이지 않는다', async () => {
+    restoreSessionAs(testMember(), (url) => {
+      if (url === '/api/posts/10') return jsonResponse(200, post())
+      if (url === '/api/posts/10/comments') return jsonResponse(200, comments)
+      return undefined
+    })
+    renderPost()
+
+    await screen.findByText('제목입니다')
+    // 글과 댓글에 신고 버튼이 하나씩 보이는 로그인 상태에서도 관리자 삭제 버튼은 없다.
+    expect(await screen.findAllByRole('button', { name: '신고' })).toHaveLength(2)
+    expect(screen.queryByRole('button', { name: '관리자 삭제' })).not.toBeInTheDocument()
+  })
+
+  it('관리자는 남의 댓글을 관리자 삭제로 바로 지운다', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const fetchMock = restoreSessionAs(testMember('ADMIN', { id: 9 }), (url, init) => {
+      if (url === '/api/posts/10') return jsonResponse(200, post())
+      if (url === '/api/posts/10/comments') return jsonResponse(200, comments)
+      if (url === '/api/admin/community/comments/100' && init?.method === 'DELETE') return new Response(null, { status: 204 })
+      return undefined
+    })
+    renderPost()
+    const user = userEvent.setup()
+
+    // 글 1개 + 댓글 1개에 버튼이 하나씩 있다.
+    const buttons = await screen.findAllByRole('button', { name: '관리자 삭제' })
+    expect(buttons).toHaveLength(2)
+
+    await user.click(buttons[1])
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/admin/community/comments/100',
+      expect.objectContaining({ method: 'DELETE' }),
+    )
+    expect(await screen.findByText('아직 댓글이 없습니다.')).toBeInTheDocument()
+  })
+
   it('신고 사유를 안 쓰면 서버로 보내지 않는다', async () => {
     const fetchMock = restoreSessionAs(testMember(), (url) => {
       if (url === '/api/posts/10') return jsonResponse(200, post())

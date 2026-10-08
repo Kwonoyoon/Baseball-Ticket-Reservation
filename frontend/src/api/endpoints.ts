@@ -1,5 +1,6 @@
 import { request } from './client'
 import type {
+  AdminDashboard,
   AdminMember,
   Comment,
   EntryTicket,
@@ -120,6 +121,8 @@ export const api = {
 
   reportComment: (commentId: number, reason: string) =>
     request<void>(`/comments/${commentId}/report`, { method: 'POST', body: { reason } }),
+
+  getAdminDashboard: (signal?: AbortSignal) => request<AdminDashboard>('/admin/dashboard', { signal }),
 
   getCommunityReports: (signal?: AbortSignal) =>
     request<Report[]>('/admin/community/reports', { signal }),

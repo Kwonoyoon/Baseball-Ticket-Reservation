@@ -1,0 +1,38 @@
+/* 관리자 페이지 위쪽 메뉴 (components/AdminLayout.tsx) */
+.admin-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 0 0 24px;
+  padding: 4px;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  scrollbar-width: none;
+}
+
+.admin-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.admin-tabs__item {
+  flex: 0 0 auto;
+  padding: 9px 16px;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.admin-tabs__item:hover {
+  background: var(--surface-muted);
+  color: var(--text);
+}
+
+/* 지금 보고 있는 화면. 관심 구단 테마가 켜져 있으면 구단 색(--accent)을 따른다. */
+.admin-tabs__item.active {
+  background: var(--accent);
+  color: #fff;
+}

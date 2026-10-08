@@ -304,6 +304,34 @@ export type TeamPostCount = {
   postCount: number
 }
 
+/** 관리자 대시보드. 날짜는 서울 기준이고 금액은 원 단위다. */
+export type AdminDashboard = {
+  date: string
+  today: {
+    reservations: number
+    canceled: number
+    revenue: number
+    newMembers: number
+    entered: number
+  }
+  pending: {
+    reports: number
+    lockedMembers: number
+    totalMembers: number
+  }
+  last7Days: { date: string; reservations: number; canceled: number; revenue: number }[]
+  topGames: {
+    gameId: number
+    homeTeam: string
+    awayTeam: string
+    startAt: string
+    sold: number
+    capacity: number
+    /** 0~100(%) */
+    rate: number
+  }[]
+}
+
 /** 게시판 안의 글 분류 (자유·경기·응원·티켓 양도) */
 export type PostCategory = 'FREE' | 'GAME' | 'CHEER' | 'TICKET_TRANSFER'
 

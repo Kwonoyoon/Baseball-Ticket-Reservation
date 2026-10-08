@@ -1,0 +1,129 @@
+/* 관리자 대시보드의 최근 7일 예매 그래프 (components/AdminTrendChart.tsx) */
+.admin-trend {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-trend__summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.admin-trend__summary > div {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+}
+
+.admin-trend__summary dt {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.admin-trend__summary dd {
+  margin: 2px 0 0;
+  font-size: 16px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* currentColor로 구단 색(--accent)을 따라가게 한다. 영역 그라데이션도 이 색을 쓴다. */
+.admin-trend__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  color: var(--accent);
+  overflow: visible;
+}
+
+.admin-trend__grid {
+  stroke: var(--border);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+}
+
+.admin-trend__tick,
+.admin-trend__weekday {
+  fill: var(--text-muted);
+  font-size: 11px;
+}
+
+.admin-trend__label {
+  fill: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.admin-trend__label.is-today,
+.admin-trend__value.is-today {
+  fill: currentcolor;
+  font-weight: 800;
+}
+
+.admin-trend__line {
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.admin-trend__line-canceled {
+  fill: none;
+  stroke: var(--text-muted);
+  stroke-width: 2;
+  stroke-dasharray: 5 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.admin-trend__point {
+  fill: var(--surface);
+  stroke: currentcolor;
+  stroke-width: 2.5;
+}
+
+.admin-trend__point.is-today {
+  fill: currentcolor;
+  stroke: var(--surface);
+  stroke-width: 3;
+}
+
+.admin-trend__value {
+  fill: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-trend__today-guide {
+  stroke: currentcolor;
+  stroke-width: 1;
+  stroke-dasharray: 2 4;
+  opacity: 0.5;
+}
+
+.admin-trend__legend {
+  display: flex;
+  gap: 16px;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.admin-trend__legend-item::before {
+  content: '';
+  display: inline-block;
+  width: 18px;
+  margin-right: 6px;
+  vertical-align: middle;
+  border-top: 3px solid var(--accent);
+  border-radius: 2px;
+}
+
+.admin-trend__legend-item.is-canceled::before {
+  border-top: 2px dashed var(--text-muted);
+}

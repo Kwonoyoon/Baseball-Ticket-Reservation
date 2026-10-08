@@ -1,10 +1,12 @@
-import { createBrowserRouter, Navigate, RouterProvider } from 'react-router'
+import { createBrowserRouter, RouterProvider } from 'react-router'
 import { AuthProvider } from './auth/AuthProvider'
 import { RequireAdmin, RequireAuth } from './auth/RequireAuth'
+import { AdminLayout } from './components/AdminLayout'
 import { Layout } from './components/Layout'
 import { TeamThemeApplier } from './components/TeamThemeApplier'
 import { AccountPage } from './pages/AccountPage'
 import { AdminCommunityReportsPage } from './pages/AdminCommunityReportsPage'
+import { AdminDashboardPage } from './pages/AdminDashboardPage'
 import { AdminEntryPage } from './pages/AdminEntryPage'
 import { AdminMembersPage } from './pages/AdminMembersPage'
 import { CalendarPage } from './pages/CalendarPage'
@@ -168,32 +170,23 @@ const router = createBrowserRouter([
           </RequireAuth>
         ),
       },
-      // 관리자 페이지 입구. 지금은 회원 관리 하나뿐이라 바로 보낸다. (메뉴가 늘면 여기에 관리자 홈을 둔다)
-      { path: 'admin', element: <Navigate to="/admin/members" replace /> },
+      // 관리자 페이지. 위쪽 공통 메뉴(AdminLayout) 아래에 관리자 화면들이 들어오고, 첫 화면은 대시보드다.
+      // 새 관리자 화면은 여기에 자식 라우트를 더하고 components/AdminLayout.tsx 메뉴에 항목을 추가한다.
       {
-        path: 'admin/members',
+        path: 'admin',
         element: (
           <RequireAdmin>
-            <AdminMembersPage />
+            <AdminLayout />
           </RequireAdmin>
         ),
-      },
-      {
-        path: 'admin/community/reports',
-        element: (
-          <RequireAdmin>
-            <AdminCommunityReportsPage />
-          </RequireAdmin>
-        ),
-      },
-      // 입장 게이트에서 관람객의 내 티켓 QR을 읽는다.
-      {
-        path: 'admin/entry',
-        element: (
-          <RequireAdmin>
-            <AdminEntryPage />
-          </RequireAdmin>
-        ),
+        children: [
+          { index: true, element: <AdminDashboardPage /> },
+          { path: 'members', element: <AdminMembersPage /> },
+          { path: 'community/reports', element: <AdminCommunityReportsPage /> },
+          { path: 'notices', element: <NoticesPage /> },
+          // 입장 게이트에서 관람객의 내 티켓 QR을 읽는다.
+          { path: 'entry', element: <AdminEntryPage /> },
+        ],
       },
       {
         path: 'notifications/settings',
