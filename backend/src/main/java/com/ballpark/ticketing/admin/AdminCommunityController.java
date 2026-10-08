@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -33,6 +34,13 @@ public class AdminCommunityController {
     @GetMapping("/posts/{postId}")
     public PostDetailResponse getPost(@PathVariable Long postId) {
         return adminCommunityService.getPost(postId);
+    }
+
+    /** 신고를 반려한다. 같은 대상의 처리전 신고도 함께 반려한다. */
+    @PostMapping("/reports/{reportId}/reject")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void rejectReport(@PathVariable Long reportId) {
+        adminCommunityService.rejectReport(reportId);
     }
 
     /** 신고를 처리해 대상을 지운다. 게시글은 지우고, 댓글은 "신고 처리로 삭제된 댓글"로 바꾼다. */

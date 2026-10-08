@@ -2,6 +2,7 @@ package com.ballpark.ticketing.community;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 import org.springframework.data.domain.PageRequest;
@@ -143,13 +144,16 @@ public class CommunityService {
     public void deletePost(Long postId, Long memberId) {
         CommunityPost post = getPostOrThrow(postId);
         requireAuthor(post, memberId);
+        resolveReportsForPostDeletion(postId);
         postRepository.delete(post);
     }
 
     /** 관리자 강제 삭제. 작성자 확인을 하지 않는다. */
     @Transactional
     public void deletePostAsAdmin(Long postId) {
-        postRepository.delete(getPostOrThrow(postId));
+        CommunityPost post = getPostOrThrow(postId);
+        resolveReportsForPostDeletion(postId);
+        postRepository.delete(post);
     }
 
     public List<CommentResponse> listComments(Long postId, Long viewerId) {
@@ -177,6 +181,7 @@ public class CommunityService {
         CommunityComment comment = getActiveCommentOrThrow(commentId);
         requireAuthor(comment, memberId);
         comment.getPost().decreaseCommentCount();
+        resolveReports(ReportTargetType.COMMENT, List.of(commentId), ReportStatus.DELETED);
         commentRepository.delete(comment);
     }
 
@@ -187,6 +192,7 @@ public class CommunityService {
     @Transactional
     public void deleteCommentByReport(Long commentId) {
         getActiveCommentOrThrow(commentId).deleteByReport(LocalDateTime.now(clock));
+        resolveReports(ReportTargetType.COMMENT, List.of(commentId), ReportStatus.DELETED);
     }
 
     /** 관리자 강제 삭제. */
@@ -194,6 +200,7 @@ public class CommunityService {
     public void deleteCommentAsAdmin(Long commentId) {
         CommunityComment comment = getCommentOrThrow(commentId);
         comment.getPost().decreaseCommentCount();
+        resolveReports(ReportTargetType.COMMENT, List.of(commentId), ReportStatus.DELETED);
         commentRepository.delete(comment);
     }
 
@@ -258,6 +265,24 @@ public class CommunityService {
     }
 
     /** 신고 처리로 지운 댓글은 없는 댓글처럼 다룬다. (다시 신고하거나 작성자가 지울 수 없다) */
+    /** 대상이 지워지거나 반려되면 그 대상에 대한 처리전 신고를 함께 처리한다. */
+    public void resolveReports(ReportTargetType targetType, Collection<Long> targetIds, ReportStatus result) {
+        if (targetIds.isEmpty()) {
+            return;
+        }
+        LocalDateTime now = LocalDateTime.now(clock);
+        reportRepository.findAllByTargetTypeAndTargetIdInAndStatus(targetType, targetIds, ReportStatus.PENDING)
+                .forEach(report -> report.resolve(result, now));
+    }
+
+    /** 글을 지우면 그 글과 글에 달린 댓글들에 대한 처리전 신고가 삭제로 처리된다. */
+    private void resolveReportsForPostDeletion(Long postId) {
+        resolveReports(ReportTargetType.POST, List.of(postId), ReportStatus.DELETED);
+        resolveReports(ReportTargetType.COMMENT,
+                commentRepository.findIdsByPostId(postId),
+                ReportStatus.DELETED);
+    }
+
     private CommunityComment getActiveCommentOrThrow(Long commentId) {
         return commentRepository.findById(commentId)
                 .filter(comment -> !comment.isDeletedByReport())

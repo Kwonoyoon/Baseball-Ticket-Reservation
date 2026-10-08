@@ -133,6 +133,9 @@ export const api = {
   /** 관리자: 신고를 처리해 대상을 지운다. 게시글은 지우고, 댓글은 "신고 처리로 삭제된 댓글"로 바꾼다. */
   deleteReportTarget: (reportId: number) =>
     request<void>(`/admin/community/reports/${reportId}/target`, { method: 'DELETE' }),
+  /** 관리자: 신고를 반려한다. 같은 대상의 처리전 신고도 함께 반려된다. */
+  rejectReport: (reportId: number) =>
+    request<void>(`/admin/community/reports/${reportId}/reject`, { method: 'POST' }),
 
   deletePostAsAdmin: (postId: number) => request<void>(`/admin/community/posts/${postId}`, { method: 'DELETE' }),
 
