@@ -1302,10 +1302,8 @@ p {
 
 .admin-report-list {
   display: grid;
-  /* 넓은 화면에서는 신고 카드를 여러 열로 나란히 놓아 가로를 채우고, 좁으면 한 열로 쌓는다.
-     내용을 펼친 카드만 길어지도록 옆 카드는 늘이지 않는다. */
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr));
-  align-items: start;
+  /* 한 줄에 신고 하나. 카드는 관리자 화면 폭(위쪽 관리자 메뉴 줄과 같은 폭)을 다 쓴다. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
   margin: 0;
   padding: 0;
