@@ -1303,6 +1303,8 @@ p {
 .admin-report-list {
   display: grid;
   gap: 12px;
+  /* 넓은 화면에서 카드가 끝까지 늘어나 빈칸만 커지지 않게, 읽기 좋은 폭으로 모은다. */
+  max-width: 760px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1317,15 +1319,49 @@ p {
 
 .admin-report__head {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+}
+
+/* 신고 종류: 게시글은 남색, 댓글은 주황 계열로 구분한다. */
+.admin-report__type {
+  flex: 0 0 auto;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+.admin-report__type.is-post {
+  background: color-mix(in srgb, var(--navy-700) 12%, var(--surface));
+  color: var(--navy-700);
+}
+
+.admin-report__type.is-comment {
+  background: #fff1df;
+  color: #9a5300;
 }
 
 .admin-report__state {
+  flex: 0 0 auto;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--surface-muted);
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
+}
+
+/* 신고 대상(글 제목·댓글 첫 줄)을 한 줄로. 길면 말줄임 */
+.admin-report__subject {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 신고 시간 | 신고자 를 한 줄에, 신고 사유를 그 아래 한 줄 가득. 항목마다 작은 카드로 묶는다. */

@@ -107,6 +107,9 @@ describe('AdminCommunityReportsPage', () => {
     expect(within(info).getByText('신고 사유').nextElementSibling).toHaveTextContent('욕설이 있어요')
     // 신고 사유는 한 줄을 다 쓰는 카드다.
     expect(within(info).getByText('신고 사유').parentElement).toHaveClass('admin-report__field--wide')
+    // 펼치기 전에도 종류와 무엇에 대한 신고인지(글 제목) 한 줄로 보인다.
+    expect(within(item).getByText('게시글')).toHaveClass('admin-report__type')
+    expect(within(item).getByTitle('오늘 경기 후기')).toHaveTextContent('오늘 경기 후기')
     // 펼치기 전에는 글 내용을 가져오지 않는다.
     expect(within(item).queryByRole('article')).not.toBeInTheDocument()
   })

@@ -98,10 +98,16 @@ function ReportItem({ report, busy, onDelete }: ReportItemProps) {
 
   return (
     <li className="panel admin-report">
+      {/* 맨 윗줄: 종류와 처리 상태, 그리고 무엇에 대한 신고인지(글 제목·댓글 첫 줄)를 펼치기 전에도 보여 준다. */}
       <div className="admin-report__head">
-        <span className={`badge badge--status-${report.targetType === 'POST' ? 'confirmed' : 'pending'}`}>{label}</span>
+        <span className={`admin-report__type is-${report.targetType.toLowerCase()}`}>{label}</span>
         {report.targetStatus === 'DELETED_BY_REPORT' && <span className="admin-report__state">신고 처리됨</span>}
         {deleted && <span className="admin-report__state">삭제됨</span>}
+        {report.targetPreview !== null && (
+          <span className="admin-report__subject" title={report.targetPreview}>
+            {report.targetPreview}
+          </span>
+        )}
       </div>
 
       {/* 신고 시간·신고자는 한 줄에 나란히, 신고 사유는 그 아래 한 줄을 다 쓴다. 항목마다 작은 카드로 묶는다. */}
