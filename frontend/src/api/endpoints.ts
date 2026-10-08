@@ -233,6 +233,9 @@ export const api = {
   createLostProperty: (body: LostPropertyInput) =>
     request<LostProperty>('/lost-properties', { method: 'POST', body }),
 
+  /** 올린 본인이나 관리자만 지울 수 있다. 남의 글이면 서버가 403으로 거절한다. */
+  deleteLostProperty: (id: number) => request<void>(`/lost-properties/${id}`, { method: 'DELETE' }),
+
   /** 관리자 전용. storageLocation을 비우면 이전 보관 장소를 유지한다. */
   updateLostStatus: (id: number, body: { status: LostStatus; storageLocation?: string }) =>
     request<LostProperty>(`/admin/lost-properties/${id}/status`, { method: 'PATCH', body }),

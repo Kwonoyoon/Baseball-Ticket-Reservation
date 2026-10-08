@@ -1,12 +1,14 @@
 package com.ballpark.ticketing.lostproperty;
 
 import static org.hamcrest.Matchers.hasItem;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +37,9 @@ class LostPropertyIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private LostPropertyRepository lostPropertyRepository;
 
     private String adminToken;
 
@@ -157,6 +162,64 @@ class LostPropertyIntegrationTest {
                         .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
                         .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"KEEPING\"}"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void 올린_본인만_내_글로_표시되고_작성자_id는_내려주지_않는다() throws Exception {
+        String author = signupAndLogin();
+        String other = signupAndLogin();
+        long id = create(author, "우산-" + UUID.randomUUID(), STADIUM);
+
+        mockMvc.perform(get("/api/lost-properties/" + id).header(HttpHeaders.AUTHORIZATION, bearer(author)))
+                .andExpect(jsonPath("$.mine").value(true))
+                .andExpect(jsonPath("$.reporterId").doesNotExist());
+        mockMvc.perform(get("/api/lost-properties/" + id).header(HttpHeaders.AUTHORIZATION, bearer(other)))
+                .andExpect(jsonPath("$.mine").value(false));
+    }
+
+    @Test
+    void 올린_본인은_자기_글을_지울_수_있고_지운_글은_더_보이지_않는다() throws Exception {
+        String author = signupAndLogin();
+        long id = create(author, "지갑-" + UUID.randomUUID(), STADIUM);
+
+        mockMvc.perform(delete("/api/lost-properties/" + id).header(HttpHeaders.AUTHORIZATION, bearer(author)))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/lost-properties/" + id).header(HttpHeaders.AUTHORIZATION, bearer(author)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void 남의_글은_일반_회원이_지울_수_없고_관리자는_지울_수_있다() throws Exception {
+        String author = signupAndLogin();
+        String other = signupAndLogin();
+        long id = create(author, "모자-" + UUID.randomUUID(), STADIUM);
+
+        // 다른 회원은 403이고 글은 그대로 남는다.
+        mockMvc.perform(delete("/api/lost-properties/" + id).header(HttpHeaders.AUTHORIZATION, bearer(other)))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/lost-properties/" + id).header(HttpHeaders.AUTHORIZATION, bearer(other)))
+                .andExpect(status().isOk());
+        // 비회원은 401
+        mockMvc.perform(delete("/api/lost-properties/" + id)).andExpect(status().isUnauthorized());
+        // 관리자는 누구의 글이든 지울 수 있다. (욕설·광고를 지우려면 필요하다)
+        mockMvc.perform(delete("/api/lost-properties/" + id).header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(status().isNoContent());
+        // 없는 글은 404
+        mockMvc.perform(delete("/api/lost-properties/" + id).header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void 작성자를_모르는_예전_글은_관리자만_지울_수_있다() throws Exception {
+        String member = signupAndLogin();
+        // reporter_id를 두기 전에 올라온 글처럼 작성자 없이 저장한다.
+        long id = lostPropertyRepository.save(new LostProperty(null, "예전 글", "작성자 기록이 없는 글", STADIUM, null,
+                "의류", null, null, LocalDateTime.now())).getId();
+
+        mockMvc.perform(delete("/api/lost-properties/" + id).header(HttpHeaders.AUTHORIZATION, bearer(member)))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(delete("/api/lost-properties/" + id).header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(status().isNoContent());
     }
 
     @Test

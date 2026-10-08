@@ -156,6 +156,9 @@ describe('TodayHero', () => {
     renderHero()
 
     expect(await screen.findByText('♥ 내 관심 구단')).toBeInTheDocument()
+    // 마이팀(두산)이 원정이어도 일정 버튼은 두산 일정으로 간다. (홈팀 LG로 가던 버그)
+    const slide = (await screen.findAllByRole('group', { hidden: true }))[0]
+    expect(within(slide).getByRole('link', { name: '두산 경기 일정 전체' })).toHaveAttribute('href', '/?team=2')
     const scheduleCalls = fetchMock.mock.calls
       .map(([url]) => String(url))
       .filter((url) => url.startsWith('/api/games?'))

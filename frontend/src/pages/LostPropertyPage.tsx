@@ -90,6 +90,11 @@ export function LostPropertyPage() {
     setNotice('상태를 바꿨어요.')
   }
 
+  const handleDeleted = (id: number) => {
+    setItems((current) => current?.filter((item) => item.id !== id) ?? null)
+    setNotice('분실물을 지웠어요.')
+  }
+
   return (
     <div className="lost-page">
       <div className="lost-page__head">
@@ -253,7 +258,7 @@ export function LostPropertyPage() {
       ) : (
         <ul className="lost-list">
           {items.map((item) => (
-            <LostCard key={item.id} item={item} isAdmin={isAdmin} onSaved={handleStatusSaved} />
+            <LostCard key={item.id} item={item} isAdmin={isAdmin} onSaved={handleStatusSaved} onDeleted={handleDeleted} />
           ))}
         </ul>
       )}
@@ -265,15 +270,33 @@ function LostCard({
   item,
   isAdmin,
   onSaved,
+  onDeleted,
 }: {
   item: LostProperty
   isAdmin: boolean
   onSaved: (updated: LostProperty) => void
+  onDeleted: (id: number) => void
 }) {
   const [status, setStatus] = useState<LostStatus>(item.status)
   const [storage, setStorage] = useState(item.storageLocation ?? '')
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // 올린 본인이나 관리자만 지울 수 있다. 서버도 같은 규칙으로 막는다. (이 버튼은 보여 줄지만 정한다)
+  const canDelete = isAdmin || item.mine
+
+  const remove = async () => {
+    if (!window.confirm(`"${item.title}" 분실물을 지울까요?`)) return
+    setDeleting(true)
+    setError(null)
+    try {
+      await api.deleteLostProperty(item.id)
+      onDeleted(item.id)
+    } catch (e) {
+      setError(errorMessage(e, '분실물을 지우지 못했습니다.'))
+      setDeleting(false)
+    }
+  }
 
   const save = async () => {
     setSaving(true)
@@ -330,12 +353,26 @@ function LostCard({
             <button type="button" className="button button--ghost button--sm" disabled={saving} onClick={save}>
               {saving ? '저장 중…' : '상태 저장'}
             </button>
-            {error && (
-              <span className="form__error" role="alert">
-                {error}
-              </span>
-            )}
           </div>
+        )}
+
+        {canDelete && (
+          <div className="lost-card__actions">
+            <button
+              type="button"
+              className="button button--danger button--sm"
+              aria-label={`${item.title} 삭제`}
+              disabled={deleting}
+              onClick={remove}
+            >
+              {deleting ? '지우는 중…' : '삭제'}
+            </button>
+          </div>
+        )}
+        {error && (
+          <span className="form__error" role="alert">
+            {error}
+          </span>
         )}
       </div>
     </li>

@@ -264,6 +264,8 @@ export type LostProperty = {
   status: LostStatus
   lostOrFoundDate: string | null
   createdAt: string
+  /** 내가 올린 글인지. 삭제 버튼을 보일지 정한다. (작성자 id는 서버가 내려주지 않는다) */
+  mine: boolean
 }
 
 export type LostPropertyInput = {

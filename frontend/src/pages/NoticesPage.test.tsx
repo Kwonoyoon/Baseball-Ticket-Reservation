@@ -58,6 +58,30 @@ describe('NoticesPage', () => {
     expect(screen.getByText('좌석 배치도가 더 보기 쉬워졌어요.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '공지 쓰기' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '수정' })).not.toBeInTheDocument()
+    // 제목(h2)이 없는 비회원 화면에도 구역 이름이 있다. (aria-labelledby가 없는 제목을 가리키지 않게)
+    expect(screen.getByRole('region', { name: '전체 공지' })).toBeInTheDocument()
+  })
+
+  it('관리자가 공지 삭제에 실패해도 받아 둔 목록은 그대로 두고 실패 안내만 따로 보여 준다', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    restoreSessionAs(testMember('ADMIN'), (url, init) => {
+      if (url === '/api/admin/notices/1' && init?.method === 'DELETE') {
+        return jsonResponse(500, { code: 'INTERNAL_ERROR', message: '일시적인 오류가 발생했습니다.' })
+      }
+      if (url.startsWith('/api/notices?scope=GLOBAL')) return jsonResponse(200, [notice({})])
+      if (url.startsWith('/api/notices?scope=COMMUNITY')) return jsonResponse(200, [])
+      return undefined
+    })
+    renderPage()
+
+    // 수정·삭제 버튼은 공지를 펼친 안에 있고, 로그인 복원이 끝나 관리자로 확인된 뒤에야 나온다.
+    await userEvent.click(await screen.findByRole('button', { name: /좌석 배치도 개선/ }))
+    await userEvent.click(await screen.findByRole('button', { name: '삭제' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('일시적인 오류가 발생했습니다.')
+    // 예전에는 여기서 목록 전체가 사라지고 오류 화면만 남았다.
+    expect(screen.getByRole('button', { name: /좌석 배치도 개선/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '삭제' })).toBeInTheDocument()
   })
 
   it('관리자는 공지를 올릴 수 있고, 커뮤니티 공지 목록도 함께 본다', async () => {

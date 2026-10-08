@@ -19,6 +19,7 @@ const item = (overrides: Partial<LostProperty>): LostProperty => ({
   status: 'REPORTED',
   lostOrFoundDate: '2026-10-05T18:30:00',
   createdAt: '2026-10-05T19:00:00',
+  mine: false,
   ...overrides,
 })
 
@@ -60,6 +61,66 @@ describe('LostPropertyPage', () => {
       const urls = fetchMock.mock.calls.map(([url]) => String(url))
       expect(urls.some((url) => url.includes('stadiumName=') && url.includes('status=KEEPING'))).toBe(true)
     })
+  })
+
+  it('올린 본인에게만 삭제 버튼이 보이고, 지우면 확인 뒤 서버에 보내고 목록에서 빠진다', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const deleted: string[] = []
+    restoreSessionAs(testMember('MEMBER'), (url, init) => {
+      if (url === '/api/lost-properties/stadiums') return jsonResponse(200, [])
+      if (url === '/api/lost-properties/1' && init?.method === 'DELETE') {
+        deleted.push(url)
+        return new Response(null, { status: 204 })
+      }
+      if (url.startsWith('/api/lost-properties')) {
+        return jsonResponse(200, [item({ id: 1, title: '내 우산', mine: true }), item({ id: 2, title: '남의 모자' })])
+      }
+      return undefined
+    })
+    renderPage()
+
+    await screen.findByText('내 우산')
+    // 남의 글에는 삭제 버튼이 없다.
+    expect(screen.queryByRole('button', { name: '남의 모자 삭제' })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: '내 우산 삭제' }))
+
+    expect(await screen.findByText('분실물을 지웠어요.')).toBeInTheDocument()
+    expect(deleted).toEqual(['/api/lost-properties/1'])
+    expect(screen.queryByText('내 우산')).not.toBeInTheDocument()
+    expect(screen.getByText('남의 모자')).toBeInTheDocument()
+  })
+
+  it('확인창에서 취소하면 서버에 보내지 않고, 서버가 거절하면 그 글은 남고 오류를 보여 준다', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const fetchMock = restoreSessionAs(testMember('MEMBER'), (url, init) => {
+      if (url === '/api/lost-properties/stadiums') return jsonResponse(200, [])
+      if (url === '/api/lost-properties/1' && init?.method === 'DELETE') {
+        return jsonResponse(403, { code: 'FORBIDDEN', message: '접근 권한이 없습니다.' })
+      }
+      if (url.startsWith('/api/lost-properties')) return jsonResponse(200, [item({ id: 1, title: '내 우산', mine: true })])
+      return undefined
+    })
+    renderPage()
+
+    await screen.findByText('내 우산')
+    await userEvent.click(screen.getByRole('button', { name: '내 우산 삭제' }))
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false)
+
+    confirmSpy.mockReturnValue(true)
+    await userEvent.click(screen.getByRole('button', { name: '내 우산 삭제' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('접근 권한이 없습니다.')
+    expect(screen.getByText('내 우산')).toBeInTheDocument()
+  })
+
+  it('관리자는 남이 올린 글에도 삭제 버튼이 보인다', async () => {
+    restoreSessionAs(testMember('ADMIN'), (url) => {
+      if (url === '/api/lost-properties/stadiums') return jsonResponse(200, [])
+      if (url.startsWith('/api/lost-properties')) return jsonResponse(200, [item({ id: 2, title: '남의 모자' })])
+      return undefined
+    })
+    renderPage()
+
+    expect(await screen.findByRole('button', { name: '남의 모자 삭제' })).toBeInTheDocument()
   })
 
   it('일반 회원에게는 상태를 바꾸는 칸이 없다', async () => {

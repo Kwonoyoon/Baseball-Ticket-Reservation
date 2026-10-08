@@ -21,6 +21,8 @@ export type NextGameInfo = {
   totalSeats: number
   /** 마이팀의 경기인지. false면 전체 리그에서 가장 가까운 경기다. */
   forFavorite: boolean
+  /** 마이팀 id. 마이팀 경기일 때만 값이 있다. 홈/원정 어느 쪽이 마이팀인지는 이 id로 가려야 한다. */
+  favoriteTeamId: number | null
 }
 
 export type MyTicketInfo = {
@@ -103,7 +105,7 @@ async function loadNextGame(
   const summary = await safely(() => api.getSeatSummary(found.id, signal), null)
   const totalSeats = summary?.sections.reduce((sum, section) => sum + section.totalSeats, 0) ?? 0
   const soldSeats = summary?.sections.reduce((sum, section) => sum + section.soldSeats, 0) ?? 0
-  return { game: found, soldSeats, totalSeats, forFavorite }
+  return { game: found, soldSeats, totalSeats, forFavorite, favoriteTeamId: forFavorite ? favoriteTeamId : null }
 }
 
 /** 로그인한 회원의 예매 목록을 한 번 받아 내 티켓 슬라이드와 직관 챌린지를 함께 만든다. */

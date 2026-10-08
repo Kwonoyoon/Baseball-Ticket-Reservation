@@ -182,6 +182,13 @@
   border-top: 1px dashed var(--border);
 }
 
+/* 올린 본인에게도 보이는 삭제 버튼 줄. 관리자 상태 칸 아래에 같은 간격으로 놓는다. */
+.lost-card__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
 .lost-card__admin input {
   flex: 1;
   min-width: 180px;
