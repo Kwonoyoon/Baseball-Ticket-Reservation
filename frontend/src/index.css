@@ -1302,9 +1302,11 @@ p {
 
 .admin-report-list {
   display: grid;
-  gap: 12px;
-  /* 넓은 화면에서 카드가 끝까지 늘어나 빈칸만 커지지 않게, 읽기 좋은 폭으로 모은다. */
-  max-width: 760px;
+  /* 넓은 화면에서는 신고 카드를 여러 열로 나란히 놓아 가로를 채우고, 좁으면 한 열로 쌓는다.
+     내용을 펼친 카드만 길어지도록 옆 카드는 늘이지 않는다. */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr));
+  align-items: start;
+  gap: 16px;
   margin: 0;
   padding: 0;
   list-style: none;
