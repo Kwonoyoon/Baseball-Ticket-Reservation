@@ -2,6 +2,7 @@
 
 **상태**: 해결 (알림 시스템 통합 PR에서 적용)
 **스택**: Spring Boot, JPA, MySQL, Redis
+**타임라인**: 발생·진단 2026-09-22 (`27097c2`, `31097c5`) → 해결 2026-09-28 (`de93fd9`, 6일 뒤)
 
 예매 확정 트랜잭션에 알림 저장 로직이 함께 묶이면서, 결제가 정상적으로 승인된 뒤에도 화면에는 500 에러가 노출된 사고를 추적한 기록.
 
@@ -114,8 +115,8 @@ private void releaseHoldsAfterCommit(long gameId, long memberId, Set<SeatPositio
 | `backend/src/main/java/com/ballpark/ticketing/global/error/GlobalExceptionHandler.java` | catch-all 예외 핸들러 |
 | `backend/src/main/java/com/ballpark/ticketing/reservation/ReservationService.java` | 결제 확정 트랜잭션 · `reserve()` / `cancel()` |
 | `backend/src/main/java/com/ballpark/ticketing/notification/NotificationService.java` | 알림 생성 · 조회 · 설정 |
-| `backend/src/main/resources/db/migration/V8__create_notifications.sql` | 신규 마이그레이션 · 미커밋 |
-| `backend/src/main/resources/db/migration/V9__create_notification_preferences.sql` | 신규 마이그레이션 · 미커밋 |
+| `backend/src/main/resources/db/migration/V10__create_notifications.sql` | 신규 마이그레이션 · develop과 번호가 겹쳐 V8→V10으로 옮겨 반영 |
+| `backend/src/main/resources/db/migration/V11__create_notification_preferences.sql` | 신규 마이그레이션 · develop과 번호가 겹쳐 V9→V11로 옮겨 반영 |
 
 ## 6. 다음 단계
 
@@ -127,6 +128,10 @@ private void releaseHoldsAfterCommit(long gameId, long memberId, Set<SeatPositio
 - [x] `cancel()`의 취소 알림도 같은 방식으로 분리
 
 ## 7. 적용 결과
+
+**2026-09-28, `de93fd9`("알림이 안 뜨던 문제 수정: 서버 간 전달, 커밋 뒤 발송, 재연결 복구")에서 적용.**
+진단(9/22)과 같은 날 바로 고친 게 아니라, 6일 지난 뒤 "알림이 아예 안 뜬다"는 별도 증상으로 다시 붙잡고 고친 것이다 —
+즉 그 사이엔 4절의 해결 방향만 적어두고 실제 코드는 여전히 트랜잭션에 묶인 채로 남아 있었다.
 
 제안대로 `ReservationService.notifyAfterCommit()`을 두고 예매·취소 알림을 커밋 뒤로 옮겼다. 적용하면서 두 가지를 더 챙겼다.
 

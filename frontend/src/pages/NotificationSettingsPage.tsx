@@ -78,7 +78,10 @@ export function NotificationSettingsPage() {
         <ul className="preference-list">
           {preferences.map((preference) => (
             <li key={preference.type} className="preference-item">
-              <span className="preference-item__label">{preference.label}</span>
+              <span className="preference-item__text">
+                <span className="preference-item__label">{preference.label}</span>
+                {preference.description && <span className="preference-item__desc">{preference.description}</span>}
+              </span>
               <label className="switch">
                 <input
                   type="checkbox"
@@ -101,7 +104,12 @@ export function NotificationSettingsPage() {
           <ul className="preference-list">
             {preferences.map((preference) => (
               <li key={`${preference.type}-email`} className="preference-item">
-                <span className="preference-item__label">{preference.label} 메일</span>
+                <span className="preference-item__text">
+                  <span className="preference-item__label">{preference.label} 메일</span>
+                  {preference.description && (
+                    <span className="preference-item__desc">{preference.description}</span>
+                  )}
+                </span>
                 <label className="switch">
                   <input
                     type="checkbox"

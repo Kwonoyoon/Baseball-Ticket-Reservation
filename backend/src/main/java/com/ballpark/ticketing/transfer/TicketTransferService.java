@@ -26,6 +26,7 @@ import com.ballpark.ticketing.member.Member;
 import com.ballpark.ticketing.member.MemberRepository;
 import com.ballpark.ticketing.notification.NotificationService;
 import com.ballpark.ticketing.notification.NotificationType;
+import com.ballpark.ticketing.notification.ReservationEmailContent;
 import com.ballpark.ticketing.reservation.Reservation;
 import com.ballpark.ticketing.reservation.ReservationQuota;
 import com.ballpark.ticketing.reservation.ReservationRepository;
@@ -59,12 +60,14 @@ public class TicketTransferService {
     private final ReservationQuota reservationQuota;
     private final PaymentGateway paymentGateway;
     private final NotificationService notificationService;
+    private final TransferWaitService waitService;
     private final Clock clock;
 
     public TicketTransferService(TicketTransferRepository transferRepository, TransferWaitRepository waitRepository,
             ReservationRepository reservationRepository, MemberRepository memberRepository,
             ReservationQuota reservationQuota, PaymentGateway paymentGateway,
-            NotificationService notificationService, Clock clock) {
+            NotificationService notificationService, TransferWaitService waitService, Clock clock) {
+        this.waitService = waitService;
         this.transferRepository = transferRepository;
         this.waitRepository = waitRepository;
         this.reservationRepository = reservationRepository;
@@ -103,7 +106,11 @@ public class TicketTransferService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_NOT_FOUND));
         ensureTransferable(reservation, now);
 
-        TicketTransfer transfer = TicketTransfer.open(reservation, memberRepository.getReferenceById(sellerId), now);
+        // 올라오는 순간 줄 서 있던 앞쪽 대기자를 양도글에 저장해 둔다. 이후 대기자가 빠져도 이 순서는 그대로다.
+        List<Long> priorityQueue = TransferPriority.queue(now, sellerId,
+                waitRepository.findAllByGameIds(List.of(reservation.getGame().getId())));
+        TicketTransfer transfer = TicketTransfer.open(reservation, memberRepository.getReferenceById(sellerId), now,
+                priorityQueue);
         try {
             // 열린 양도글 중복은 유니크 인덱스가 막는다. 동시에 두 번 눌러도 한 건만 저장된다.
             transferRepository.saveAndFlush(transfer);
@@ -111,6 +118,9 @@ public class TicketTransferService {
             throw new BusinessException(ErrorCode.ALREADY_LISTED);
         }
         notifyWaitersAfterCommit(transfer);
+        ReservationEmailContent emailContent = buildEmailContent(reservation);
+        notifyAfterCommit(sellerId, NotificationType.TRANSFER_REGISTERED, "양도 등록되었습니다",
+                emailContent.reservationNumber() + " 예매가 양도 마켓에 등록되었습니다.", emailContent);
         return toResponses(List.of(transfer), sellerId).getFirst();
     }
 
@@ -120,6 +130,9 @@ public class TicketTransferService {
                 .filter(found -> found.isSoldBy(sellerId))
                 .orElseThrow(() -> new BusinessException(ErrorCode.TRANSFER_NOT_FOUND));
         transfer.cancel(LocalDateTime.now(clock));
+        ReservationEmailContent emailContent = buildEmailContent(transfer.getReservation());
+        notifyAfterCommit(sellerId, NotificationType.TRANSFER_CANCELED, "양도 취소되었습니다",
+                emailContent.reservationNumber() + " 예매가 양도 마켓에서 취소되었습니다.", emailContent);
     }
 
     /**
@@ -162,7 +175,15 @@ public class TicketTransferService {
         reservation.transferTo(buyer, method, payment.transactionId());
         transfer.sell(buyer, now);
         // 표를 구했으니 이 경기 대기에서는 빠진다.
-        waitRepository.deleteByMemberIdAndGameId(buyerId, game.getId());
+        waitService.leaveQueueAfterPurchase(buyerId, game.getId());
+
+        // 사는 사람과 파는 사람 모두에게 알린다. 메일 내용은 같은 예매 정보를 쓴다.
+        ReservationEmailContent emailContent = buildEmailContent(reservation);
+        String reservationNumber = emailContent.reservationNumber();
+        notifyAfterCommit(buyerId, NotificationType.TRANSFER_BOUGHT, "양도 티켓을 구매했습니다",
+                reservationNumber + " 예매를 양도 마켓에서 구매했습니다.", emailContent);
+        notifyAfterCommit(transfer.getSeller().getId(), NotificationType.TRANSFER_SOLD, "양도 티켓이 팔렸습니다",
+                reservationNumber + " 예매가 양도 마켓에서 팔렸습니다. 결제하신 금액은 환불됩니다.", emailContent);
     }
 
     /** 경기가 취소되면 그 경기의 판매 중인 양도글도 함께 닫는다. (예매는 따로 환불된다) */
@@ -188,12 +209,21 @@ public class TicketTransferService {
 
     private void ensurePriorityAllows(TicketTransfer transfer, Long gameId, Long buyerId, LocalDateTime now) {
         List<TransferWait> waits = waitRepository.findAllByGameIds(List.of(gameId));
-        List<Long> queue = TransferPriority.queue(transfer.getCreatedAt(), transfer.getSeller().getId(), waits);
+        List<Long> queue = priorityQueueOf(transfer, waits);
         Window window = TransferPriority.current(transfer.getCreatedAt(), queue, now);
         if (window != null && !window.holderId().equals(buyerId)) {
             throw new BusinessException(ErrorCode.TRANSFER_PRIORITY,
                     "대기자 우선 구매 시간입니다. " + window.until().format(TIME_FORMAT) + " 이후에 구매할 수 있어요.");
         }
+    }
+
+    /**
+     * 이 양도글의 우선 구매 순서. 올라올 때 저장해 둔 값이 있으면 그대로 쓴다.
+     * 저장되기 전에 올라온 글만 예전처럼 현재 대기 목록으로 계산한다.
+     */
+    private List<Long> priorityQueueOf(TicketTransfer transfer, List<TransferWait> waits) {
+        return transfer.storedPriorityQueue()
+                .orElseGet(() -> TransferPriority.queue(transfer.getCreatedAt(), transfer.getSeller().getId(), waits));
     }
 
     /** 응답을 만들 때 경기별 대기 줄을 한 번에 가져와 글마다 쿼리가 나가지 않게 한다. */
@@ -211,13 +241,38 @@ public class TicketTransferService {
             if (transfer.getStatus() == TicketTransferStatus.OPEN) {
                 List<TransferWait> waits = waitsByGame.getOrDefault(transfer.getReservation().getGame().getId(),
                         List.of());
-                List<Long> queue = TransferPriority.queue(transfer.getCreatedAt(), transfer.getSeller().getId(),
-                        waits);
+                List<Long> queue = priorityQueueOf(transfer, waits);
                 window = TransferPriority.current(transfer.getCreatedAt(), queue, now);
             }
             return TransferResponse.from(transfer, viewerId, window == null ? null : window.until(),
                     window != null && window.holderId().equals(viewerId));
         }).toList();
+    }
+
+    /** 메일에 쓸 경기·좌석·금액을 커밋 전에 문자열로 뽑아 둔다. (지연 로딩 필드는 커밋 뒤에 읽을 수 없다) */
+    private ReservationEmailContent buildEmailContent(Reservation reservation) {
+        Game game = reservation.getGame();
+        List<String> seatLabels = reservation.getSeats().stream()
+                .map(seat -> seat.getSection().getName() + " " + seat.getRowNo() + "열 " + seat.getSeatNo() + "번")
+                .toList();
+        return new ReservationEmailContent(reservation.getId(), reservation.getReservationNumber(),
+                game.getHomeTeam().getName(), game.getAwayTeam().getName(), game.getStadium().getName(),
+                game.getStartAt(), seatLabels, reservation.getTotalPrice());
+    }
+
+    /** 양도 거래 당사자(판매자·구매자)에게 알린다. 커밋 뒤에 보내고, 실패해도 거래는 그대로 성공한다. */
+    private void notifyAfterCommit(Long memberId, NotificationType type, String title, String message,
+            ReservationEmailContent emailContent) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                try {
+                    notificationService.create(memberId, type, title, message, emailContent);
+                } catch (RuntimeException e) {
+                    log.warn("양도 알림을 보내지 못했습니다. memberId={}, type={}", memberId, type, e);
+                }
+            }
+        });
     }
 
     /**
@@ -226,8 +281,8 @@ public class TicketTransferService {
      */
     private void notifyWaitersAfterCommit(TicketTransfer transfer) {
         Game game = transfer.getReservation().getGame();
-        List<Long> queue = TransferPriority.queue(transfer.getCreatedAt(), transfer.getSeller().getId(),
-                waitRepository.findAllByGameIds(List.of(game.getId())));
+        // 구매 검증과 같은 값을 안내하도록, 방금 저장한 우선 순서를 그대로 쓴다.
+        List<Long> queue = priorityQueueOf(transfer, waitRepository.findAllByGameIds(List.of(game.getId())));
         if (queue.isEmpty()) {
             return;
         }

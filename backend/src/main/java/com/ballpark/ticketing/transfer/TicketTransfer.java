@@ -1,6 +1,10 @@
 package com.ballpark.ticketing.transfer;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import com.ballpark.ticketing.global.error.BusinessException;
 import com.ballpark.ticketing.global.error.ErrorCode;
@@ -53,6 +57,13 @@ public class TicketTransfer {
     @Column(name = "open_reservation_id", unique = true)
     private Long openReservationId;
 
+    /**
+     * 올라온 순간 정한 우선 구매 대기자 id를 쉼표로 이어 둔다. null이면 이 값이 생기기 전에 올라온 글이다.
+     * 알림과 구매 검증이 이 값을 같이 보므로, 뒤늦게 대기자가 빠져도 이미 안내한 순서가 달라지지 않는다.
+     */
+    @Column(name = "priority_member_ids", length = 100)
+    private String priorityMemberIds;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
@@ -61,7 +72,8 @@ public class TicketTransfer {
     protected TicketTransfer() {
     }
 
-    public static TicketTransfer open(Reservation reservation, Member seller, LocalDateTime now) {
+    public static TicketTransfer open(Reservation reservation, Member seller, LocalDateTime now,
+            List<Long> priorityQueue) {
         TicketTransfer transfer = new TicketTransfer();
         transfer.reservation = reservation;
         transfer.seller = seller;
@@ -69,7 +81,19 @@ public class TicketTransfer {
         transfer.status = TicketTransferStatus.OPEN;
         transfer.openReservationId = reservation.getId();
         transfer.createdAt = now;
+        transfer.priorityMemberIds = priorityQueue.stream().map(String::valueOf).collect(Collectors.joining(","));
         return transfer;
+    }
+
+    /** 올라올 때 정한 우선 구매 순서. 이 값이 생기기 전에 올라온 글이면 비어 있다. */
+    public Optional<List<Long>> storedPriorityQueue() {
+        if (priorityMemberIds == null) {
+            return Optional.empty();
+        }
+        if (priorityMemberIds.isEmpty()) {
+            return Optional.of(List.of());
+        }
+        return Optional.of(Arrays.stream(priorityMemberIds.split(",")).map(Long::valueOf).toList());
     }
 
     public void sell(Member buyer, LocalDateTime now) {

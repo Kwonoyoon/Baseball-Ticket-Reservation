@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { errorMessage, isAbortError } from '../api/client'
 import { api } from '../api/endpoints'
 import type { GameSummary, TransferWait } from '../api/types'
 import { formatGameDate, formatTime, isBookable, todayInSeoul } from '../lib/format'
+import { NotificationContext } from '../notifications/notificationContext'
 
 type TransferWaitSectionProps = {
   /** 값이 바뀌면 대기 목록을 다시 받는다. (양도를 사서 대기에서 빠졌을 수 있다) */
@@ -22,6 +23,12 @@ export function TransferWaitSection({ refreshKey }: TransferWaitSectionProps) {
   const [busyGameId, setBusyGameId] = useState<number | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
 
+  // 다른 사람이 대기를 취소해 내 순번이 당겨지면 서버가 순번 변경 알림을 보낸다.
+  // 그 알림이 도착할 때마다 대기 목록을 다시 받아, 새로고침 없이 내 순번을 맞춘다.
+  // (알림 컨텍스트가 없는 화면에서도 쓸 수 있도록 useNotifications 대신 context를 직접 읽는다)
+  const notifications = useContext(NotificationContext)?.notifications
+  const latestPositionNoticeId = notifications?.find((n) => n.type === 'TRANSFER_WAIT_POSITION')?.id ?? null
+
   useEffect(() => {
     const controller = new AbortController()
     api
@@ -31,7 +38,7 @@ export function TransferWaitSection({ refreshKey }: TransferWaitSectionProps) {
         if (!isAbortError(e)) setError(errorMessage(e, '대기 목록을 불러오지 못했습니다.'))
       })
     return () => controller.abort()
-  }, [refreshKey, reloadKey])
+  }, [refreshKey, reloadKey, latestPositionNoticeId])
 
   useEffect(() => {
     const controller = new AbortController()
