@@ -10,6 +10,7 @@ import {
   formatGameDate,
   formatPrice,
   formatTime,
+  parseSeoulDateTime,
   PAYMENT_METHOD_LABELS,
   PAYMENT_METHODS,
 } from '../lib/format'
@@ -50,6 +51,21 @@ export function TransferMarketPage() {
   }, [reloadKey])
 
   const reload = () => setReloadKey((key) => key + 1)
+
+  // 우선 구매 시간이 끝나는 시각이 되면 목록을 다시 받는다. 새로고침 없이도 구매 버튼이 풀리게 하려는 것이다.
+  // 시각만 비교해서 버튼을 풀지 않는 이유: 시간이 끝나면 다음 대기자의 차례가 시작될 수 있어서 누가 살 수 있는지는 서버가 정한다.
+  useEffect(() => {
+    if (!open) return
+    const now = Date.now()
+    const endTimes = open
+      .map((transfer) => (transfer.exclusiveUntil ? parseSeoulDateTime(transfer.exclusiveUntil).getTime() : NaN))
+      .filter((time) => time > now)
+    if (endTimes.length === 0) return
+    // 끝나는 순간에 요청하면 서버 시계와 어긋나 아직 시간 안일 수 있어서 0.5초 여유를 둔다. setTimeout 한도(약 24일)도 넘지 않게 자른다.
+    const delay = Math.min(Math.min(...endTimes) - now + 500, 2_000_000_000)
+    const timer = window.setTimeout(reload, delay)
+    return () => window.clearTimeout(timer)
+  }, [open])
 
   const handleBuy = async (transfer: Transfer) => {
     const method = methods[transfer.id] ?? 'CARD'

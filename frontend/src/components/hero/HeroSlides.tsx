@@ -68,9 +68,13 @@ export function NextGameSlide({ info }: { info: NextGameInfo }) {
   const { game } = info
   const left = timeLeft(game.startAt, now)
   const percent = bookedPercent(info.soldSeats, info.totalSeats)
-  const favoriteTeam = [game.homeTeam, game.awayTeam].find((team) => info.forFavorite && team)
-  // 마이팀 경기면 그 구단을, 아니면 리그 전체를 안내한다.
-  const scheduleHref = info.forFavorite ? `/?team=${favoriteTeam?.id ?? ''}#schedule` : '#schedule'
+  // 마이팀이 홈인지 원정인지는 id로 가린다. (예전에는 항상 홈팀을 골라서, 마이팀이 원정이면 상대팀 일정으로 갔다)
+  const favoriteTeam =
+    info.favoriteTeamId === null
+      ? null
+      : ([game.homeTeam, game.awayTeam].find((team) => team.id === info.favoriteTeamId) ?? null)
+  // 같은 화면이라 페이지를 새로 읽지 않고 주소의 ?team= 만 바꾼다. 일정 영역으로는 직접 스크롤한다.
+  const scrollToSchedule = () => requestAnimationFrame(() => document.getElementById('schedule')?.scrollIntoView?.())
 
   return (
     <div className="hs hs--next">
@@ -100,9 +104,15 @@ export function NextGameSlide({ info }: { info: NextGameInfo }) {
           <Link className="hs-button hs-button--primary" to={`/games/${game.id}`}>
             지금 예매하기
           </Link>
-          <a className="hs-button" href={scheduleHref}>
-            {info.forFavorite ? `${favoriteTeam?.shortName ?? ''} 경기 일정 전체` : '경기 일정 전체'}
-          </a>
+          {favoriteTeam ? (
+            <Link className="hs-button" to={`/?team=${favoriteTeam.id}`} onClick={scrollToSchedule}>
+              {favoriteTeam.shortName} 경기 일정 전체
+            </Link>
+          ) : (
+            <a className="hs-button" href="#schedule">
+              경기 일정 전체
+            </a>
+          )}
         </div>
       </div>
 

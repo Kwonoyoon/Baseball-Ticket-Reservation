@@ -27,6 +27,8 @@ export function NoticesPage() {
   const [reloadKey, setReloadKey] = useState(0)
   const [editing, setEditing] = useState<Editing | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  // 삭제 같은 작업이 실패한 안내. 목록을 못 불러온 오류(error)와 나눠 두어야, 삭제에 실패해도 받아 둔 목록이 화면에 남는다.
+  const [actionError, setActionError] = useState<string | null>(null)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -56,12 +58,13 @@ export function NoticesPage() {
   const handleDelete = async (target: Notice) => {
     if (!window.confirm(`"${target.title}" 공지를 지울까요?`)) return
     setNotice(null)
+    setActionError(null)
     try {
       await api.deleteNotice(target.id)
       setNotice('공지를 지웠어요.')
       reload()
     } catch (e) {
-      setError(errorMessage(e, '공지를 지우지 못했습니다.'))
+      setActionError(errorMessage(e, '공지를 지우지 못했습니다.'))
     }
   }
 
@@ -107,6 +110,11 @@ export function NoticesPage() {
           {notice}
         </p>
       )}
+      {actionError && (
+        <p className="form__error" role="alert">
+          {actionError}
+        </p>
+      )}
 
       {isAdmin && editing && (
         <NoticeForm
@@ -129,7 +137,8 @@ export function NoticesPage() {
         <Loading label="공지를 불러오는 중…" />
       ) : (
         <>
-          <section aria-labelledby="notices-global-title">
+          {/* 제목(h2)은 관리자에게만 보이므로, 아닌 사람에게는 aria-label로 구역 이름을 알린다 */}
+          <section {...(isAdmin ? { 'aria-labelledby': 'notices-global-title' } : { 'aria-label': '전체 공지' })}>
             {isAdmin && (
               <h2 id="notices-global-title" className="notices-page__heading">
                 {NOTICE_SCOPE_LABELS.GLOBAL}

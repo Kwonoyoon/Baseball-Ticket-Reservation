@@ -54,11 +54,16 @@ public class LostProperty {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    /** 올린 회원. 작성자 기록을 두기 전에 올라온 글은 null이다. */
+    private Long reporterId;
+
     protected LostProperty() {
     }
 
-    public LostProperty(String title, String description, String stadiumName, String specificLocation,
-            String category, String imageUrl, LocalDateTime lostOrFoundDate, LocalDateTime now) {
+    public LostProperty(Long reporterId, String title, String description, String stadiumName,
+            String specificLocation, String category, String imageUrl, LocalDateTime lostOrFoundDate,
+            LocalDateTime now) {
+        this.reporterId = reporterId;
         this.title = title;
         this.description = description;
         this.stadiumName = stadiumName;
@@ -80,6 +85,11 @@ public class LostProperty {
 
     public Long getId() {
         return id;
+    }
+
+    /** 이 회원이 올린 글인지. 작성자를 모르는 예전 글은 누구의 것도 아니다. */
+    public boolean isReportedBy(Long memberId) {
+        return reporterId != null && reporterId.equals(memberId);
     }
 
     public String getTitle() {

@@ -139,6 +139,28 @@ describe('TransferMarketPage', () => {
     expect(button).toBeDisabled()
   })
 
+  it('우선 구매 시간이 끝나면 새로고침 없이 목록을 다시 받아 구매 버튼이 풀린다', async () => {
+    // 한국 시각의 "지금 + 1.2초". (서버가 주는 시각 형식과 같다: 시간대 표시가 없는 한국 시각)
+    const endsAt = new Date(Date.now() + 1200 + 9 * 3600 * 1000).toISOString().slice(0, 19)
+    let transferCalls = 0
+    renderPage((url) => {
+      if (url === '/api/transfers') {
+        transferCalls += 1
+        // 처음에는 다른 대기자의 시간, 시간이 끝난 뒤 다시 받으면 누구나 살 수 있는 상태
+        return jsonResponse(200, [
+          transfer({ id: 1, exclusiveUntil: transferCalls === 1 ? endsAt : null, exclusiveForMe: false }),
+        ])
+      }
+      if (url === '/api/transfers/me') return jsonResponse(200, [])
+      return jsonResponse(404, { code: 'NOT_FOUND', message: '없음' })
+    })
+
+    expect(await screen.findByRole('button', { name: /^대기자 우선 구매 중/ })).toBeDisabled()
+    // 끝나는 시각 + 0.5초 뒤에 스스로 다시 받는다.
+    expect(await screen.findByRole('button', { name: '구매하기' }, { timeout: 4000 })).toBeEnabled()
+    expect(transferCalls).toBe(2)
+  })
+
   it('내 우선 구매 시간에는 안내가 보이고 구매할 수 있다', async () => {
     renderPage((url) => {
       if (url === '/api/transfers') {
