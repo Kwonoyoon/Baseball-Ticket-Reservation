@@ -14,6 +14,8 @@ public interface TransferWaitRepository extends JpaRepository<TransferWait, Long
 
     Optional<TransferWait> findByIdAndMemberId(Long id, Long memberId);
 
+    Optional<TransferWait> findByMemberIdAndGameId(Long memberId, Long gameId);
+
     /** 아직 시작하지 않은 경기의 내 대기 목록 */
     @Query("""
             select w from TransferWait w

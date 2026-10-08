@@ -226,6 +226,55 @@ class TicketTransferIntegrationTest {
     }
 
     @Test
+    void 대기_등록과_취소와_순번_변경에_알림이_간다() throws Exception {
+        String first = signupAndLogin();
+        String second = signupAndLogin();
+        String third = signupAndLogin();
+        long firstWait = waitAndGetId(first);
+        waitAndGetId(second);
+        waitAndGetId(third);
+
+        // 대기하면 본인에게 내 순번 알림이 간다.
+        mockMvc.perform(get("/api/notifications").header(HttpHeaders.AUTHORIZATION, bearer(second)))
+                .andExpect(jsonPath("$[?(@.type == 'TRANSFER_WAIT_REGISTERED')].message")
+                        .value(hasItem(org.hamcrest.Matchers.containsString("2번째"))));
+
+        // 1번이 취소하면 본인에게 취소 알림, 뒤의 두 사람에게 당겨진 순번 알림이 간다.
+        mockMvc.perform(post("/api/transfer-waits/" + firstWait + "/cancel")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(first)))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/notifications").header(HttpHeaders.AUTHORIZATION, bearer(first)))
+                .andExpect(jsonPath("$[?(@.type == 'TRANSFER_WAIT_CANCELED')]").isNotEmpty())
+                .andExpect(jsonPath("$[?(@.type == 'TRANSFER_WAIT_POSITION')]").isEmpty());
+        mockMvc.perform(get("/api/notifications").header(HttpHeaders.AUTHORIZATION, bearer(second)))
+                .andExpect(jsonPath("$[?(@.type == 'TRANSFER_WAIT_POSITION')].message")
+                        .value(hasItem(org.hamcrest.Matchers.containsString("1번째"))));
+        mockMvc.perform(get("/api/notifications").header(HttpHeaders.AUTHORIZATION, bearer(third)))
+                .andExpect(jsonPath("$[?(@.type == 'TRANSFER_WAIT_POSITION')].message")
+                        .value(hasItem(org.hamcrest.Matchers.containsString("2번째"))));
+    }
+
+    @Test
+    void 앞선_대기자가_양도글을_사서_빠지면_뒤의_순번도_당겨져_알림이_간다() throws Exception {
+        String seller = signupAndLogin();
+        String first = signupAndLogin();
+        String second = signupAndLogin();
+        long reservationId = reserve(seller);
+        waitAndGetId(first);
+        waitAndGetId(second);
+        long transferId = registerAndGetId(seller, reservationId);
+
+        buy(first, transferId).andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/notifications").header(HttpHeaders.AUTHORIZATION, bearer(second)))
+                .andExpect(jsonPath("$[?(@.type == 'TRANSFER_WAIT_POSITION')].message")
+                        .value(hasItem(org.hamcrest.Matchers.containsString("1번째"))));
+        // 산 사람은 대기를 취소한 게 아니므로 취소 알림은 가지 않는다.
+        mockMvc.perform(get("/api/notifications").header(HttpHeaders.AUTHORIZATION, bearer(first)))
+                .andExpect(jsonPath("$[?(@.type == 'TRANSFER_WAIT_CANCELED')]").isEmpty());
+    }
+
+    @Test
     void 이미_시작한_경기에는_대기_등록할_수_없다() throws Exception {
         Team home = game.getHomeTeam();
         Game past = gameRepository.save(new Game(home, game.getAwayTeam(), home.getStadium(),
@@ -276,6 +325,77 @@ class TicketTransferIntegrationTest {
         buy(firstWaiter, transferId).andExpect(status().isNoContent());
         mockMvc.perform(get("/api/transfer-waits/me").header(HttpHeaders.AUTHORIZATION, bearer(firstWaiter)))
                 .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
+    void 양도글이_올라온_뒤_대기자가_빠져도_안내한_우선_순서는_그대로다() throws Exception {
+        String seller = signupAndLogin();
+        String firstWaiter = signupAndLogin();
+        String secondWaiter = signupAndLogin();
+        long reservationId = reserve(seller);
+        long firstWait = waitAndGetId(firstWaiter);
+        waitAndGetId(secondWaiter);
+        long transferId = registerAndGetId(seller, reservationId);
+
+        // 올라온 뒤에 1번 대기자가 대기를 취소해도, 2번 대기자의 차례는 안내한 대로 10분 뒤다.
+        mockMvc.perform(post("/api/transfer-waits/" + firstWait + "/cancel")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(firstWaiter)))
+                .andExpect(status().isNoContent());
+
+        buy(secondWaiter, transferId)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("TRANSFER_PRIORITY"));
+        mockMvc.perform(get("/api/transfers").header(HttpHeaders.AUTHORIZATION, bearer(secondWaiter)))
+                .andExpect(jsonPath("$[?(@.id == " + transferId + ")].exclusiveForMe").value(hasItem(false)));
+        mockMvc.perform(get("/api/transfers").header(HttpHeaders.AUTHORIZATION, bearer(firstWaiter)))
+                .andExpect(jsonPath("$[?(@.id == " + transferId + ")].exclusiveForMe").value(hasItem(true)));
+    }
+
+    @Test
+    void 양도글을_사면_구매자와_판매자에게_알림이_간다() throws Exception {
+        String seller = signupAndLogin();
+        String buyer = signupAndLogin();
+        long transferId = registerAndGetId(seller, reserve(seller));
+
+        buy(buyer, transferId).andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/notifications").header(HttpHeaders.AUTHORIZATION, bearer(buyer)))
+                .andExpect(jsonPath("$[?(@.type == 'TRANSFER_BOUGHT')]").isNotEmpty())
+                .andExpect(jsonPath("$[?(@.type == 'TRANSFER_SOLD')]").isEmpty());
+        mockMvc.perform(get("/api/notifications").header(HttpHeaders.AUTHORIZATION, bearer(seller)))
+                .andExpect(jsonPath("$[?(@.type == 'TRANSFER_SOLD')]").isNotEmpty())
+                .andExpect(jsonPath("$[?(@.type == 'TRANSFER_BOUGHT')]").isEmpty());
+    }
+
+    @Test
+    void 알림_설정에는_양도_알림이_거래와_대기_둘로_묶여_보인다() throws Exception {
+        String member = signupAndLogin();
+
+        mockMvc.perform(get("/api/notifications/preferences").header(HttpHeaders.AUTHORIZATION, bearer(member)))
+                .andExpect(jsonPath("$.length()").value(5))
+                .andExpect(jsonPath("$[?(@.label == '양도 거래 알림')]").isNotEmpty())
+                .andExpect(jsonPath("$[?(@.label == '양도 대기 알림')]").isNotEmpty());
+    }
+
+    @Test
+    void 양도_거래_알림을_끄면_등록_취소_구매_판매_알림이_모두_가지_않는다() throws Exception {
+        String seller = signupAndLogin();
+        String buyer = signupAndLogin();
+        mockMvc.perform(post("/api/notifications/preferences/TRANSFER_REGISTERED")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(seller))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"enabled\":false}"))
+                .andExpect(status().isNoContent());
+
+        long transferId = registerAndGetId(seller, reserve(seller));
+        buy(buyer, transferId).andExpect(status().isNoContent());
+
+        // 판매자는 묶음을 꺼서 등록·판매 알림이 모두 오지 않고, 켜 둔 구매자는 구매 알림을 받는다.
+        mockMvc.perform(get("/api/notifications").header(HttpHeaders.AUTHORIZATION, bearer(seller)))
+                .andExpect(jsonPath("$[?(@.type == 'TRANSFER_REGISTERED')]").isEmpty())
+                .andExpect(jsonPath("$[?(@.type == 'TRANSFER_SOLD')]").isEmpty());
+        mockMvc.perform(get("/api/notifications").header(HttpHeaders.AUTHORIZATION, bearer(buyer)))
+                .andExpect(jsonPath("$[?(@.type == 'TRANSFER_BOUGHT')]").isNotEmpty());
     }
 
     @Test

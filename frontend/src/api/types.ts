@@ -150,7 +150,7 @@ export type ReservedSeat = {
   price: number
 }
 
-export type NotificationType = 'RESERVATION_CONFIRMED' | 'RESERVATION_CANCELED' | 'GAME_CANCELED' | 'TRANSFER_AVAILABLE' | 'GENERAL'
+export type NotificationType = 'RESERVATION_CONFIRMED' | 'RESERVATION_CANCELED' | 'GAME_CANCELED' | 'TRANSFER_AVAILABLE' | 'TRANSFER_REGISTERED' | 'TRANSFER_CANCELED' | 'TRANSFER_BOUGHT' | 'TRANSFER_SOLD' | 'TRANSFER_WAIT_REGISTERED' | 'TRANSFER_WAIT_CANCELED' | 'TRANSFER_WAIT_POSITION' | 'GENERAL'
 
 export type Notification = {
   id: number
@@ -165,6 +165,8 @@ export type Notification = {
 export type NotificationPreference = {
   type: NotificationType
   label: string
+  /** 여러 알림을 묶은 설정일 때만 값이 있다. */
+  description?: string | null
   enabled: boolean
   emailEnabled: boolean
 }

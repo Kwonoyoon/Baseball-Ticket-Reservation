@@ -875,8 +875,22 @@ p {
   border-top: 1px solid var(--border);
 }
 
+.preference-item__text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding-right: 16px;
+}
+
 .preference-item__label {
   font-weight: 600;
+}
+
+.preference-item__desc {
+  font-size: 13px;
+  color: var(--text-muted, #6b7280);
+  line-height: 1.4;
 }
 
 .switch {
