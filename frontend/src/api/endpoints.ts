@@ -127,6 +127,13 @@ export const api = {
   getCommunityReports: (signal?: AbortSignal) =>
     request<Report[]>('/admin/community/reports', { signal }),
 
+  /** 관리자: 신고된 글을 가져온다. 공개 조회와 달리 조회수를 올리지 않는다. */
+  getPostAsAdmin: (postId: number, signal?: AbortSignal) =>
+    request<PostDetail>(`/admin/community/posts/${postId}`, { signal }),
+  /** 관리자: 신고를 처리해 대상을 지운다. 게시글은 지우고, 댓글은 "신고 처리로 삭제된 댓글"로 바꾼다. */
+  deleteReportTarget: (reportId: number) =>
+    request<void>(`/admin/community/reports/${reportId}/target`, { method: 'DELETE' }),
+
   deletePostAsAdmin: (postId: number) => request<void>(`/admin/community/posts/${postId}`, { method: 'DELETE' }),
 
   deleteCommentAsAdmin: (commentId: number) =>

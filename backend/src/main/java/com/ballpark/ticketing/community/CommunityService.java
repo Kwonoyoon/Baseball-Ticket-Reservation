@@ -116,6 +116,11 @@ public class CommunityService {
         return toDetail(post, viewerId);
     }
 
+    /** 관리자가 신고된 글을 확인할 때. 조회수를 올리지 않는다. */
+    public PostDetailResponse getPostForAdmin(Long postId) {
+        return toDetail(getPostOrThrow(postId), null);
+    }
+
     @Transactional
     public PostDetailResponse createPost(Long teamId, Long memberId, PostCreateRequest request) {
         Team team = teamRepository.findById(teamId).orElseThrow(() -> new BusinessException(ErrorCode.TEAM_NOT_FOUND));
@@ -169,10 +174,19 @@ public class CommunityService {
 
     @Transactional
     public void deleteComment(Long commentId, Long memberId) {
-        CommunityComment comment = getCommentOrThrow(commentId);
+        CommunityComment comment = getActiveCommentOrThrow(commentId);
         requireAuthor(comment, memberId);
         comment.getPost().decreaseCommentCount();
         commentRepository.delete(comment);
+    }
+
+    /**
+     * 관리자가 신고를 처리해 댓글을 지운다. 행은 남겨 게시글 화면에 "신고 처리로 삭제된 댓글입니다."를 보여 주고,
+     * 원래 내용은 신고 관리에서 확인할 수 있게 둔다. 자리가 남으므로 댓글 수는 그대로 둔다.
+     */
+    @Transactional
+    public void deleteCommentByReport(Long commentId) {
+        getActiveCommentOrThrow(commentId).deleteByReport(LocalDateTime.now(clock));
     }
 
     /** 관리자 강제 삭제. */
@@ -211,7 +225,7 @@ public class CommunityService {
 
     @Transactional
     public void reportComment(Long commentId, Long reporterId, ReportRequest request) {
-        CommunityComment comment = getCommentOrThrow(commentId);
+        CommunityComment comment = getActiveCommentOrThrow(commentId);
         if (comment.isAuthor(reporterId)) {
             throw new BusinessException(ErrorCode.CANNOT_REPORT_OWN_CONTENT);
         }
@@ -240,6 +254,13 @@ public class CommunityService {
 
     private CommunityComment getCommentOrThrow(Long commentId) {
         return commentRepository.findById(commentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.COMMENT_NOT_FOUND));
+    }
+
+    /** 신고 처리로 지운 댓글은 없는 댓글처럼 다룬다. (다시 신고하거나 작성자가 지울 수 없다) */
+    private CommunityComment getActiveCommentOrThrow(Long commentId) {
+        return commentRepository.findById(commentId)
+                .filter(comment -> !comment.isDeletedByReport())
                 .orElseThrow(() -> new BusinessException(ErrorCode.COMMENT_NOT_FOUND));
     }
 

@@ -1,20 +1,20 @@
 package com.ballpark.ticketing.admin;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ballpark.ticketing.community.CommunityComment;
 import com.ballpark.ticketing.community.CommunityCommentRepository;
-import com.ballpark.ticketing.community.CommunityPost;
 import com.ballpark.ticketing.community.CommunityPostRepository;
 import com.ballpark.ticketing.community.CommunityReport;
 import com.ballpark.ticketing.community.CommunityReportRepository;
 import com.ballpark.ticketing.community.CommunityService;
 import com.ballpark.ticketing.community.ReportTargetType;
+import com.ballpark.ticketing.community.dto.PostDetailResponse;
 import com.ballpark.ticketing.community.dto.ReportResponse;
+import com.ballpark.ticketing.global.error.BusinessException;
+import com.ballpark.ticketing.global.error.ErrorCode;
 
 /** 관리자 전용. 신고 목록 확인과 신고된 글·댓글 강제 삭제. */
 @Service
@@ -43,15 +43,30 @@ public class AdminCommunityService {
     }
 
     private ReportResponse withPostPreview(CommunityReport report) {
-        Optional<CommunityPost> post = postRepository.findById(report.getTargetId());
-        return ReportResponse.of(report, post.map(CommunityPost::getTitle).orElse(null),
-                post.map(p -> p.getMember().getName()).orElse(null));
+        return ReportResponse.ofPost(report, postRepository.findById(report.getTargetId()).orElse(null));
     }
 
     private ReportResponse withCommentPreview(CommunityReport report) {
-        Optional<CommunityComment> comment = commentRepository.findById(report.getTargetId());
-        return ReportResponse.of(report, comment.map(CommunityComment::getContent).orElse(null),
-                comment.map(c -> c.getMember().getName()).orElse(null));
+        return ReportResponse.ofComment(report, commentRepository.findById(report.getTargetId()).orElse(null));
+    }
+
+    /**
+     * 신고를 처리해 신고 대상을 지운다. 게시글이면 글을 지우고, 댓글이면 "신고 처리로 삭제된 댓글"로 바꾼다.
+     */
+    @Transactional
+    public void deleteReportTarget(Long reportId) {
+        CommunityReport report = reportRepository.findById(reportId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.REPORT_NOT_FOUND));
+        if (report.getTargetType() == ReportTargetType.POST) {
+            communityService.deletePostAsAdmin(report.getTargetId());
+        } else {
+            communityService.deleteCommentByReport(report.getTargetId());
+        }
+    }
+
+    /** 신고된 글을 확인한다. 조회수는 올리지 않는다. */
+    public PostDetailResponse getPost(Long postId) {
+        return communityService.getPostForAdmin(postId);
     }
 
     @Transactional

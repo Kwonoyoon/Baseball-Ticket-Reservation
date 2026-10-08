@@ -264,7 +264,13 @@ export function CommunityPostPage() {
           <p className="community-comments__empty">아직 댓글이 없습니다.</p>
         ) : (
           <ul className="community-comments__list">
-            {comments.map((comment) => (
+            {comments.map((comment) =>
+              comment.deletedByReport ? (
+                // 관리자가 신고를 처리해 지운 댓글: 자리만 남기고 작성자·내용·버튼은 보이지 않는다.
+                <li key={comment.id} className="community-comments__item-wrap">
+                  <p className="community-comments__deleted">신고 처리로 삭제된 댓글입니다.</p>
+                </li>
+              ) : (
               <li key={comment.id} className="community-comments__item-wrap">
                 <div className="community-comments__item">
                   <div className="community-comments__body">
@@ -333,7 +339,8 @@ export function CommunityPostPage() {
                   </form>
                 )}
               </li>
-            ))}
+              ),
+            )}
           </ul>
         )}
 
