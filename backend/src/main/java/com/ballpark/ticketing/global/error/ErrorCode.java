@@ -29,6 +29,7 @@ public enum ErrorCode {
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다."),
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "댓글을 찾을 수 없습니다."),
     ALREADY_REPORTED(HttpStatus.CONFLICT, "이미 신고한 게시글 또는 댓글입니다."),
+    REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "신고 내역을 찾을 수 없습니다."),
     CANNOT_REPORT_OWN_CONTENT(HttpStatus.BAD_REQUEST, "본인이 작성한 글이나 댓글은 신고할 수 없습니다."),
     DUPLICATE_USERNAME(HttpStatus.CONFLICT, "이미 사용 중인 아이디입니다."),
     NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다."),

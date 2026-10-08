@@ -379,11 +379,14 @@ export type PostDetail = {
 
 export type Comment = {
   id: number
-  authorId: number
-  authorName: string
-  content: string
+  /** 신고 처리로 지운 댓글이면 작성자·내용이 비어 있다. */
+  authorId: number | null
+  authorName: string | null
+  content: string | null
   mine: boolean
   createdAt: string
+  /** 관리자가 신고를 처리해 지운 댓글. 화면에는 "신고 처리로 삭제된 댓글입니다."만 보여 준다. */
+  deletedByReport: boolean
 }
 
 export type LikeResult = {
@@ -393,11 +396,17 @@ export type LikeResult = {
 
 export type ReportTargetType = 'POST' | 'COMMENT'
 
-/** 신고 대상이 이미 지워졌으면 target·post 쪽 값은 모두 null이다. */
+/**
+ * 신고 대상의 지금 상태. DELETED면 target·post 쪽 값은 모두 null이다.
+ * DELETED_BY_REPORT(신고 처리로 지운 댓글)는 관리자가 원래 내용을 확인할 수 있게 값이 그대로 온다.
+ */
+export type ReportTargetStatus = 'ACTIVE' | 'DELETED' | 'DELETED_BY_REPORT'
+
 export type Report = {
   id: number
   targetType: ReportTargetType
   targetId: number
+  targetStatus: ReportTargetStatus
   /** 목록 한 줄에 보여 줄 값. 글이면 제목, 댓글이면 댓글 내용 */
   targetPreview: string | null
   targetAuthorName: string | null

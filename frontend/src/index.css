@@ -1308,66 +1308,92 @@ p {
   list-style: none;
 }
 
-.admin-report-list__item {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
+/* 신고 한 건: 종류 표시 → 신고 시간·신고자·신고 사유 → 버튼 → (펼치면) 신고 대상 */
+.admin-report {
+  display: grid;
   gap: 12px;
-}
-
-.admin-report-list__meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 6px;
-  color: var(--text-muted);
-  font-size: 13px;
-}
-
-/* 글 내용이 길어도 삭제 버튼을 밀어내지 않고 줄을 바꾼다. */
-.admin-report-list__body {
-  flex: 1 1 320px;
   min-width: 0;
 }
 
-.admin-report-list__preview {
-  margin-bottom: 6px;
+.admin-report__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-report__state {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.admin-report__info {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.admin-report__info div {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.admin-report__info dt {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.admin-report__info dd {
+  margin: 0;
   overflow-wrap: anywhere;
 }
 
-/* [내용 보기]로 펼치는 신고 대상 전체 내용 */
-.admin-report-list__detail {
-  margin-bottom: 8px;
-}
-
-.admin-report-list__detail summary {
-  width: fit-content;
-  color: var(--accent, var(--navy-700));
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.admin-report-list__content {
-  display: grid;
+.admin-report__actions {
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  margin-top: 8px;
-  padding: 14px 16px;
+}
+
+.admin-report__gone {
+  margin: 0;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* 펼친 신고 대상 */
+.admin-report__content {
+  padding: 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface-muted);
 }
 
-.admin-report-list__content-title {
+.admin-report__target {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-report__target-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
   margin: 0;
-  font-size: 16px;
-  font-weight: 800;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.admin-report__target-title {
+  margin: 0;
+  font-size: 18px;
   overflow-wrap: anywhere;
 }
 
-.admin-report-list__context {
+.admin-report__target-context {
   margin: 0;
   color: var(--text-muted);
   font-size: 13px;
@@ -1375,29 +1401,38 @@ p {
 }
 
 /* 줄바꿈을 그대로 보여 주고, 아주 긴 글은 안에서 스크롤한다. */
-.admin-report-list__text {
-  max-height: 320px;
+.admin-report__target-text {
+  max-height: 360px;
   margin: 0;
   overflow-y: auto;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
-.admin-report-list__open {
+.admin-report__target-note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.admin-report__load-error {
+  margin: 0;
+  color: var(--red-500);
+}
+
+.admin-report__open {
   justify-self: start;
   font-size: 13.5px;
   font-weight: 700;
 }
 
-.admin-report-list__deleted {
-  margin-bottom: 6px;
+/* 신고 처리로 삭제된 댓글 자리 (pages/CommunityPostPage.tsx) */
+.community-comments__deleted {
+  margin: 0;
+  padding: 12px 0;
   color: var(--text-muted);
+  font-size: 14px;
   font-style: italic;
-}
-
-.admin-report-list__reason {
-  color: var(--text-muted);
-  font-size: 13px;
 }
 
 .grade--premium {
