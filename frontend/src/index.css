@@ -1373,10 +1373,12 @@ p {
   margin: 0;
 }
 
+/* 카드 안에서 라벨과 값을 한 줄에 나란히: "신고 시간  2026.10.07 16:23" */
 .admin-report__field {
   display: grid;
-  align-content: start;
-  gap: 4px;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: 14px;
   min-width: 0;
   padding: 10px 14px;
   border: 1px solid var(--border);
@@ -1389,10 +1391,12 @@ p {
 }
 
 .admin-report__field dt {
+  /* 카드마다 값이 같은 자리에서 시작하도록 라벨 폭을 맞춘다. */
+  min-width: 4.6em;
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .admin-report__field dd {
@@ -1402,21 +1406,14 @@ p {
   overflow-wrap: anywhere;
 }
 
-/* 좁은 휴대폰에서도 신고 시간(2026.10.08 10:00)이 한 줄에 들어가게 */
-@media (max-width: 400px) {
-  .admin-report__field {
-    padding: 8px 10px;
-  }
-
-  .admin-report__field dd {
-    font-size: 13px;
-  }
-}
-
-/* 360px보다 좁으면 신고 시간과 신고자를 위아래로 쌓는다. */
-@media (max-width: 359px) {
+/* 휴대폰에서는 두 칸에 라벨과 값이 함께 들어가지 않으므로 카드를 위아래로 놓는다. (카드 안은 그대로 한 줄) */
+@media (max-width: 560px) {
   .admin-report__info {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-report__field {
+    padding: 9px 12px;
   }
 }
 
