@@ -1,10 +1,11 @@
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { errorMessage, isAbortError } from '../api/client'
 import { api } from '../api/endpoints'
 import type { PostDetail, Report } from '../api/types'
 import { EmptyState, ErrorMessage, Loading } from '../components/StatusView'
 import { formatDateTime } from '../lib/format'
+import { scrollPanelIntoView } from '../lib/panelScroll'
 import { postCategoryLabel } from '../lib/postCategory'
 
 const TARGET_LABEL = { POST: '게시글', COMMENT: '댓글' } as const
@@ -84,8 +85,16 @@ type ReportItemProps = {
 function ReportItem({ report, busy, onDelete }: ReportItemProps) {
   const [open, setOpen] = useState(false)
   const contentId = useId()
+  const contentRef = useRef<HTMLDivElement>(null)
   const label = TARGET_LABEL[report.targetType]
   const deleted = report.targetStatus === 'DELETED'
+
+  // 내용을 펼치면 그 자리로 화면을 옮기고 초점도 옮긴다. (화면 낭독기·키보드 사용자도 바로 내용부터 읽는다)
+  useEffect(() => {
+    if (!open) return undefined
+    contentRef.current?.focus({ preventScroll: true })
+    return scrollPanelIntoView(contentRef.current)
+  }, [open])
 
   return (
     <li className="panel admin-report">
@@ -95,16 +104,17 @@ function ReportItem({ report, busy, onDelete }: ReportItemProps) {
         {deleted && <span className="admin-report__state">삭제됨</span>}
       </div>
 
+      {/* 신고 시간·신고자는 한 줄에 나란히, 신고 사유는 그 아래 한 줄을 다 쓴다. 항목마다 작은 카드로 묶는다. */}
       <dl className="admin-report__info">
-        <div>
+        <div className="admin-report__field">
           <dt>신고 시간</dt>
           <dd>{formatDateTime(report.createdAt)}</dd>
         </div>
-        <div>
+        <div className="admin-report__field">
           <dt>신고자</dt>
           <dd>{report.reporterName}</dd>
         </div>
-        <div>
+        <div className="admin-report__field admin-report__field--wide">
           <dt>신고 사유</dt>
           <dd>{report.reason}</dd>
         </div>
@@ -137,7 +147,13 @@ function ReportItem({ report, busy, onDelete }: ReportItemProps) {
       )}
 
       {open && !deleted && (
-        <div id={contentId} className="admin-report__content">
+        <div
+          id={contentId}
+          ref={contentRef}
+          className="admin-report__content"
+          tabIndex={-1}
+          aria-label={`신고된 ${label} 내용`}
+        >
           {report.targetType === 'POST' ? <ReportedPost report={report} /> : <ReportedComment report={report} />}
         </div>
       )}

@@ -1328,27 +1328,66 @@ p {
   font-weight: 700;
 }
 
+/* 신고 시간 | 신고자 를 한 줄에, 신고 사유를 그 아래 한 줄 가득. 항목마다 작은 카드로 묶는다. */
 .admin-report__info {
   display: grid;
-  gap: 6px;
-  margin: 0;
-}
-
-.admin-report__info div {
-  display: grid;
-  grid-template-columns: 76px minmax(0, 1fr);
+  /* 신고 시간(숫자 16자)이 한 줄에 들어가게 신고자보다 조금 넓게 */
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   gap: 8px;
-}
-
-.admin-report__info dt {
-  color: var(--text-muted);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.admin-report__info dd {
   margin: 0;
+}
+
+.admin-report__field {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+}
+
+.admin-report__field--wide {
+  grid-column: 1 / -1;
+}
+
+.admin-report__field dt {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.admin-report__field dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
+}
+
+/* 좁은 휴대폰에서도 신고 시간(2026.10.08 10:00)이 한 줄에 들어가게 */
+@media (max-width: 400px) {
+  .admin-report__field {
+    padding: 8px 10px;
+  }
+
+  .admin-report__field dd {
+    font-size: 14px;
+  }
+}
+
+/* 360px보다 좁으면 신고 시간과 신고자를 위아래로 쌓는다. */
+@media (max-width: 359px) {
+  .admin-report__info {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* 신고 사유는 여러 줄일 수 있어 줄바꿈을 그대로 보여 준다. */
+.admin-report__field--wide dd {
+  font-weight: 500;
+  white-space: pre-wrap;
 }
 
 .admin-report__actions {
@@ -1363,8 +1402,18 @@ p {
   font-style: italic;
 }
 
-/* 펼친 신고 대상 */
+/* 펼친 신고 대상. 펼치면 이 자리로 화면과 초점을 옮긴다. (붙어 있는 헤더에 가리지 않게 띄운다) */
+.admin-report__content:focus {
+  outline: none;
+}
+
+.admin-report__content:focus-visible {
+  outline: 3px solid var(--accent, var(--navy-700));
+  outline-offset: 2px;
+}
+
 .admin-report__content {
+  scroll-margin-top: 120px;
   padding: 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);

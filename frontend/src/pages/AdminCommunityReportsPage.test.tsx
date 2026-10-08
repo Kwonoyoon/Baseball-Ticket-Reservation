@@ -105,6 +105,8 @@ describe('AdminCommunityReportsPage', () => {
     expect(within(info).getByText('신고 시간').nextElementSibling).toHaveTextContent('2026.10.08 10:00')
     expect(within(info).getByText('신고자').nextElementSibling).toHaveTextContent('김신고')
     expect(within(info).getByText('신고 사유').nextElementSibling).toHaveTextContent('욕설이 있어요')
+    // 신고 사유는 한 줄을 다 쓰는 카드다.
+    expect(within(info).getByText('신고 사유').parentElement).toHaveClass('admin-report__field--wide')
     // 펼치기 전에는 글 내용을 가져오지 않는다.
     expect(within(item).queryByRole('article')).not.toBeInTheDocument()
   })
@@ -116,6 +118,7 @@ describe('AdminCommunityReportsPage', () => {
     const toggle = within(item).getByRole('button', { name: '내용 보기 ▾' })
     await userEvent.setup().click(toggle)
     expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    expect(document.activeElement).toBe(within(item).getByLabelText('신고된 게시글 내용'))
 
     const article = await within(item).findByRole('article', { name: '신고된 게시글' })
     expect(within(article).getByRole('heading', { name: '오늘 경기 후기' })).toBeInTheDocument()
@@ -135,6 +138,8 @@ describe('AdminCommunityReportsPage', () => {
     const item = await reportItem('광고입니다')
 
     await userEvent.setup().click(within(item).getByRole('button', { name: '내용 보기 ▾' }))
+    // 펼친 내용으로 초점이 옮겨 간다.
+    expect(document.activeElement).toBe(within(item).getByLabelText('신고된 댓글 내용'))
     const article = within(item).getByRole('article', { name: '신고된 댓글' })
     expect(article).toHaveTextContent('「오늘 경기 후기」 글에 단 댓글')
     expect(article).toHaveTextContent('댓글러')
