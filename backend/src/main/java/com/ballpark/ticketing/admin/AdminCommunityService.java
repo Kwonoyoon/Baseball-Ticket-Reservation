@@ -10,6 +10,7 @@ import com.ballpark.ticketing.community.CommunityPostRepository;
 import com.ballpark.ticketing.community.CommunityReport;
 import com.ballpark.ticketing.community.CommunityReportRepository;
 import com.ballpark.ticketing.community.CommunityService;
+import com.ballpark.ticketing.community.ReportStatus;
 import com.ballpark.ticketing.community.ReportTargetType;
 import com.ballpark.ticketing.community.dto.PostDetailResponse;
 import com.ballpark.ticketing.community.dto.ReportResponse;
@@ -55,13 +56,30 @@ public class AdminCommunityService {
      */
     @Transactional
     public void deleteReportTarget(Long reportId) {
-        CommunityReport report = reportRepository.findById(reportId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.REPORT_NOT_FOUND));
+        CommunityReport report = getPendingReportOrThrow(reportId);
+        // 대상을 지우면 이 신고와 같은 대상의 처리전 신고가 모두 삭제로 처리된다. (CommunityService)
         if (report.getTargetType() == ReportTargetType.POST) {
             communityService.deletePostAsAdmin(report.getTargetId());
         } else {
             communityService.deleteCommentByReport(report.getTargetId());
         }
+    }
+
+    /** 반려: 지울 만한 내용이 아니라고 판단한다. 같은 대상의 처리전 신고도 함께 반려한다. */
+    @Transactional
+    public void rejectReport(Long reportId) {
+        CommunityReport report = getPendingReportOrThrow(reportId);
+        communityService.resolveReports(report.getTargetType(), List.of(report.getTargetId()),
+                ReportStatus.REJECTED);
+    }
+
+    private CommunityReport getPendingReportOrThrow(Long reportId) {
+        CommunityReport report = reportRepository.findById(reportId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.REPORT_NOT_FOUND));
+        if (!report.isPending()) {
+            throw new BusinessException(ErrorCode.REPORT_ALREADY_PROCESSED);
+        }
+        return report;
     }
 
     /** 신고된 글을 확인한다. 조회수는 올리지 않는다. */

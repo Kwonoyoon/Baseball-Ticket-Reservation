@@ -11,6 +11,8 @@ const postReport: Report = {
   id: 1,
   targetType: 'POST',
   targetId: 10,
+  status: 'PENDING',
+  processedAt: null,
   targetStatus: 'ACTIVE',
   targetPreview: '오늘 경기 후기',
   targetAuthorName: '야구팬',
@@ -27,6 +29,8 @@ const commentReport: Report = {
   id: 2,
   targetType: 'COMMENT',
   targetId: 55,
+  status: 'PENDING',
+  processedAt: null,
   targetStatus: 'ACTIVE',
   targetPreview: '싸게 표 팝니다',
   targetAuthorName: '댓글러',
@@ -62,11 +66,17 @@ function renderReportsPage(initial: Report[]) {
   const fetchMock = restoreSessionAs(testMember('ADMIN'), (url, init) => {
     if (url === '/api/admin/community/reports') return jsonResponse(200, reports)
     if (url === '/api/admin/community/posts/10') return jsonResponse(200, post)
-    const match = /^\/api\/admin\/community\/reports\/(\d+)\/target$/.exec(url)
-    if (match && init?.method === 'DELETE') {
+    const match = /^\/api\/admin\/community\/reports\/(\d+)\/(target|reject)$/.exec(url)
+    if (match && (init?.method === 'DELETE' || init?.method === 'POST')) {
+      const reject = match[2] === 'reject'
       reports = reports.map((report) =>
         report.id === Number(match[1])
-          ? { ...report, targetStatus: report.targetType === 'POST' ? 'DELETED' : 'DELETED_BY_REPORT' }
+          ? {
+              ...report,
+              status: reject ? 'REJECTED' : 'DELETED',
+              processedAt: '2026-10-08T15:00:00',
+              targetStatus: reject ? report.targetStatus : report.targetType === 'POST' ? 'DELETED' : 'DELETED_BY_REPORT',
+            }
           : report,
       )
       return new Response(null, { status: 204 })
@@ -91,6 +101,11 @@ async function reportItem(reason: string) {
   return item
 }
 
+/** 제목 옆 현황 칸을 눌러 볼 신고 상태를 고른다. */
+async function chooseStatus(label: '처리전' | '삭제' | '반려' | '전체') {
+  await userEvent.setup().click(screen.getByRole('tab', { name: new RegExp(`^${label}`) }))
+}
+
 describe('AdminCommunityReportsPage', () => {
   afterEach(() => {
     vi.restoreAllMocks()
@@ -105,6 +120,11 @@ describe('AdminCommunityReportsPage', () => {
     expect(within(info).getByText('신고 시간').nextElementSibling).toHaveTextContent('2026.10.08 10:00')
     expect(within(info).getByText('신고자').nextElementSibling).toHaveTextContent('김신고')
     expect(within(info).getByText('신고 사유').nextElementSibling).toHaveTextContent('욕설이 있어요')
+    // 신고 사유는 한 줄을 다 쓰는 카드다.
+    expect(within(info).getByText('신고 사유').parentElement).toHaveClass('admin-report__field--wide')
+    // 펼치기 전에도 종류와 무엇에 대한 신고인지(글 제목) 한 줄로 보인다.
+    expect(within(item).getByText('게시글')).toHaveClass('admin-report__type')
+    expect(within(item).getByTitle('오늘 경기 후기')).toHaveTextContent('오늘 경기 후기')
     // 펼치기 전에는 글 내용을 가져오지 않는다.
     expect(within(item).queryByRole('article')).not.toBeInTheDocument()
   })
@@ -116,6 +136,7 @@ describe('AdminCommunityReportsPage', () => {
     const toggle = within(item).getByRole('button', { name: '내용 보기 ▾' })
     await userEvent.setup().click(toggle)
     expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    expect(document.activeElement).toBe(within(item).getByLabelText('신고된 게시글 내용'))
 
     const article = await within(item).findByRole('article', { name: '신고된 게시글' })
     expect(within(article).getByRole('heading', { name: '오늘 경기 후기' })).toBeInTheDocument()
@@ -135,13 +156,42 @@ describe('AdminCommunityReportsPage', () => {
     const item = await reportItem('광고입니다')
 
     await userEvent.setup().click(within(item).getByRole('button', { name: '내용 보기 ▾' }))
+    // 펼친 내용으로 초점이 옮겨 간다.
+    expect(document.activeElement).toBe(within(item).getByLabelText('신고된 댓글 내용'))
     const article = within(item).getByRole('article', { name: '신고된 댓글' })
     expect(article).toHaveTextContent('「오늘 경기 후기」 글에 단 댓글')
     expect(article).toHaveTextContent('댓글러')
     expect(article).toHaveTextContent('싸게 표 팝니다')
   })
 
-  it('댓글을 삭제하면 신고 처리됨으로 바뀌고, 원래 내용은 관리자가 계속 볼 수 있다', async () => {
+  it('제목 옆에 상태별 현황을 보여 주고, 처음에는 처리전 신고만 최신순으로 보여 준다', async () => {
+    const rejected: Report = { ...postReport, id: 7, status: 'REJECTED', processedAt: '2026-10-08T12:00:00', reason: '반려된 신고' }
+    const newer: Report = { ...commentReport, id: 9, reason: '더 최근 신고', createdAt: '2026-10-08T13:00:00' }
+    // 서버는 최신순으로 준다.
+    renderReportsPage([newer, rejected, commentReport, postReport])
+
+    const tabs = await screen.findByRole('tablist', { name: '신고 현황' })
+    expect(within(tabs).getByRole('tab', { name: /^처리전\s*3$/ })).toHaveAttribute('aria-selected', 'true')
+    expect(within(tabs).getByRole('tab', { name: /^삭제\s*0$/ })).toHaveAttribute('aria-selected', 'false')
+    expect(within(tabs).getByRole('tab', { name: /^반려\s*1$/ })).toBeInTheDocument()
+    expect(within(tabs).getByRole('tab', { name: /^전체\s*4$/ })).toBeInTheDocument()
+    // 드롭다운은 없다. 현황 칸이 곧 보기 고르기다.
+    expect(screen.queryByRole('button', { name: /볼 신고 상태/ })).not.toBeInTheDocument()
+
+    const reasons = () =>
+      [...document.querySelectorAll('.admin-report__field--wide dd')].map((element) => element.textContent)
+    await waitFor(() => expect(reasons()).toEqual(['더 최근 신고', '광고입니다', '욕설이 있어요']))
+
+    // [반려] 칸을 누르면 반려된 신고만 보인다.
+    await chooseStatus('반려')
+    expect(within(tabs).getByRole('tab', { name: /^반려/ })).toHaveAttribute('aria-selected', 'true')
+    expect(reasons()).toEqual(['반려된 신고'])
+    expect(screen.getByText('2026.10.08 12:00 처리')).toBeInTheDocument()
+    // 처리된 신고에는 삭제·반려 버튼이 없다.
+    expect(screen.queryByRole('button', { name: '반려' })).not.toBeInTheDocument()
+  })
+
+  it('댓글을 삭제하면 처리전에서 빠지고 [삭제]에서 볼 수 있으며, 원래 내용은 관리자가 계속 볼 수 있다', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     renderReportsPage([commentReport])
     const item = await reportItem('광고입니다')
@@ -149,36 +199,57 @@ describe('AdminCommunityReportsPage', () => {
     await userEvent.setup().click(within(item).getByRole('button', { name: '삭제' }))
 
     expect(await screen.findByRole('status')).toHaveTextContent('댓글을 신고 처리로 삭제했습니다.')
-    const updated = await reportItem('광고입니다')
-    await waitFor(() => expect(within(updated).getByText('신고 처리됨')).toBeInTheDocument())
-    expect(within(updated).queryByRole('button', { name: '삭제' })).not.toBeInTheDocument()
+    expect(await screen.findByText('처리전 신고가 없습니다.')).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /^삭제\s*1$/ })).toBeInTheDocument()
 
+    await chooseStatus('삭제')
+    const updated = await reportItem('광고입니다')
+    expect(within(updated).getByText('삭제', { selector: '.admin-report__status' })).toBeInTheDocument()
+    expect(within(updated).queryByRole('button', { name: '삭제' })).not.toBeInTheDocument()
     await userEvent.setup().click(within(updated).getByRole('button', { name: '내용 보기 ▾' }))
     expect(within(updated).getByRole('article', { name: '신고된 댓글' })).toHaveTextContent(
       '게시글 화면에는 "신고 처리로 삭제된 댓글입니다."로 보입니다.',
     )
   })
 
-  it('게시글을 삭제하면 삭제됨으로 바뀌고 내용 보기와 삭제 버튼이 사라진다', async () => {
+  it('반려하면 처리전에서 빠지고 [반려]에서 볼 수 있으며, 글은 그대로라 내용을 볼 수 있다', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const fetchMock = renderReportsPage([postReport])
+    const item = await reportItem('욕설이 있어요')
+
+    await userEvent.setup().click(within(item).getByRole('button', { name: '반려' }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent('신고를 반려했습니다.')
+    expect(fetchMock.mock.calls.some((call) => call[0] === '/api/admin/community/reports/1/reject')).toBe(true)
+    expect(await screen.findByText('처리전 신고가 없습니다.')).toBeInTheDocument()
+
+    await chooseStatus('반려')
+    const updated = await reportItem('욕설이 있어요')
+    expect(within(updated).getByRole('button', { name: '내용 보기 ▾' })).toBeInTheDocument()
+    expect(within(updated).queryByRole('button', { name: '반려' })).not.toBeInTheDocument()
+  })
+
+  it('게시글을 삭제하면 [삭제]에서 이미 삭제된 게시글로 보이고 내용 보기가 없다', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     renderReportsPage([postReport])
     const item = await reportItem('욕설이 있어요')
 
     await userEvent.setup().click(within(item).getByRole('button', { name: '삭제' }))
-
     expect(await screen.findByRole('status')).toHaveTextContent('게시글을 삭제했습니다.')
+
+    await chooseStatus('전체')
     const updated = await reportItem('욕설이 있어요')
-    await waitFor(() => expect(within(updated).getByText('이미 삭제된 게시글입니다.')).toBeInTheDocument())
+    expect(within(updated).getByText('이미 삭제된 게시글입니다.')).toBeInTheDocument()
     expect(within(updated).queryByRole('button', { name: /내용 보기/ })).not.toBeInTheDocument()
-    expect(within(updated).queryByRole('button', { name: '삭제' })).not.toBeInTheDocument()
   })
 
-  it('삭제를 확인하지 않으면 지우지 않는다', async () => {
+  it('삭제·반려를 확인하지 않으면 처리하지 않는다', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(false)
     const fetchMock = renderReportsPage([commentReport])
     const item = await reportItem('광고입니다')
 
     await userEvent.setup().click(within(item).getByRole('button', { name: '삭제' }))
-    expect(fetchMock.mock.calls.some((call) => String(call[0]).endsWith('/target'))).toBe(false)
+    await userEvent.setup().click(within(item).getByRole('button', { name: '반려' }))
+    expect(fetchMock.mock.calls.some((call) => /\/(target|reject)$/.test(String(call[0])))).toBe(false)
   })
 })

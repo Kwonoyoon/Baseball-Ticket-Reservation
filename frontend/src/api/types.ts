@@ -404,10 +404,16 @@ export type ReportTargetType = 'POST' | 'COMMENT'
  */
 export type ReportTargetStatus = 'ACTIVE' | 'DELETED' | 'DELETED_BY_REPORT'
 
+/** 신고 처리 상태: 처리전 / 삭제(신고 대상을 지움) / 반려 */
+export type ReportStatus = 'PENDING' | 'DELETED' | 'REJECTED'
+
 export type Report = {
   id: number
   targetType: ReportTargetType
   targetId: number
+  status: ReportStatus
+  /** 삭제·반려로 처리한 시각. 처리전이거나 알 수 없으면 null */
+  processedAt: string | null
   targetStatus: ReportTargetStatus
   /** 목록 한 줄에 보여 줄 값. 글이면 제목, 댓글이면 댓글 내용 */
   targetPreview: string | null

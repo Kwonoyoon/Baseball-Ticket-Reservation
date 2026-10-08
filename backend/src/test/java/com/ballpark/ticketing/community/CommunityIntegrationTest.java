@@ -433,8 +433,15 @@ class CommunityIntegrationTest {
         // 관리자는 원래 내용을 계속 확인할 수 있다.
         String commentReportPath = "$[?(@.id == " + commentReportId + ")]";
         mockMvc.perform(get("/api/admin/community/reports").header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(jsonPath(commentReportPath + ".status").value("DELETED"))
+                .andExpect(jsonPath(commentReportPath + ".processedAt").exists())
                 .andExpect(jsonPath(commentReportPath + ".targetStatus").value("DELETED_BY_REPORT"))
                 .andExpect(jsonPath(commentReportPath + ".targetContent").value("광고 댓글입니다"));
+        // 이미 처리한 신고는 다시 처리할 수 없다.
+        mockMvc.perform(post("/api/admin/community/reports/" + commentReportId + "/reject")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("REPORT_ALREADY_PROCESSED"));
         // 지운 댓글은 다시 신고하거나 작성자가 지울 수 없다.
         mockMvc.perform(report("/api/comments/" + commentId + "/report", signup()))
                 .andExpect(status().isNotFound())
@@ -453,6 +460,50 @@ class CommunityIntegrationTest {
                         .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("REPORT_NOT_FOUND"));
+    }
+
+    @Test
+    void 반려하면_같은_대상의_처리전_신고가_함께_반려되고_작성자가_지우면_삭제로_처리된다() throws Exception {
+        String author = signup();
+        String first = signup();
+        String second = signup();
+        Long postId = createPost(author, "반려될 글", "평범한 글");
+        mockMvc.perform(report("/api/posts/" + postId + "/report", first)).andExpect(status().isNoContent());
+        mockMvc.perform(report("/api/posts/" + postId + "/report", second)).andExpect(status().isNoContent());
+
+        String postReports = "$[?(@.targetType == 'POST' && @.targetId == " + postId + ")]";
+        String reports = mockMvc.perform(get("/api/admin/community/reports")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(jsonPath(postReports + ".status").value(org.hamcrest.Matchers.contains("PENDING", "PENDING")))
+                .andReturn().getResponse().getContentAsString();
+        Number reportId = JsonPath.<List<Number>>read(reports, postReports + ".id").getFirst();
+
+        // 일반 회원은 반려할 수 없다.
+        mockMvc.perform(post("/api/admin/community/reports/" + reportId + "/reject")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(first)))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/admin/community/reports/" + reportId + "/reject")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(status().isNoContent());
+
+        // 같은 글에 대한 처리전 신고가 모두 반려되고, 글은 그대로 남는다.
+        mockMvc.perform(get("/api/admin/community/reports").header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(jsonPath(postReports + ".status").value(org.hamcrest.Matchers.contains("REJECTED", "REJECTED")));
+        mockMvc.perform(get("/api/posts/" + postId)).andExpect(status().isOk());
+
+        // 반려 뒤에 들어온 새 신고는 다시 처리전이다.
+        String third = signup();
+        mockMvc.perform(report("/api/posts/" + postId + "/report", third)).andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/admin/community/reports").header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(jsonPath(postReports + ".status").value(
+                        org.hamcrest.Matchers.containsInAnyOrder("PENDING", "REJECTED", "REJECTED")));
+
+        // 작성자가 글을 스스로 지우면 처리전 신고는 삭제로 처리된다. (반려된 신고는 그대로)
+        mockMvc.perform(delete("/api/posts/" + postId).header(HttpHeaders.AUTHORIZATION, bearer(author)))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/admin/community/reports").header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(jsonPath(postReports + ".status").value(
+                        org.hamcrest.Matchers.containsInAnyOrder("DELETED", "REJECTED", "REJECTED")));
     }
 
     private void like(String token, Long postId) throws Exception {
