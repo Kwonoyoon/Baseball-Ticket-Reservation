@@ -57,8 +57,24 @@ public class NotificationService {
                     .save(new Notification(memberId, type, title, message, now));
             broadcaster.broadcast(memberId, NotificationResponse.from(notification));
         }
-        if (isEmailEnabled(memberId, type)) {
+        // 이메일 본문은 예매 정보로 만들기 때문에, 예매 정보가 없는 알림(양도 대기 등)은 이메일을 건너뛴다.
+        if (emailContent != null && isEmailEnabled(memberId, type)) {
             emailSender.sendReservationMail(memberId, type, emailContent);
+        }
+    }
+
+    /** 예매 정보가 없는 양도 대기 알림. 이메일은 경기 정보와 순번으로 만든다. {@link #create}와 같은 규칙으로 보낸다. */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void createWaitNotification(Long memberId, NotificationType type, String title, String message,
+            WaitEmailContent emailContent, boolean sendEmail) {
+        if (isEnabled(memberId, type)) {
+            LocalDateTime now = LocalDateTime.now(clock);
+            Notification notification = notificationRepository
+                    .save(new Notification(memberId, type, title, message, now));
+            broadcaster.broadcast(memberId, NotificationResponse.from(notification));
+        }
+        if (sendEmail && isEmailEnabled(memberId, type)) {
+            emailSender.sendWaitMail(memberId, type, emailContent);
         }
     }
 
@@ -67,20 +83,24 @@ public class NotificationService {
                 .collect(Collectors.toMap(NotificationPreference::getType, preference -> preference));
         return Arrays.stream(NotificationType.values())
                 .filter(NotificationType::isControllable)
+                // 양도 알림처럼 설정을 묶는 종류는 대표 종류 하나만 설정 화면에 보인다.
+                .filter(type -> type.settingType() == type)
                 .map(type -> {
                     NotificationPreference preference = saved.get(type);
                     boolean enabled = preference == null || preference.isEnabled();
                     boolean emailEnabled = preference == null || preference.isEmailEnabled();
-                    return new NotificationPreferenceResponse(type, type.getLabel(), enabled, emailEnabled);
+                    return new NotificationPreferenceResponse(type, type.getLabel(), type.getDescription(), enabled,
+                            emailEnabled);
                 })
                 .toList();
     }
 
     @Transactional
-    public void updatePreference(Long memberId, NotificationType type, boolean enabled) {
-        if (!type.isControllable()) {
+    public void updatePreference(Long memberId, NotificationType requested, boolean enabled) {
+        if (!requested.isControllable()) {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "설정할 수 없는 알림 유형입니다.");
         }
+        NotificationType type = requested.settingType();
         preferenceRepository.findByMemberIdAndType(memberId, type)
                 .ifPresentOrElse(
                         preference -> preference.updateEnabled(enabled),
@@ -89,10 +109,11 @@ public class NotificationService {
 
     /** 이메일 알림은 회원이 꺼두지 않은 이상 보낸다. (기본값 켜짐) */
     @Transactional
-    public void updateEmailPreference(Long memberId, NotificationType type, boolean emailEnabled) {
-        if (!type.isControllable()) {
+    public void updateEmailPreference(Long memberId, NotificationType requested, boolean emailEnabled) {
+        if (!requested.isControllable()) {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "설정할 수 없는 알림 유형입니다.");
         }
+        NotificationType type = requested.settingType();
         preferenceRepository.findByMemberIdAndType(memberId, type)
                 .ifPresentOrElse(
                         preference -> preference.updateEmailEnabled(emailEnabled),
@@ -103,7 +124,7 @@ public class NotificationService {
         if (!type.isControllable()) {
             return true;
         }
-        return preferenceRepository.findByMemberIdAndType(memberId, type)
+        return preferenceRepository.findByMemberIdAndType(memberId, type.settingType())
                 .map(NotificationPreference::isEnabled)
                 .orElse(true);
     }
@@ -112,7 +133,7 @@ public class NotificationService {
         if (!type.isControllable()) {
             return false;
         }
-        return preferenceRepository.findByMemberIdAndType(memberId, type)
+        return preferenceRepository.findByMemberIdAndType(memberId, type.settingType())
                 .map(NotificationPreference::isEmailEnabled)
                 .orElse(true);
     }

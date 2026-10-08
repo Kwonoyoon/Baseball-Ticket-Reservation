@@ -45,6 +45,13 @@ public class CommunityReport {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private ReportStatus status = ReportStatus.PENDING;
+
+    /** 삭제·반려로 처리한 시각. 처리전이면 비어 있다. */
+    private LocalDateTime processedAt;
+
     protected CommunityReport() {
     }
 
@@ -55,6 +62,26 @@ public class CommunityReport {
         this.reporter = reporter;
         this.reason = reason;
         this.createdAt = now;
+    }
+
+    /** 처리전인 신고만 처리한다. 이미 처리된 신고는 그대로 둔다. */
+    public void resolve(ReportStatus result, LocalDateTime now) {
+        if (status == ReportStatus.PENDING && result != ReportStatus.PENDING) {
+            status = result;
+            processedAt = now;
+        }
+    }
+
+    public boolean isPending() {
+        return status == ReportStatus.PENDING;
+    }
+
+    public ReportStatus getStatus() {
+        return status;
+    }
+
+    public LocalDateTime getProcessedAt() {
+        return processedAt;
     }
 
     public Long getId() {

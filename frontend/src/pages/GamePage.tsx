@@ -23,7 +23,8 @@ import {
   seatKey,
 } from '../lib/format'
 import { scrollPanelIntoView } from '../lib/panelScroll'
-import { hasStadiumMap } from '../lib/stadiumMap'
+import { checkoutUrl } from '../lib/mockPg'
+import { hasStadiumMap, stadiumLayout } from '../lib/stadiumMap'
 
 const SEAT_REFRESH_INTERVAL_MS = 10_000
 /** 결제 카드가 좌석표 아래로 내려가는 폭. index.css의 .booking 한 단 배치 기준과 같다. */
@@ -191,6 +192,8 @@ export function GamePage() {
 
   const bookable = game.status === 'SCHEDULED' && isBookable(game.startAt)
   const activeSection = activeSectionId === null ? undefined : sectionsById.get(activeSectionId)
+  // 구장마다 좌석 배치도가 다르다. 배치도가 없는 구장은 구역 목록(StadiumOverview)으로 고른다.
+  const layout = stadiumLayout(game.stadium.code)
   const quotaExhausted = isAuthenticated && remainingQuota === 0
 
   const handleSelectSection = (sectionId: number | null) => {
@@ -230,12 +233,21 @@ export function GamePage() {
     }
   }
 
+  /** 결제 대기 예매를 만들고 가짜 PG 결제창으로 넘어간다. 결제창에서 돌아오면 성공·실패 페이지가 마무리한다. */
   const handlePay = async () => {
     setSubmitting(true)
     setNotice(null)
     try {
       const reservation = await api.reserve({ gameId, seats: activeSelection, paymentMethod })
-      navigate(`/reservations/${reservation.id}`, { state: { justBooked: true } })
+      navigate(
+        checkoutUrl({
+          orderId: reservation.reservationNumber,
+          orderName: `${game.awayTeam.shortName} vs ${game.homeTeam.shortName} ${reservation.seats.length}매`,
+          amount: reservation.totalPrice,
+          method: paymentMethod,
+          deadline: reservation.paymentDeadline,
+        }),
+      )
     } catch (e) {
       setNotice(errorMessage(e, '결제를 완료하지 못했습니다.'))
       if (e instanceof ApiError && HOLD_LOST_CODES.includes(e.code)) setHold(null)
@@ -343,8 +355,9 @@ export function GamePage() {
           </section>
 
           <section className="panel" aria-label="구역 선택">
-            {hasStadiumMap(game.sections) ? (
+            {hasStadiumMap(layout, game.sections) ? (
               <StadiumMap
+                layout={layout}
                 sections={game.sections}
                 activeSectionId={activeSectionId}
                 remainingBySection={remainingBySection}

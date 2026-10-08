@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import type { SeatSection } from '../api/types'
-import { hasStadiumMap } from '../lib/stadiumMap'
+import { hasStadiumMap, stadiumLayout } from '../lib/stadiumMap'
 import { StadiumMap } from './StadiumMap'
 
 function section(overrides: Partial<SeatSection> & Pick<SeatSection, 'id' | 'code'>): SeatSection {
@@ -22,17 +22,30 @@ const sections: SeatSection[] = [
   section({ id: 12, code: 'RED-01', name: '레드석 1번', grade: 'RED', gradeLabel: '레드석', price: 16000 }),
 ]
 
+const jamsil = stadiumLayout('JAMSIL')!
+
 describe('StadiumMap', () => {
   it('배치도와 연결된 구장인지 판단한다', () => {
-    expect(hasStadiumMap(sections)).toBe(true)
-    expect(hasStadiumMap([section({ id: 1, code: null })])).toBe(false)
-    expect(hasStadiumMap([section({ id: 2, code: 'UNKNOWN-99' })])).toBe(false)
+    expect(hasStadiumMap(jamsil, sections)).toBe(true)
+    expect(hasStadiumMap(jamsil, [section({ id: 1, code: null })])).toBe(false)
+    expect(hasStadiumMap(jamsil, [section({ id: 2, code: 'UNKNOWN-99' })])).toBe(false)
+    expect(hasStadiumMap(stadiumLayout(null), sections)).toBe(false)
+  })
+
+  it('구장마다 배치도가 다르다', () => {
+    const gocheok = stadiumLayout('GOCHEOK')!
+    expect(gocheok.name).toBe('고척 스카이돔')
+    // 잠실 블록 코드로는 고척 배치도와 이어지지 않는다.
+    expect(hasStadiumMap(gocheok, sections)).toBe(false)
+    expect(hasStadiumMap(gocheok, [section({ id: 3, code: 'DIAMOND-01' })])).toBe(true)
+    expect(stadiumLayout('NOWHERE')).toBeNull()
   })
 
   it('블록을 잔여석과 함께 보여주고, 누르면 구역 ID를 전달한다', async () => {
     const onSelect = vi.fn()
     render(
       <StadiumMap
+        layout={jamsil}
         sections={sections}
         activeSectionId={11}
         remainingBySection={new Map([
@@ -54,6 +67,7 @@ describe('StadiumMap', () => {
   it('고른 구역만 또렷하게 두고 나머지는 흐리게 표시한다', () => {
     render(
       <StadiumMap
+        layout={jamsil}
         sections={sections}
         activeSectionId={11}
         remainingBySection={new Map([
@@ -77,6 +91,7 @@ describe('StadiumMap', () => {
     const onSelect = vi.fn()
     render(
       <StadiumMap
+        layout={jamsil}
         sections={sections}
         activeSectionId={11}
         remainingBySection={new Map([[11, 150]])}
@@ -94,6 +109,7 @@ describe('StadiumMap', () => {
     const onSelect = vi.fn()
     render(
       <StadiumMap
+        layout={jamsil}
         sections={sections}
         activeSectionId={null}
         remainingBySection={new Map([
@@ -115,6 +131,7 @@ describe('StadiumMap', () => {
   it('커서를 올리면 블록 이름과 잔여석을 보여준다', async () => {
     render(
       <StadiumMap
+        layout={jamsil}
         sections={sections}
         activeSectionId={null}
         remainingBySection={new Map([

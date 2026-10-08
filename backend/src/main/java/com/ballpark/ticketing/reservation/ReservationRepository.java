@@ -4,7 +4,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import jakarta.persistence.LockModeType;
+
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -34,13 +37,41 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     /** 아직 시작하지 않은 경기의 예매가 남아 있는지 (회원 탈퇴 전 확인) */
     boolean existsByMemberIdAndStatusAndGameStartAtAfter(Long memberId, ReservationStatus status, LocalDateTime now);
 
-    /** 경기 취소 시 자동으로 취소·환불하고 알림을 보낼 예매자 전원을 찾는다. */
+    /**
+     * 취소하려는 예매를 잠그고 읽는다. 같은 예매를 동시에 두 번 취소하면 두 번째 요청은 첫 번째가 끝날 때까지 기다렸다가
+     * 이미 취소된 상태를 보게 되어, 환불이 두 번 나가지 않는다. (잠금 대상이 늘지 않게 연관 엔티티는 함께 읽지 않는다)
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select r from Reservation r where r.id = :id")
+    Optional<Reservation> findForUpdateById(@Param("id") Long id);
+
+    /** 결제 승인·결제창 이탈 때 주문번호(예매번호)로 결제 대기 예매를 잠그고 읽는다. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select r from Reservation r where r.reservationNumber = :reservationNumber")
+    Optional<Reservation> findForUpdateByReservationNumber(@Param("reservationNumber") String reservationNumber);
+
     @Query("""
-            select distinct r from Reservation r
-            join fetch r.member
-            join fetch r.seats s
-            join fetch s.section
-            where r.game.id = :gameId and r.status = :status
+            select r from Reservation r
+            join fetch r.game g
+            join fetch g.homeTeam
+            join fetch g.awayTeam
+            join fetch g.stadium
+            where r.reservationNumber = :reservationNumber
             """)
-    List<Reservation> findAllByGameIdAndStatus(@Param("gameId") Long gameId, @Param("status") ReservationStatus status);
+    Optional<Reservation> findDetailByReservationNumber(@Param("reservationNumber") String reservationNumber);
+
+    /** 결제 시간이 지난 결제 대기 예매를 잠그고 읽는다. (정리 작업용, id 순으로 잠근다) */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select r from Reservation r where r.status = :status and r.createdAt < :before order by r.id")
+    List<Reservation> findAllForUpdateByStatusCreatedBefore(@Param("status") ReservationStatus status,
+            @Param("before") LocalDateTime before);
+
+    /**
+     * 경기 취소 시 자동으로 취소·환불하고 알림을 보낼 예매를 잠그고 읽는다.
+     * 회원의 개별 취소와 겹쳐도 한쪽이 끝난 뒤 다른 쪽이 진행되어 환불이 두 번 나가지 않는다. (잠금 순서는 id 순)
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select r from Reservation r where r.game.id = :gameId and r.status = :status order by r.id")
+    List<Reservation> findAllForUpdateByGameIdAndStatus(@Param("gameId") Long gameId,
+            @Param("status") ReservationStatus status);
 }

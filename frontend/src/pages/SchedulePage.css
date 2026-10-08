@@ -27,6 +27,7 @@
   --home-mono: ui-monospace, Menlo, Consolas, monospace;
 
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--home-bg);
   color: var(--home-ink);
 }
@@ -41,10 +42,7 @@
   outline-color: #ffffff;
 }
 
-.home-hero__mark,
-.home-section-title,
-.home-slide__team strong,
-.home-slide__vs {
+.home-section-title {
   font-family: var(--home-display);
   font-weight: 800;
 }
@@ -60,7 +58,7 @@
 .home-hero {
   position: relative;
   overflow: hidden;
-  height: clamp(300px, 40vw, 400px);
+  height: clamp(440px, 40vw, 500px);
   background: var(--home-hero-bg);
 }
 
@@ -71,19 +69,34 @@
 }
 
 .home-slide {
+  position: relative;
   display: flex;
   flex: 0 0 100%;
   align-items: center;
   justify-content: center;
   height: 100%;
-  padding: 24px;
-  /* 원정팀 색에서 홈팀 색으로 이어지는 배경. 15%는 어두운 바탕색을 섞어 채도를 눌러 준다. */
-  background: linear-gradient(
-    120deg,
-    color-mix(in srgb, var(--away-color) 85%, var(--home-hero-bg)),
-    color-mix(in srgb, var(--home-color) 85%, var(--home-hero-bg))
-  );
+  padding: 28px 0;
+  /* 반투명 빛 대신 깊은 남색 한 겹으로 깔고, 안쪽 카드(흰색)가 또렷하게 보이게 한다. */
+  background: linear-gradient(135deg, #0a1122 0%, #11203c 55%, #172b4d 100%);
   color: #ffffff;
+}
+
+/* 슬라이드마다 바탕 색만 달리해 넘어갈 때 변화가 느껴지게 한다. */
+.home-slide--ticket {
+  background: linear-gradient(135deg, #0d1226 0%, #1a2150 55%, #25306a 100%);
+}
+
+.home-slide--hot {
+  background: linear-gradient(135deg, #1a0f1c 0%, #3a1426 55%, #5a1b2c 100%);
+}
+
+.home-slide--event {
+  background: linear-gradient(135deg, #0c2218 0%, #123a2a 55%, #1a5039 100%);
+}
+
+.home-slide--today,
+.home-slide--community {
+  background: linear-gradient(135deg, #0a1426 0%, #12243f 55%, #1a3358 100%);
 }
 
 .home-slide--message {
@@ -91,108 +104,78 @@
   color: rgb(255 255 255 / 75%);
 }
 
-.home-slide__teams {
-  --slide-logo: clamp(44px, 7vw, 64px);
-  display: flex;
-  /* 홈팀 캡션(구장 이름)이 좁은 화면에서 여러 줄로 접혀도 두 로고의 높이가 어긋나지 않게 위쪽 기준으로 맞춘다. */
-  align-items: flex-start;
-  gap: clamp(14px, 3.4vw, 44px);
-}
-
-.home-slide__team {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  width: clamp(84px, 15vw, 128px);
-  text-align: center;
-}
-
-.home-slide__team .team-mark {
-  width: var(--slide-logo);
-  height: var(--slide-logo);
-  box-shadow:
-    inset 0 0 0 3px var(--team-color),
-    0 6px 18px rgb(0 0 0 / 35%);
-}
-
-.home-slide__team strong {
-  font-size: clamp(13px, 1.4vw, 16px);
-}
-
-.home-slide__team span {
-  color: rgb(255 255 255 / 88%);
-  font-size: 11.5px;
-}
-
-.home-slide__vs {
-  color: rgb(255 255 255 / 60%);
-  font-size: clamp(16px, 2vw, 22px);
-  /* 로고 높이와 같게 두면 VS가 로고의 세로 가운데에 놓인다. */
-  line-height: var(--slide-logo);
-}
-
-.home-hero__shade {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(to top, rgb(0 0 0 / 55%) 0%, transparent 46%),
-    linear-gradient(to right, rgb(0 0 0 / 28%), transparent 30%, transparent 70%, rgb(0 0 0 / 28%));
-  pointer-events: none;
-}
-
-.home-hero__copy {
-  position: absolute;
-  inset-inline: 0;
-  bottom: 20px;
-  z-index: 2;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-  max-width: 1120px;
-  margin-inline: auto;
-  padding-inline: 24px;
-  color: #ffffff;
-}
-
-.home-hero__mark {
-  font-size: clamp(22px, 3.4vw, 32px);
-  letter-spacing: 0.01em;
-  line-height: 1.05;
-}
-
-.home-hero__mark em {
-  color: var(--accent-on-dark, var(--home-accent));
-  font-style: normal;
-}
-
-.home-hero__sub {
-  margin-top: 6px;
-  color: rgb(255 255 255 / 85%);
-  font-size: 13px;
-}
-
-.home-hero__cta {
-  display: inline-flex;
-  align-items: center;
-  min-height: 40px;
-  padding: 0 18px;
-  border-radius: 6px;
-  background: var(--home-accent);
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 700;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.home-hero__cta:hover {
-  background: var(--home-accent-hover);
-}
-
 /* 점은 눈에 보이는 크기(7px)보다 눌러야 하는 영역을 넓게 잡는다. */
+/* 양옆 화살표: 평소에는 은은하게, 캐러셀에 마우스를 올리면 또렷해진다. 높이는 경기 정보와 겹치지 않는 가운데다. */
+.home-hero__arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 1px solid rgb(255 255 255 / 28%);
+  border-radius: 50%;
+  background: rgb(0 0 0 / 28%);
+  color: #ffffff;
+  cursor: pointer;
+  opacity: 0.55;
+  transform: translateY(-50%);
+  transition:
+    opacity 0.2s,
+    background-color 0.2s;
+}
+
+.home-hero:hover .home-hero__arrow,
+.home-hero__arrow:focus-visible {
+  opacity: 1;
+}
+
+.home-hero__arrow:hover {
+  background: rgb(0 0 0 / 50%);
+}
+
+.home-hero__arrow--prev {
+  left: clamp(8px, 2vw, 28px);
+}
+
+.home-hero__arrow--next {
+  right: clamp(8px, 2vw, 28px);
+}
+
+/* 화살표 모양은 테두리로 그린 꺾쇠(‹ ›)다. 이미지나 아이콘 라이브러리가 필요 없다. */
+.home-hero__arrow::before {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  border-top: 3px solid currentColor;
+  border-left: 3px solid currentColor;
+  content: '';
+}
+
+.home-hero__arrow--prev::before {
+  transform: translate(-30%, -50%) rotate(-45deg);
+}
+
+.home-hero__arrow--next::before {
+  transform: translate(-70%, -50%) rotate(135deg);
+}
+
+@media (max-width: 640px) {
+  .home-hero__arrow {
+    width: 36px;
+    height: 36px;
+    /* 좁은 화면에서는 로고가 위쪽에 붙어 있어서 화살표도 로고 높이에 맞춘다. */
+    top: 38%;
+  }
+
+  .home-hero__arrow::before {
+    width: 9px;
+    height: 9px;
+  }
+}
+
 .home-hero__dots {
   position: absolute;
   top: 12px;
@@ -601,24 +584,18 @@
   /* 좁은 화면은 캐러셀(팀 로고)과 카피(제목+버튼)가 세로로 한 화면 안에 다 안 들어가서 살짝 더 높이고,
      캐러셀은 위로 붙여 카피가 들어갈 자리를 아래에 만든다. */
   .home-hero {
-    height: 340px;
+    height: 560px;
   }
 
   .home-slide {
     align-items: flex-start;
-    padding-top: 20px;
+    padding-top: 22px;
   }
 
-  .home-hero__copy {
-    align-items: flex-start;
-    flex-direction: column;
-    bottom: 12px;
-  }
 }
 
 @media (max-width: 560px) {
   .home .container,
-  .home-hero__copy,
   .home-main,
   .home-footer {
     padding-inline: 16px;

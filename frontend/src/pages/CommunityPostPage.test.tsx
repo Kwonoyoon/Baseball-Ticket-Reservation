@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -29,10 +29,9 @@ const comments = [
 ]
 
 function renderPost() {
-  const router = createMemoryRouter(
-    [{ path: '/community/:teamId/posts/:postId', element: <CommunityPostPage /> }],
-    { initialEntries: ['/community/1/posts/10'] },
-  )
+  const router = createMemoryRouter([{ path: '/community/:teamId/posts/:postId', element: <CommunityPostPage /> }], {
+    initialEntries: ['/community/1/posts/10'],
+  })
   render(
     <AuthProvider>
       <RouterProvider router={router} />
@@ -62,6 +61,30 @@ describe('CommunityPostPage', () => {
     expect(screen.getByText('본문입니다')).toBeInTheDocument()
     expect(screen.getByText('자유')).toBeInTheDocument()
     expect(await screen.findByText('댓글입니다')).toBeInTheDocument()
+  })
+
+  it('신고 처리로 지운 댓글은 작성자·내용·버튼 없이 안내만 보여 준다', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url === '/api/posts/10') return jsonResponse(200, post())
+        if (url === '/api/posts/10/comments') {
+          return jsonResponse(200, [
+            ...comments,
+            { id: 101, authorId: null, authorName: null, content: null, mine: false, createdAt: '2026-09-29T12:00:00', deletedByReport: true },
+          ])
+        }
+        return jsonResponse(404, { code: 'NOT_FOUND', message: '없음' })
+      }),
+    )
+    renderPost()
+
+    const placeholder = await screen.findByText('신고 처리로 삭제된 댓글입니다.')
+    const item = placeholder.closest('li')!
+    expect(within(item).queryByRole('button')).not.toBeInTheDocument()
+    // 다른 댓글은 그대로 보인다.
+    expect(screen.getByText('댓글입니다')).toBeInTheDocument()
   })
 
   it('실제 오류일 때는 제대로 오류 화면을 보여 준다', async () => {
@@ -112,6 +135,32 @@ describe('CommunityPostPage', () => {
     expect(fetchMock.mock.calls.some((c) => c[0] === '/api/posts/10/like')).toBe(true)
   })
 
+  it('비회원이 좋아요를 누르면 서버에 보내지 않고 로그인 안내를 띄운다', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url === '/api/posts/10') return jsonResponse(200, post())
+      if (url === '/api/posts/10/comments') return jsonResponse(200, [])
+      return jsonResponse(404, { code: 'NOT_FOUND', message: '없음' })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    renderPost()
+    const user = userEvent.setup()
+
+    const like = await screen.findByRole('button', { name: /좋아요 1/ })
+    // 비회원이어도 버튼은 눌러 볼 수 있다. (눌러지지 않아 헷갈리는 것보다 안내가 낫다)
+    expect(like).toBeEnabled()
+    await user.click(like)
+
+    expect(await screen.findByText(/좋아요는 로그인한 뒤에 누를 수 있어요/)).toBeInTheDocument()
+    // 로그인하면 이 글로 돌아오도록 주소를 넘긴다.
+    expect(screen.getByRole('link', { name: '로그인하기' })).toHaveAttribute(
+      'href',
+      '/login?redirect=%2Fcommunity%2F1%2Fposts%2F10',
+    )
+    expect(fetchMock.mock.calls.some((c) => String(c[0]).endsWith('/like'))).toBe(false)
+    expect(screen.getByRole('button', { name: /좋아요 1/ })).toBeInTheDocument()
+  })
+
   it('신고 버튼을 누르면 사유 입력창이 열리고, 제출하면 서버로 보낸다', async () => {
     const fetchMock = restoreSessionAs(testMember(), (url, init) => {
       if (url === '/api/posts/10') return jsonResponse(200, post())
@@ -159,6 +208,44 @@ describe('CommunityPostPage', () => {
     resolveRefresh(jsonResponse(200, loginResult(testMember())))
 
     expect(await screen.findByRole('link', { name: '수정' })).toBeInTheDocument()
+  })
+
+  it('일반 회원에게는 남의 글에 관리자 삭제 버튼이 보이지 않는다', async () => {
+    restoreSessionAs(testMember(), (url) => {
+      if (url === '/api/posts/10') return jsonResponse(200, post())
+      if (url === '/api/posts/10/comments') return jsonResponse(200, comments)
+      return undefined
+    })
+    renderPost()
+
+    await screen.findByText('제목입니다')
+    // 글과 댓글에 신고 버튼이 하나씩 보이는 로그인 상태에서도 관리자 삭제 버튼은 없다.
+    expect(await screen.findAllByRole('button', { name: '신고' })).toHaveLength(2)
+    expect(screen.queryByRole('button', { name: '관리자 삭제' })).not.toBeInTheDocument()
+  })
+
+  it('관리자는 남의 댓글을 관리자 삭제로 바로 지운다', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const fetchMock = restoreSessionAs(testMember('ADMIN', { id: 9 }), (url, init) => {
+      if (url === '/api/posts/10') return jsonResponse(200, post())
+      if (url === '/api/posts/10/comments') return jsonResponse(200, comments)
+      if (url === '/api/admin/community/comments/100' && init?.method === 'DELETE') return new Response(null, { status: 204 })
+      return undefined
+    })
+    renderPost()
+    const user = userEvent.setup()
+
+    // 글 1개 + 댓글 1개에 버튼이 하나씩 있다.
+    const buttons = await screen.findAllByRole('button', { name: '관리자 삭제' })
+    expect(buttons).toHaveLength(2)
+
+    await user.click(buttons[1])
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/admin/community/comments/100',
+      expect.objectContaining({ method: 'DELETE' }),
+    )
+    expect(await screen.findByText('아직 댓글이 없습니다.')).toBeInTheDocument()
   })
 
   it('신고 사유를 안 쓰면 서버로 보내지 않는다', async () => {

@@ -78,6 +78,33 @@ ticketing:
   reservation:
     # 한 회원이 한 경기에서 예매할 수 있는 최대 좌석 수
     max-seats-per-game: 4
+    # 결제창에서 이 시간 안에 결제를 마치지 않으면 결제 대기 예매를 지우고 좌석을 푼다
+    payment-time-limit: 10m
+  entry-ticket:
+    # 입장 QR 서명 키(32바이트 이상). 따로 주지 않으면 JWT_SECRET을 쓴다. (입장 QR과 로그인 토큰은 종류 값으로 구분한다)
+    secret: ${ENTRY_TICKET_SECRET:${JWT_SECRET:local-development-only-entry-ticket-key!!}}
+    # QR 하나가 유효한 시간. 화면은 이 간격으로 새 QR을 받는다.
+    token-validity: 30s
+    # 평일은 경기 1시간 30분 전, 주말·공휴일은 2시간 전부터 입장
+    weekday-gate-open: 90m
+    holiday-gate-open: 120m
+    # 경기 결과가 아직 기록되지 않아도 시작 4시간 뒤에는 끝난 경기로 본다.
+    game-length: 4h
+    # 공휴일 목록(PublicHolidays)에 없는 임시공휴일. 예: [2026-10-02]
+    extra-holidays: []
   sample-data:
     enabled: ${SAMPLE_DATA_ENABLED:true}
     days: 14
+  news:
+    # 메인 슬라이드 끝에 보여 줄 KBO 뉴스. 언론사가 배포하는 RSS에서 제목·링크·사진 주소만 가져오고, 본문은 복사하지 않는다.
+    # 지금 화면에서는 쓰지 않는다. 켜 두면 언론사 서버가 느릴 때 이 API를 부르는 요청이 같이 느려지고, 로그인 없이 누구나 부를 수 있어서 꺼 둔다.
+    # 다시 쓰려면 true로 바꾸고, 외부 호출을 백그라운드로 옮기고 전체 시간·본문 크기 제한을 두는 작업을 먼저 한다.
+    enabled: false
+    feed-url: https://www.yna.co.kr/rss/sports.xml
+    source-name: 연합뉴스
+    # 제목에 이 중 하나가 있는 기사만 쓴다. (스포츠 RSS에는 다른 종목 기사도 섞여 있다)
+    keywords:
+      - KBO
+      - 프로야구
+    max-items: 5
+    cache-ttl: 30m

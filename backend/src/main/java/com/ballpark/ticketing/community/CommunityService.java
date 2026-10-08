@@ -2,6 +2,7 @@ package com.ballpark.ticketing.community;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 import org.springframework.data.domain.PageRequest;
@@ -14,6 +15,7 @@ import com.ballpark.ticketing.community.dto.LikeResponse;
 import com.ballpark.ticketing.community.dto.PostCreateRequest;
 import com.ballpark.ticketing.community.dto.PostDetailResponse;
 import com.ballpark.ticketing.community.dto.PostPageResponse;
+import com.ballpark.ticketing.community.dto.HotPostResponse;
 import com.ballpark.ticketing.community.dto.PostSummaryResponse;
 import com.ballpark.ticketing.community.dto.ReportRequest;
 import com.ballpark.ticketing.community.dto.TeamPostCountResponse;
@@ -40,6 +42,9 @@ public class CommunityService {
     private final MemberRepository memberRepository;
     private final Clock clock;
 
+    /** 게시글 목록 한 쪽에 담을 수 있는 최대 글 수 */
+    static final int MAX_PAGE_SIZE = 50;
+
     public CommunityService(CommunityPostRepository postRepository, CommunityCommentRepository commentRepository,
             PostLikeRepository postLikeRepository, CommunityReportRepository reportRepository,
             TeamRepository teamRepository, MemberRepository memberRepository, Clock clock) {
@@ -59,14 +64,37 @@ public class CommunityService {
                 .toList();
     }
 
-    /** category가 null이면 모든 분류를 섞어서, keyword가 비어 있으면 검색 없이 보여 준다. */
+    /**
+     * category가 null이면 모든 분류를 섞어서, keyword가 비어 있으면 검색 없이 보여 준다.
+     * 쪽 번호를 그릴 수 있게 같은 조건의 전체 글 수와 쪽 수도 함께 준다.
+     * 쪽 크기는 1~50으로, 쪽 번호는 0 이상으로 맞춘다. (아주 큰 크기로 한 번에 다 읽어 가는 것을 막는다)
+     */
     public PostPageResponse listPosts(Long teamId, PostCategory category, String keyword, int page, int size) {
-        // hasMore 판단을 위해 한 개 더 가져와서 잘라낸다.
-        List<CommunityPost> posts = postRepository.findByTeamId(teamId, category, likePattern(keyword),
-                PageRequest.of(page, size + 1));
-        boolean hasMore = posts.size() > size;
-        List<PostSummaryResponse> items = posts.stream().limit(size).map(PostSummaryResponse::from).toList();
-        return new PostPageResponse(items, hasMore);
+        int pageSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+        int pageIndex = Math.max(page, 0);
+        String pattern = likePattern(keyword);
+
+        long totalCount = postRepository.countByTeamId(teamId, category, pattern);
+        int totalPages = (int) ((totalCount + pageSize - 1) / pageSize);
+        List<PostSummaryResponse> items = totalCount == 0 ? List.of()
+                : postRepository.findByTeamId(teamId, category, pattern, PageRequest.of(pageIndex, pageSize)).stream()
+                        .map(PostSummaryResponse::from)
+                        .toList();
+        return new PostPageResponse(items, pageIndex + 1 < totalPages, pageIndex, pageSize, totalCount, totalPages);
+    }
+
+    /** 모든 구단을 통틀어 좋아요가 많은 글. limit은 1~10으로 맞춘다. */
+    public List<HotPostResponse> listHotPosts(int limit) {
+        int size = Math.min(Math.max(limit, 1), 10);
+        return postRepository.findHotPosts(PageRequest.of(0, size)).stream().map(HotPostResponse::from).toList();
+    }
+
+    /** 구단 게시판의 인기글. 좋아요가 많은 순으로 limit개(1~10)를 준다. */
+    public List<PostSummaryResponse> listPopularPosts(Long teamId, int limit) {
+        int size = Math.min(Math.max(limit, 1), 10);
+        return postRepository.findPopularByTeamId(teamId, PageRequest.of(0, size)).stream()
+                .map(PostSummaryResponse::from)
+                .toList();
     }
 
     /**
@@ -87,6 +115,11 @@ public class CommunityService {
         CommunityPost post = getPostOrThrow(postId);
         post.increaseViewCount();
         return toDetail(post, viewerId);
+    }
+
+    /** 관리자가 신고된 글을 확인할 때. 조회수를 올리지 않는다. */
+    public PostDetailResponse getPostForAdmin(Long postId) {
+        return toDetail(getPostOrThrow(postId), null);
     }
 
     @Transactional
@@ -111,13 +144,16 @@ public class CommunityService {
     public void deletePost(Long postId, Long memberId) {
         CommunityPost post = getPostOrThrow(postId);
         requireAuthor(post, memberId);
+        resolveReportsForPostDeletion(postId);
         postRepository.delete(post);
     }
 
     /** 관리자 강제 삭제. 작성자 확인을 하지 않는다. */
     @Transactional
     public void deletePostAsAdmin(Long postId) {
-        postRepository.delete(getPostOrThrow(postId));
+        CommunityPost post = getPostOrThrow(postId);
+        resolveReportsForPostDeletion(postId);
+        postRepository.delete(post);
     }
 
     public List<CommentResponse> listComments(Long postId, Long viewerId) {
@@ -142,10 +178,21 @@ public class CommunityService {
 
     @Transactional
     public void deleteComment(Long commentId, Long memberId) {
-        CommunityComment comment = getCommentOrThrow(commentId);
+        CommunityComment comment = getActiveCommentOrThrow(commentId);
         requireAuthor(comment, memberId);
         comment.getPost().decreaseCommentCount();
+        resolveReports(ReportTargetType.COMMENT, List.of(commentId), ReportStatus.DELETED);
         commentRepository.delete(comment);
+    }
+
+    /**
+     * 관리자가 신고를 처리해 댓글을 지운다. 행은 남겨 게시글 화면에 "신고 처리로 삭제된 댓글입니다."를 보여 주고,
+     * 원래 내용은 신고 관리에서 확인할 수 있게 둔다. 자리가 남으므로 댓글 수는 그대로 둔다.
+     */
+    @Transactional
+    public void deleteCommentByReport(Long commentId) {
+        getActiveCommentOrThrow(commentId).deleteByReport(LocalDateTime.now(clock));
+        resolveReports(ReportTargetType.COMMENT, List.of(commentId), ReportStatus.DELETED);
     }
 
     /** 관리자 강제 삭제. */
@@ -153,6 +200,7 @@ public class CommunityService {
     public void deleteCommentAsAdmin(Long commentId) {
         CommunityComment comment = getCommentOrThrow(commentId);
         comment.getPost().decreaseCommentCount();
+        resolveReports(ReportTargetType.COMMENT, List.of(commentId), ReportStatus.DELETED);
         commentRepository.delete(comment);
     }
 
@@ -184,7 +232,7 @@ public class CommunityService {
 
     @Transactional
     public void reportComment(Long commentId, Long reporterId, ReportRequest request) {
-        CommunityComment comment = getCommentOrThrow(commentId);
+        CommunityComment comment = getActiveCommentOrThrow(commentId);
         if (comment.isAuthor(reporterId)) {
             throw new BusinessException(ErrorCode.CANNOT_REPORT_OWN_CONTENT);
         }
@@ -213,6 +261,31 @@ public class CommunityService {
 
     private CommunityComment getCommentOrThrow(Long commentId) {
         return commentRepository.findById(commentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.COMMENT_NOT_FOUND));
+    }
+
+    /** 신고 처리로 지운 댓글은 없는 댓글처럼 다룬다. (다시 신고하거나 작성자가 지울 수 없다) */
+    /** 대상이 지워지거나 반려되면 그 대상에 대한 처리전 신고를 함께 처리한다. */
+    public void resolveReports(ReportTargetType targetType, Collection<Long> targetIds, ReportStatus result) {
+        if (targetIds.isEmpty()) {
+            return;
+        }
+        LocalDateTime now = LocalDateTime.now(clock);
+        reportRepository.findAllByTargetTypeAndTargetIdInAndStatus(targetType, targetIds, ReportStatus.PENDING)
+                .forEach(report -> report.resolve(result, now));
+    }
+
+    /** 글을 지우면 그 글과 글에 달린 댓글들에 대한 처리전 신고가 삭제로 처리된다. */
+    private void resolveReportsForPostDeletion(Long postId) {
+        resolveReports(ReportTargetType.POST, List.of(postId), ReportStatus.DELETED);
+        resolveReports(ReportTargetType.COMMENT,
+                commentRepository.findIdsByPostId(postId),
+                ReportStatus.DELETED);
+    }
+
+    private CommunityComment getActiveCommentOrThrow(Long commentId) {
+        return commentRepository.findById(commentId)
+                .filter(comment -> !comment.isDeletedByReport())
                 .orElseThrow(() -> new BusinessException(ErrorCode.COMMENT_NOT_FOUND));
     }
 

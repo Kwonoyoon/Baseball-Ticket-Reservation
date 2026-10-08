@@ -149,7 +149,7 @@ export function MyReservationsPage() {
                   aria-label={`예매번호 ${reservation.reservationNumber} 좌석 위치`}
                 >
                   {reservation.seats.some((seat) => seat.sectionCode !== null) ? (
-                    <ReservedSeatMap seats={reservation.seats} />
+                    <ReservedSeatMap seats={reservation.seats} stadiumCode={reservation.game.stadium.code} />
                   ) : (
                     <p className="summary__empty">이 구장은 좌석 배치도가 없습니다.</p>
                   )}

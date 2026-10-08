@@ -12,7 +12,7 @@ type StadiumOverviewProps = {
 
 /** 홈플레이트에서 외야를 바라본 방향으로 구역을 배치한다. (왼쪽 3루, 오른쪽 1루) */
 function gridAreaOf(section: SeatSection): string {
-  if (section.grade === 'OUTFIELD') return 'outfield'
+  if (section.grade === 'OUTFIELD' || section.grade === 'GRASS') return 'outfield'
   if (section.grade === 'PREMIUM') return 'premium'
   const side = section.name.includes('3루') ? '3b' : '1b'
   return section.grade === 'TABLE' ? `table-${side}` : `infield-${side}`

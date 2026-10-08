@@ -37,6 +37,10 @@
   --grade-navy: #28356b;
   --grade-infield: #1c6fd1;
   --grade-outfield: #2f8a57;
+  --grade-cheer: #e0457b;
+  --grade-sky: #4fa3c7;
+  --grade-grass: #6baa3c;
+  --grade-party: #b5651d;
 
   --radius-sm: 8px;
   --radius: 14px;
@@ -95,8 +99,15 @@ p {
 
 .app {
   min-height: 100vh;
+  /* 휴대폰 브라우저의 100vh는 주소창이 숨었을 때 높이라 화면보다 길어진다. 지금 보이는 높이를 쓴다. */
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
+}
+
+/* 헤더(로고 줄 60px + 메뉴 줄 46px + 테두리)의 높이. 헤더 아래에 붙는 sticky 요소가 헤더에 가리지 않도록 top 계산에 쓴다. */
+:root {
+  --site-header-h: 107px;
 }
 
 /* 모든 화면이 함께 쓰는 헤더 (components/Header.tsx). 메인 화면도 이 스타일을 그대로 쓴다. */
@@ -252,6 +263,11 @@ p {
 }
 
 .site-header__mypage {
+  /* 이름이 길어도 헤더를 밀어내지 않게 줄인다. */
+  max-width: 10em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   padding: 8px 12px;
   border-radius: var(--radius-sm);
   font-size: 14px;
@@ -263,6 +279,41 @@ p {
 .site-header__mypage:hover {
   color: var(--text);
   background: var(--surface-muted);
+}
+
+/* 헤더의 [내 티켓] 버튼 (components/Header.tsx) */
+.site-header__ticket {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.site-header__ticket svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+/* 아주 좁은 휴대폰(360px 미만)에서는 [내 티켓]을 아이콘 버튼으로 줄인다. */
+@media (max-width: 359px) {
+  .site-header__ticket {
+    width: 40px;
+    padding-inline: 0;
+    justify-content: center;
+  }
+
+  .site-header__ticket-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }
 
 .icon-button {
@@ -382,39 +433,6 @@ p {
   animation-name: sidebar-slide-out;
 }
 
-/* 메뉴 항목은 살짝 늦게, 아래에서 떠오르듯 나타난다. */
-.sidebar-layer:not(.is-closing) .sidebar__item {
-  animation: sidebar-item-in 0.3s ease both;
-}
-
-.sidebar-layer:not(.is-closing) .sidebar__item:nth-child(1) {
-  animation-delay: 0.1s;
-}
-
-.sidebar-layer:not(.is-closing) .sidebar__item:nth-child(2) {
-  animation-delay: 0.16s;
-}
-
-.sidebar-layer:not(.is-closing) .sidebar__item:nth-child(3) {
-  animation-delay: 0.22s;
-}
-
-.sidebar-layer:not(.is-closing) .sidebar__item:nth-child(4) {
-  animation-delay: 0.28s;
-}
-
-@keyframes sidebar-item-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 @keyframes sidebar-slide-in {
   from {
     transform: translateX(100%);
@@ -483,6 +501,8 @@ p {
   color: var(--text);
   font-weight: 700;
   text-align: left;
+  /* 링크(<a>)로 된 항목도 버튼 항목처럼 밑줄 없이 */
+  text-decoration: none;
   cursor: pointer;
 }
 
@@ -805,8 +825,7 @@ p {
   }
 
   .sidebar,
-  .sidebar-backdrop,
-  .sidebar__item {
+  .sidebar-backdrop {
     animation-duration: 0.01s;
     animation-delay: 0s;
   }
@@ -861,8 +880,22 @@ p {
   border-top: 1px solid var(--border);
 }
 
+.preference-item__text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding-right: 16px;
+}
+
 .preference-item__label {
   font-weight: 600;
+}
+
+.preference-item__desc {
+  font-size: 13px;
+  color: var(--text-muted, #6b7280);
+  line-height: 1.4;
 }
 
 .switch {
@@ -1177,12 +1210,15 @@ p {
 
 .community-post__article {
   display: grid;
+  /* 공백 없이 긴 글자가 있어도 카드가 옆으로 늘어나지 않게 한다. grid 칸은 기본으로 내용 폭 아래로 줄지 않아서 minmax(0, 1fr)이 필요하다. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
 }
 
 .community-post__title {
   font-size: 26px;
   letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
 }
 
 .community-post__meta,
@@ -1196,6 +1232,8 @@ p {
 
 .community-post__content {
   white-space: pre-wrap;
+  /* 띄어쓰기 없이 이어진 긴 글자는 칸 끝에서 줄을 바꾼다. */
+  overflow-wrap: anywhere;
   line-height: 1.7;
 }
 
@@ -1228,6 +1266,12 @@ p {
   display: flex;
   justify-content: space-between;
   gap: 12px;
+}
+
+/* flex 칸도 내용 폭 아래로 줄지 않으므로 min-width: 0을 줘야 긴 댓글이 줄바꿈된다. */
+.community-comments__body {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .community-report-form {
@@ -1277,43 +1321,348 @@ p {
 
 .admin-report-list {
   display: grid;
-  gap: 12px;
+  /* 한 줄에 신고 하나. 카드는 관리자 화면 폭(위쪽 관리자 메뉴 줄과 같은 폭)을 다 쓴다. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.admin-report-list__item {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
+/* 신고 한 건: 종류 표시 → 신고 시간·신고자·신고 사유 → 버튼 → (펼치면) 신고 대상 */
+.admin-report {
+  display: grid;
   gap: 12px;
+  min-width: 0;
 }
 
-.admin-report-list__meta {
+.admin-report__head {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 6px;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* 신고 종류: 게시글은 남색, 댓글은 주황 계열로 구분한다. */
+.admin-report__type {
+  flex: 0 0 auto;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+.admin-report__type.is-post {
+  background: color-mix(in srgb, var(--navy-700) 12%, var(--surface));
+  color: var(--navy-700);
+}
+
+.admin-report__type.is-comment {
+  background: #fff1df;
+  color: #9a5300;
+}
+
+/* 신고 처리 상태: 처리전(파랑) · 삭제(빨강) · 반려(회색) */
+.admin-report__status {
+  flex: 0 0 auto;
+  padding: 3px 9px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-report__status.is-pending {
+  color: #1d5fbf;
+}
+
+.admin-report__status.is-deleted {
+  color: #c0392b;
+}
+
+.admin-report__status.is-rejected {
+  color: var(--text-muted);
+}
+
+/* 처리한 시각. 맨 윗줄 오른쪽 끝 */
+.admin-report__processed {
+  flex: 0 0 auto;
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+/* 처리가 끝난 신고는 조금 흐리게 */
+.admin-report.is-deleted,
+.admin-report.is-rejected {
+  opacity: 0.88;
+}
+
+/* ---------- 신고 관리 머리: 제목(남색 줄) 아래에 현황 탭 ----------
+   현황 칸이 곧 보기 고르기다. */
+.admin-reports__head {
+  display: grid;
+  justify-items: start;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.admin-reports__head .page-title {
+  margin: 0;
+}
+
+/* 한 묶음 안에서 칸을 세로줄로 나눈다. 고른 칸은 남색으로 채운다. */
+.admin-reports__tabs {
+  display: flex;
+  height: 40px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.admin-reports__tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+
+.admin-reports__tab + .admin-reports__tab {
+  border-left: 1px solid var(--border);
+}
+
+.admin-reports__tab:hover {
+  background: var(--surface-muted);
+  color: var(--text);
+}
+
+.admin-reports__tab:focus-visible {
+  outline: 3px solid var(--accent, var(--navy-700));
+  outline-offset: -3px;
+}
+
+.admin-reports__tab strong {
+  font-size: 16px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-reports__tab.is-pending strong {
+  color: #1d5fbf;
+}
+
+.admin-reports__tab.is-deleted strong {
+  color: #c0392b;
+}
+
+.admin-reports__tab.is-rejected strong,
+.admin-reports__tab.is-all strong {
+  color: var(--text);
+}
+
+.admin-reports__tab.is-current,
+.admin-reports__tab.is-current:hover {
+  background: var(--navy-800);
+  color: #ffffff;
+}
+
+.admin-reports__tab.is-current strong {
+  color: #ffffff;
+}
+
+/* 휴대폰: 한 줄에 다 들어가도록 칸을 화면 폭에 맞춰 나눈다. */
+@media (max-width: 560px) {
+  .admin-reports__tabs {
+    width: 100%;
+  }
+
+  .admin-reports__tab {
+    flex: 1;
+    justify-content: center;
+    gap: 5px;
+    padding: 0 8px;
+    font-size: 13px;
+  }
+
+  .admin-reports__tab strong {
+    font-size: 15px;
+  }
+}
+
+/* 신고 대상(글 제목·댓글 첫 줄)을 한 줄로. 길면 말줄임 */
+.admin-report__subject {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 신고 시간 | 신고자 를 한 줄에, 신고 사유를 그 아래 한 줄 가득. 항목마다 작은 카드로 묶는다. */
+.admin-report__info {
+  display: grid;
+  /* 신고 시간 | 신고자 를 한 줄에 1:1로 */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+/* 카드 안에서 라벨과 값을 한 줄에 나란히: "신고 시간  2026.10.07 16:23" */
+.admin-report__field {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: 14px;
+  min-width: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+}
+
+.admin-report__field--wide {
+  grid-column: 1 / -1;
+}
+
+.admin-report__field dt {
+  /* 카드마다 값이 같은 자리에서 시작하도록 라벨 폭을 맞춘다. */
+  min-width: 4.6em;
   color: var(--text-muted);
   font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
-.admin-report-list__preview {
-  margin-bottom: 6px;
+.admin-report__field dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
 }
 
-.admin-report-list__deleted {
-  margin-bottom: 6px;
+/* 휴대폰에서는 두 칸에 라벨과 값이 함께 들어가지 않으므로 카드를 위아래로 놓는다. (카드 안은 그대로 한 줄) */
+@media (max-width: 560px) {
+  .admin-report__info {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-report__field {
+    padding: 9px 12px;
+  }
+}
+
+/* 신고 사유는 여러 줄일 수 있어 줄바꿈을 그대로 보여 준다. */
+.admin-report__field--wide dd {
+  font-weight: 500;
+  white-space: pre-wrap;
+}
+
+.admin-report__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-report__gone {
+  margin: 0;
   color: var(--text-muted);
   font-style: italic;
 }
 
-.admin-report-list__reason {
+/* 펼친 신고 대상. 펼치면 이 자리로 화면과 초점을 옮긴다. (붙어 있는 헤더에 가리지 않게 띄운다) */
+.admin-report__content:focus {
+  outline: none;
+}
+
+.admin-report__content:focus-visible {
+  outline: 3px solid var(--accent, var(--navy-700));
+  outline-offset: 2px;
+}
+
+.admin-report__content {
+  scroll-margin-top: 120px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+}
+
+.admin-report__target {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-report__target-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin: 0;
   color: var(--text-muted);
   font-size: 13px;
+}
+
+.admin-report__target-title {
+  margin: 0;
+  font-size: 18px;
+  overflow-wrap: anywhere;
+}
+
+.admin-report__target-context {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+/* 줄바꿈을 그대로 보여 주고, 아주 긴 글은 안에서 스크롤한다. */
+.admin-report__target-text {
+  max-height: 360px;
+  margin: 0;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.admin-report__target-note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.admin-report__load-error {
+  margin: 0;
+  color: var(--red-500);
+}
+
+.admin-report__open {
+  justify-self: start;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+/* 신고 처리로 삭제된 댓글 자리 (pages/CommunityPostPage.tsx) */
+.community-comments__deleted {
+  margin: 0;
+  padding: 12px 0;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-style: italic;
 }
 
 .grade--premium {
@@ -1350,6 +1699,22 @@ p {
 
 .grade--outfield {
   --grade-color: var(--grade-outfield);
+}
+
+.grade--cheer {
+  --grade-color: var(--grade-cheer);
+}
+
+.grade--sky {
+  --grade-color: var(--grade-sky);
+}
+
+.grade--grass {
+  --grade-color: var(--grade-grass);
+}
+
+.grade--party {
+  --grade-color: var(--grade-party);
 }
 
 .stadium {
@@ -1716,12 +2081,30 @@ p {
 
 .form {
   display: grid;
+  /* 칸 너비를 내용(입력칸의 기본 최소 너비)에 맞춰 늘리지 않는다. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
 }
 
 .field {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
+}
+
+/* 입력칸은 기본으로 "글자 20자" 만큼의 최소 너비를 갖는다. 휴대폰에서 글자 크기를 키우면(카카오톡 브라우저 등)
+   그 너비가 카드보다 넓어져 입력칸과 버튼이 카드 밖으로 밀려나므로, 언제나 칸 너비에 맞춘다. */
+input,
+select,
+textarea {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
 }
 
 .field__label {
@@ -1824,6 +2207,13 @@ p {
   margin-top: 14px;
   font-size: 20px;
   letter-spacing: -0.02em;
+}
+
+.ticket__team {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
 }
 
 .ticket__matchup .team-mark {
@@ -2058,9 +2448,36 @@ p {
     gap: 8px;
   }
 
-  /* 아주 좁은 화면에서는 로그인만 남기고 회원가입 버튼을 접어 헤더 줄바꿈을 막는다. */
-  .site-header__auth .button--primary {
+  /* 예매 카드의 경기 줄: 휴대폰 폭에서도 "원정 vs 홈"이 한 줄에 들어가게 조금 줄인다. */
+  .ticket__matchup {
+    gap: 6px;
+    font-size: 18px;
+  }
+
+  .ticket__team {
+    gap: 6px;
+  }
+
+  .ticket__matchup .team-mark {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* 휴대폰에서는 헤더가 넘치지 않게 비회원은 로그인만, 회원은 이름 링크를 접는다. (마이페이지는 메뉴에서 간다)
+     [내 티켓]은 입장할 때 바로 꺼내야 하므로 남긴다. */
+  .site-header__signup,
+  .site-header__mypage {
     display: none;
+  }
+
+  /* 알림 목록은 종 아래에 붙이면 왼쪽으로 넘치므로 화면 폭에 맞춰 띄운다.
+     (헤더에 backdrop-filter가 있어 fixed의 기준이 헤더라, 헤더 첫 줄 바로 아래가 된다) */
+  .notification-panel {
+    position: fixed;
+    top: 60px;
+    right: 16px;
+    left: 16px;
+    width: auto;
   }
 
   .stadium {
@@ -3291,4 +3708,116 @@ p {
   margin: -8px 0 16px;
   color: var(--text-muted);
   font-size: 14px;
+}
+
+/* ---------- 결제 결과 (pages/PaymentResultPage.tsx) ---------- */
+.payment-result {
+  display: grid;
+  gap: 12px;
+  max-width: 520px;
+  margin: 24px auto;
+  text-align: center;
+}
+
+.payment-result .page-title {
+  margin: 0;
+}
+
+.payment-result__note {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.payment-result__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* ---------- 쪽 번호 이동 (components/Pagination.tsx) ---------- */
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 24px;
+}
+
+.pagination__pages {
+  display: flex;
+  gap: 4px;
+  margin: 0 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.pagination__step,
+.pagination__page {
+  display: grid;
+  place-items: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 6px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+
+.pagination__step {
+  font-size: 18px;
+}
+
+.pagination__step:hover:not(:disabled),
+.pagination__page:hover:not(.is-current) {
+  background: var(--surface-muted);
+  color: var(--text);
+}
+
+.pagination__step:disabled {
+  color: var(--border);
+  cursor: default;
+}
+
+.pagination__page.is-current {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #ffffff;
+  cursor: default;
+}
+
+.pagination__step:focus-visible,
+.pagination__page:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------- 좁은 화면 덮어쓰기 ----------
+   위쪽에 "예매 상세: 내 좌석 위치" 묶음이 여러 번 들어가 있어(예전 머지) 앞쪽의 휴대폰 규칙을 뒤쪽이 덮는다.
+   파일 맨 끝에서 다시 정해 휴대폰에서는 좌석 목록 아래에 배치도를 크게 그린다. */
+@media (max-width: 960px) {
+  .seat-location {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .seat-location__list {
+    position: static;
+  }
+}
+
+/* 휴대폰에서 예매 상세의 좌석 목록 버튼을 손가락으로 누르기 쉬운 높이로 */
+@media (max-width: 560px) {
+  .seat-location__seat {
+    min-height: 36px;
+  }
 }

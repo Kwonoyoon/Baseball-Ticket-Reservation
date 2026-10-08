@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -83,6 +84,75 @@ class CommunityIntegrationTest {
         // 공백뿐이면 검색 없이 전체 목록이다.
         mockMvc.perform(get("/api/teams/" + TEAM_ID + "/posts").param("q", "   "))
                 .andExpect(jsonPath("$.items[?(@.title == '다른글-" + tag + "')]").isNotEmpty());
+    }
+
+    @Test
+    void 인기글은_좋아요_많은_순이고_좋아요가_없는_글은_뺀다() throws Exception {
+        String author = signup();
+        String fan = signup();
+        String tag = UUID.randomUUID().toString().substring(0, 8);
+        // 구단 하나를 이 테스트만 쓰는 건 아니라서, 이 글들의 상대 순서만 확인한다.
+        Long none = createPost(author, "무관심-" + tag, "내용");
+        Long one = createPost(author, "하나-" + tag, "내용");
+        Long two = createPost(author, "둘-" + tag, "내용");
+        like(fan, one);
+        like(fan, two);
+        like(author, two);
+
+        String body = mockMvc.perform(get("/api/teams/" + TEAM_ID + "/posts/popular").param("limit", "10"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        List<Integer> ids = JsonPath.read(body, "$[*].id");
+        // 좋아요 2개인 글이 1개인 글보다 앞이고, 0개인 글은 목록에 없다.
+        assertThat(ids).contains(two.intValue(), one.intValue()).doesNotContain(none.intValue());
+        assertThat(ids.indexOf(two.intValue())).isLessThan(ids.indexOf(one.intValue()));
+
+        // limit 만큼만 준다.
+        mockMvc.perform(get("/api/teams/" + TEAM_ID + "/posts/popular").param("limit", "1"))
+                .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    void 목록은_전체_글_수와_쪽_수를_함께_주고_쪽_크기는_1에서_50으로_맞춘다() throws Exception {
+        String token = signup();
+        String tag = UUID.randomUUID().toString().substring(0, 8);
+        for (int i = 1; i <= 5; i++) {
+            createPost(token, "쪽나눔" + i + "-" + tag, "내용");
+        }
+
+        // 5개를 2개씩 나누면 3쪽이다. 첫 쪽은 최신 글부터 2개.
+        mockMvc.perform(get("/api/teams/" + TEAM_ID + "/posts").param("q", tag).param("size", "2"))
+                .andExpect(jsonPath("$.totalCount").value(5))
+                .andExpect(jsonPath("$.totalPages").value(3))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.hasMore").value(true))
+                .andExpect(jsonPath("$.items[*].title")
+                        .value(org.hamcrest.Matchers.contains("쪽나눔5-" + tag, "쪽나눔4-" + tag)));
+
+        // 마지막 쪽에는 1개만 있고 다음 쪽이 없다.
+        mockMvc.perform(get("/api/teams/" + TEAM_ID + "/posts").param("q", tag).param("size", "2").param("page", "2"))
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.hasMore").value(false));
+
+        // 없는 쪽은 빈 목록이지만 전체 수는 그대로 알려 준다.
+        mockMvc.perform(get("/api/teams/" + TEAM_ID + "/posts").param("q", tag).param("size", "2").param("page", "9"))
+                .andExpect(jsonPath("$.items").isEmpty())
+                .andExpect(jsonPath("$.totalPages").value(3));
+
+        // 쪽 크기는 1~50으로, 쪽 번호는 0 이상으로 맞춘다.
+        mockMvc.perform(get("/api/teams/" + TEAM_ID + "/posts").param("q", tag).param("size", "1000"))
+                .andExpect(jsonPath("$.size").value(50))
+                .andExpect(jsonPath("$.totalPages").value(1));
+        mockMvc.perform(get("/api/teams/" + TEAM_ID + "/posts").param("q", tag).param("size", "0").param("page", "-3"))
+                .andExpect(jsonPath("$.size").value(1))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.totalPages").value(5));
+
+        // 검색 결과가 없으면 0쪽이다.
+        mockMvc.perform(get("/api/teams/" + TEAM_ID + "/posts").param("q", "없는글-" + tag))
+                .andExpect(jsonPath("$.totalCount").value(0))
+                .andExpect(jsonPath("$.totalPages").value(0))
+                .andExpect(jsonPath("$.hasMore").value(false));
     }
 
     @Test
@@ -263,7 +333,13 @@ class CommunityIntegrationTest {
 
         mockMvc.perform(get("/api/admin/community/reports").header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].targetPreview").value("삭제될 글"));
+                .andExpect(jsonPath("$[0].targetPreview").value("삭제될 글"))
+                .andExpect(jsonPath("$[0].targetStatus").value("ACTIVE"))
+                // 관리자가 신고된 글의 본문을 펼쳐 보고, 원래 글로 갈 수 있다.
+                .andExpect(jsonPath("$[0].targetContent").value("신고 대상"))
+                .andExpect(jsonPath("$[0].postId").value(postId))
+                .andExpect(jsonPath("$[0].postTeamId").value(TEAM_ID))
+                .andExpect(jsonPath("$[0].postTitle").value("삭제될 글"));
 
         mockMvc.perform(get("/api/admin/community/reports").header(HttpHeaders.AUTHORIZATION, bearer(author)))
                 .andExpect(status().isForbidden());
@@ -272,6 +348,167 @@ class CommunityIntegrationTest {
                         .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
                 .andExpect(status().isNoContent());
         mockMvc.perform(get("/api/posts/" + postId)).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void 신고된_댓글은_내용과_어느_글에_달렸는지_보여주고_지워지면_내용을_비운다() throws Exception {
+        String author = signup();
+        String reporter = signup();
+        Long postId = createPost(author, "댓글이 달린 글", "본문");
+        String body = mockMvc.perform(post("/api/posts/" + postId + "/comments")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(author))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"content\":\"신고될 댓글 내용\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        long commentId = ((Number) JsonPath.read(body, "$.id")).longValue();
+        mockMvc.perform(report("/api/comments/" + commentId + "/report", reporter)).andExpect(status().isNoContent());
+
+        String reportPath = "$[?(@.targetType == 'COMMENT' && @.targetId == " + commentId + ")]";
+        mockMvc.perform(get("/api/admin/community/reports").header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(reportPath + ".targetContent").value("신고될 댓글 내용"))
+                .andExpect(jsonPath(reportPath + ".postId").value(postId.intValue()))
+                .andExpect(jsonPath(reportPath + ".postTitle").value("댓글이 달린 글"));
+
+        mockMvc.perform(delete("/api/admin/community/comments/" + commentId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/admin/community/reports").header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(jsonPath(reportPath + ".targetPreview").value(org.hamcrest.Matchers.contains((Object) null)))
+                .andExpect(jsonPath(reportPath + ".targetContent").value(org.hamcrest.Matchers.contains((Object) null)))
+                .andExpect(jsonPath(reportPath + ".postId").value(org.hamcrest.Matchers.contains((Object) null)));
+    }
+
+    @Test
+    void 신고를_처리하면_댓글은_신고_처리로_삭제된_댓글로_남고_게시글은_지워진다() throws Exception {
+        String author = signup();
+        String reporter = signup();
+        Long postId = createPost(author, "신고 처리 글", "본문");
+        String body = mockMvc.perform(post("/api/posts/" + postId + "/comments")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(author))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"content\":\"광고 댓글입니다\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        long commentId = ((Number) JsonPath.read(body, "$.id")).longValue();
+        mockMvc.perform(report("/api/comments/" + commentId + "/report", reporter)).andExpect(status().isNoContent());
+        mockMvc.perform(report("/api/posts/" + postId + "/report", reporter)).andExpect(status().isNoContent());
+
+        String reports = mockMvc.perform(get("/api/admin/community/reports")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andReturn().getResponse().getContentAsString();
+        Number commentReportId = JsonPath.<List<Number>>read(reports,
+                "$[?(@.targetType == 'COMMENT' && @.targetId == " + commentId + ")].id").getFirst();
+        Number postReportId = JsonPath.<List<Number>>read(reports,
+                "$[?(@.targetType == 'POST' && @.targetId == " + postId + ")].id").getFirst();
+
+        // 관리자는 신고된 글을 조회수 없이 가져와 확인한다.
+        mockMvc.perform(get("/api/admin/community/posts/" + postId).header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("신고 처리 글"))
+                .andExpect(jsonPath("$.content").value("본문"))
+                .andExpect(jsonPath("$.viewCount").value(0));
+        mockMvc.perform(get("/api/admin/community/posts/" + postId).header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(jsonPath("$.viewCount").value(0));
+        mockMvc.perform(get("/api/admin/community/posts/" + postId).header(HttpHeaders.AUTHORIZATION, bearer(reporter)))
+                .andExpect(status().isForbidden());
+
+        // 일반 회원은 신고를 처리할 수 없다.
+        mockMvc.perform(delete("/api/admin/community/reports/" + commentReportId + "/target")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(reporter)))
+                .andExpect(status().isForbidden());
+
+        // 댓글 신고 처리: 게시글 화면에는 자리만 남고 작성자·내용은 보이지 않는다.
+        mockMvc.perform(delete("/api/admin/community/reports/" + commentReportId + "/target")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/posts/" + postId + "/comments").header(HttpHeaders.AUTHORIZATION, bearer(author)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(commentId))
+                .andExpect(jsonPath("$[0].deletedByReport").value(true))
+                .andExpect(jsonPath("$[0].content").doesNotExist())
+                .andExpect(jsonPath("$[0].authorName").doesNotExist())
+                .andExpect(jsonPath("$[0].mine").value(false));
+        // 관리자는 원래 내용을 계속 확인할 수 있다.
+        String commentReportPath = "$[?(@.id == " + commentReportId + ")]";
+        mockMvc.perform(get("/api/admin/community/reports").header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(jsonPath(commentReportPath + ".status").value("DELETED"))
+                .andExpect(jsonPath(commentReportPath + ".processedAt").exists())
+                .andExpect(jsonPath(commentReportPath + ".targetStatus").value("DELETED_BY_REPORT"))
+                .andExpect(jsonPath(commentReportPath + ".targetContent").value("광고 댓글입니다"));
+        // 이미 처리한 신고는 다시 처리할 수 없다.
+        mockMvc.perform(post("/api/admin/community/reports/" + commentReportId + "/reject")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("REPORT_ALREADY_PROCESSED"));
+        // 지운 댓글은 다시 신고하거나 작성자가 지울 수 없다.
+        mockMvc.perform(report("/api/comments/" + commentId + "/report", signup()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("COMMENT_NOT_FOUND"));
+        mockMvc.perform(delete("/api/comments/" + commentId).header(HttpHeaders.AUTHORIZATION, bearer(author)))
+                .andExpect(status().isNotFound());
+
+        // 게시글 신고 처리: 글이 지워진다.
+        mockMvc.perform(delete("/api/admin/community/reports/" + postReportId + "/target")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/posts/" + postId)).andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/admin/community/reports").header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(jsonPath("$[?(@.id == " + postReportId + ")].targetStatus").value("DELETED"));
+        mockMvc.perform(delete("/api/admin/community/reports/999999/target")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("REPORT_NOT_FOUND"));
+    }
+
+    @Test
+    void 반려하면_같은_대상의_처리전_신고가_함께_반려되고_작성자가_지우면_삭제로_처리된다() throws Exception {
+        String author = signup();
+        String first = signup();
+        String second = signup();
+        Long postId = createPost(author, "반려될 글", "평범한 글");
+        mockMvc.perform(report("/api/posts/" + postId + "/report", first)).andExpect(status().isNoContent());
+        mockMvc.perform(report("/api/posts/" + postId + "/report", second)).andExpect(status().isNoContent());
+
+        String postReports = "$[?(@.targetType == 'POST' && @.targetId == " + postId + ")]";
+        String reports = mockMvc.perform(get("/api/admin/community/reports")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(jsonPath(postReports + ".status").value(org.hamcrest.Matchers.contains("PENDING", "PENDING")))
+                .andReturn().getResponse().getContentAsString();
+        Number reportId = JsonPath.<List<Number>>read(reports, postReports + ".id").getFirst();
+
+        // 일반 회원은 반려할 수 없다.
+        mockMvc.perform(post("/api/admin/community/reports/" + reportId + "/reject")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(first)))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/admin/community/reports/" + reportId + "/reject")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(status().isNoContent());
+
+        // 같은 글에 대한 처리전 신고가 모두 반려되고, 글은 그대로 남는다.
+        mockMvc.perform(get("/api/admin/community/reports").header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(jsonPath(postReports + ".status").value(org.hamcrest.Matchers.contains("REJECTED", "REJECTED")));
+        mockMvc.perform(get("/api/posts/" + postId)).andExpect(status().isOk());
+
+        // 반려 뒤에 들어온 새 신고는 다시 처리전이다.
+        String third = signup();
+        mockMvc.perform(report("/api/posts/" + postId + "/report", third)).andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/admin/community/reports").header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(jsonPath(postReports + ".status").value(
+                        org.hamcrest.Matchers.containsInAnyOrder("PENDING", "REJECTED", "REJECTED")));
+
+        // 작성자가 글을 스스로 지우면 처리전 신고는 삭제로 처리된다. (반려된 신고는 그대로)
+        mockMvc.perform(delete("/api/posts/" + postId).header(HttpHeaders.AUTHORIZATION, bearer(author)))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/admin/community/reports").header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(jsonPath(postReports + ".status").value(
+                        org.hamcrest.Matchers.containsInAnyOrder("DELETED", "REJECTED", "REJECTED")));
+    }
+
+    private void like(String token, Long postId) throws Exception {
+        mockMvc.perform(post("/api/posts/" + postId + "/like").header(HttpHeaders.AUTHORIZATION, bearer(token)))
+                .andExpect(status().isOk());
     }
 
     private long teamPostCount(long teamId) throws Exception {

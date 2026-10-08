@@ -20,6 +20,7 @@ import com.ballpark.ticketing.community.dto.LikeResponse;
 import com.ballpark.ticketing.community.dto.PostCreateRequest;
 import com.ballpark.ticketing.community.dto.PostDetailResponse;
 import com.ballpark.ticketing.community.dto.PostPageResponse;
+import com.ballpark.ticketing.community.dto.PostSummaryResponse;
 import com.ballpark.ticketing.community.dto.ReportRequest;
 import com.ballpark.ticketing.community.dto.TeamPostCountResponse;
 import com.ballpark.ticketing.global.security.AuthMember;
@@ -50,8 +51,20 @@ public class CommunityController {
             @RequestParam(required = false) PostCategory category,
             @RequestParam(required = false) String q,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "10") int size) {
         return communityService.listPosts(teamId, category, q, page, size);
+    }
+
+    @GetMapping("/api/community/hot-posts")
+    public List<com.ballpark.ticketing.community.dto.HotPostResponse> listHotPosts(
+            @RequestParam(defaultValue = "3") int limit) {
+        return communityService.listHotPosts(limit);
+    }
+
+    @GetMapping("/api/teams/{teamId}/posts/popular")
+    public List<PostSummaryResponse> listPopularPosts(@PathVariable Long teamId,
+            @RequestParam(defaultValue = "3") int limit) {
+        return communityService.listPopularPosts(teamId, limit);
     }
 
     @PostMapping("/api/teams/{teamId}/posts")

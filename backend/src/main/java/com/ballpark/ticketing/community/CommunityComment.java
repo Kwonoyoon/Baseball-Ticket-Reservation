@@ -36,6 +36,10 @@ public class CommunityComment {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    /** 관리자가 신고를 처리해 지운 시각. 행은 남기고 게시글 화면에는 내용 대신 안내만 보여 준다. */
+    @Column(name = "deleted_by_report_at")
+    private LocalDateTime deletedByReportAt;
+
     protected CommunityComment() {
     }
 
@@ -44,6 +48,17 @@ public class CommunityComment {
         this.member = member;
         this.content = content;
         this.createdAt = now;
+    }
+
+    /** 신고 처리로 지운다. 원래 내용은 관리자 확인용으로 남긴다. */
+    public void deleteByReport(LocalDateTime now) {
+        if (deletedByReportAt == null) {
+            deletedByReportAt = now;
+        }
+    }
+
+    public boolean isDeletedByReport() {
+        return deletedByReportAt != null;
     }
 
     public boolean isAuthor(Long memberId) {

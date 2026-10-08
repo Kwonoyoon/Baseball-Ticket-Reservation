@@ -31,6 +31,7 @@ import com.ballpark.ticketing.stadium.SeatSection;
 import com.ballpark.ticketing.stadium.SeatSectionRepository;
 import com.ballpark.ticketing.team.Team;
 import com.ballpark.ticketing.team.TeamRepository;
+import com.ballpark.ticketing.support.PaymentTestSupport;
 import com.jayway.jsonpath.JsonPath;
 
 @SpringBootTest
@@ -92,11 +93,21 @@ class ReservationFlowIntegrationTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("HOLD_EXPIRED"));
 
-        String body = reserve(alice, seat(1, 1))
+        // 1단계: 결제 대기 예매. 좌석은 확보됐지만 아직 결제 전이라 취소 대상이 아니다.
+        String pending = reserve(alice, seat(1, 1))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.status").value("CONFIRMED"))
+                .andExpect(jsonPath("$.status").value("PENDING"))
                 .andExpect(jsonPath("$.totalPrice").value(section.getPrice()))
+                .andExpect(jsonPath("$.cancelable").value(false))
+                .andExpect(jsonPath("$.paymentDeadline").isNotEmpty())
+                .andReturn().getResponse().getContentAsString();
+
+        // 2단계: 결제창 승인 뒤 확정
+        String body = PaymentTestSupport.confirm(mockMvc, alice, pending)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CONFIRMED"))
                 .andExpect(jsonPath("$.cancelable").value(true))
+                .andExpect(jsonPath("$.paymentDeadline").isEmpty())
                 .andExpect(jsonPath("$.seats[0].sectionName").value(section.getName()))
                 // 예매 상세 화면이 좌석 위치를 배치도에 표시하려면 블록 코드와 크기가 필요하다.
                 .andExpect(jsonPath("$.seats[0].sectionCode").value(section.getZoneCode()))
@@ -212,9 +223,13 @@ class ReservationFlowIntegrationTest {
                 .collect(Collectors.joining(","));
 
         hold(alice, fourSeats).andExpect(status().isOk());
-        String body = reserve(alice, fourSeats)
+        String pending = reserve(alice, fourSeats)
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
+        // 결제 대기 중인 좌석도 한도에 들어간다. (결제창을 여러 개 열어 한도를 넘지 못하게)
+        mockMvc.perform(get(summaryUrl()).header(HttpHeaders.AUTHORIZATION, bearer(alice)))
+                .andExpect(jsonPath("$.myReservedSeats").value(4));
+        String body = PaymentTestSupport.payAndConfirm(mockMvc, alice, pending);
         long reservationId = ((Number) JsonPath.read(body, "$.id")).longValue();
 
         mockMvc.perform(get(summaryUrl()).header(HttpHeaders.AUTHORIZATION, bearer(alice)))

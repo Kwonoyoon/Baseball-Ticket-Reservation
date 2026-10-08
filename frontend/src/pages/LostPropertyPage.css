@@ -1,0 +1,211 @@
+/* ---------- 분실물센터 (pages/LostPropertyPage.tsx) ---------- */
+
+.lost-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 22px;
+}
+
+.lost-page__head {
+  display: flex;
+  /* 좁은 휴대폰에서는 등록 버튼이 제목 아래로 내려간다 */
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.lost-page__head .page-title {
+  margin: 0;
+}
+
+.lost-page__intro {
+  margin: -10px 0 0;
+  color: var(--text-muted);
+  font-size: 14.5px;
+}
+
+.lost-page__heading {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+.lost-form {
+  display: grid;
+  gap: 14px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.lost-form__row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.lost-form__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.lost-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.lost-filter label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.lost-filter select,
+.lost-card__admin select,
+.lost-card__admin input {
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+}
+
+.lost-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lost-card {
+  display: flex;
+  gap: 18px;
+  padding: 20px 22px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.lost-card__image {
+  flex: 0 0 auto;
+  width: 112px;
+  height: 112px;
+  border-radius: var(--radius);
+  background: var(--surface-muted);
+  object-fit: cover;
+}
+
+.lost-card__main {
+  display: grid;
+  flex: 1;
+  gap: 6px;
+  min-width: 0;
+}
+
+.lost-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lost-chip {
+  padding: 2px 9px;
+  border-radius: 6px;
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.lost-chip--reported {
+  background: color-mix(in srgb, #2563eb 12%, transparent);
+  color: #1d4ed8;
+}
+
+.lost-chip--keeping {
+  background: color-mix(in srgb, #b45309 14%, transparent);
+  color: #92400e;
+}
+
+.lost-chip--claimed {
+  background: color-mix(in srgb, #059669 14%, transparent);
+  color: #047857;
+}
+
+.lost-card__title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+.lost-card__place,
+.lost-card__meta {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13.5px;
+}
+
+.lost-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 12.5px;
+}
+
+.lost-card__desc {
+  margin: 4px 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+  /* 줄바꿈은 쓴 그대로, 띄어쓰기 없이 긴 글자는 칸 끝에서 줄을 바꾼다. */
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.lost-card__admin {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+
+/* 올린 본인에게도 보이는 삭제 버튼 줄. 관리자 상태 칸 아래에 같은 간격으로 놓는다. */
+.lost-card__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.lost-card__admin input {
+  flex: 1;
+  min-width: 180px;
+}
+
+@media (max-width: 640px) {
+  .lost-form__row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lost-card {
+    flex-direction: column;
+    padding: 18px;
+  }
+
+  .lost-card__image {
+    width: 100%;
+    height: 160px;
+  }
+}

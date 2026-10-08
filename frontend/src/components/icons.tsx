@@ -21,6 +21,27 @@ export function BellIcon() {
   )
 }
 
+/** 공지(확성기). 알림 벨과 헷갈리지 않게 다른 모양을 쓴다. */
+export function MegaphoneIcon() {
+  return (
+    <svg {...commonProps}>
+      <path d="M3 11v2a1 1 0 0 0 1 1h2l8 4V6L6 10H4a1 1 0 0 0-1 1Z" />
+      <path d="M18 9a4 4 0 0 1 0 6" />
+      <path d="M7 14l1.5 5.5" />
+    </svg>
+  )
+}
+
+/** 분실물센터(돋보기) */
+export function SearchIcon() {
+  return (
+    <svg {...commonProps}>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </svg>
+  )
+}
+
 export function MenuIcon() {
   return (
     <svg {...commonProps}>
@@ -42,6 +63,16 @@ export function TicketIcon() {
     <svg {...commonProps}>
       <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
       <path d="M13 5v2M13 11v2M13 17v2" />
+    </svg>
+  )
+}
+
+/** 입장 QR 스캔: 네 모서리 틀 안의 QR 무늬 */
+export function ScanIcon() {
+  return (
+    <svg {...commonProps}>
+      <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" />
+      <path d="M8 8h3v3H8zM13 13h3v3h-3zM13 8h3M8 16h3" />
     </svg>
   )
 }

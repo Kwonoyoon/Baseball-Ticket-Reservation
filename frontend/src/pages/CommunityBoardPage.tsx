@@ -4,6 +4,8 @@ import { errorMessage, isAbortError } from '../api/client'
 import { api } from '../api/endpoints'
 import type { PostCategory, Team } from '../api/types'
 import { useAuth } from '../auth/useAuth'
+import { CommunityNotices } from '../components/CommunityNotices'
+import { PopularPosts } from '../components/PopularPosts'
 import { ErrorMessage } from '../components/StatusView'
 import { TeamBoard } from '../components/TeamBoard'
 import { TeamPicker } from '../components/TeamPicker'
@@ -115,9 +117,7 @@ export function CommunityBoardPage() {
     setSearchParams(boardParams({ category, keyword, page: next }))
   }
 
-  const settingPath = member
-    ? FAVORITE_SETTING_PATH
-    : `/login?redirect=${encodeURIComponent(FAVORITE_SETTING_PATH)}`
+  const settingPath = member ? FAVORITE_SETTING_PATH : `/login?redirect=${encodeURIComponent(FAVORITE_SETTING_PATH)}`
 
   // 글쓰기 버튼·분류 탭·배지 같은 강조색도 보고 있는 구단 색으로. (흰 글자가 읽히게 보정된 색)
   const teamTheme = buildTeamTheme(teamColor)
@@ -134,6 +134,10 @@ export function CommunityBoardPage() {
         onSelect={selectTeam}
         favoriteSettingPath={settingPath}
       />
+
+      {/* 위에서부터: 구단 → 커뮤니티 공지 → 인기글 → 게시판 */}
+      <CommunityNotices />
+      {selectedId !== null && <PopularPosts key={selectedId} teamId={selectedId} />}
 
       {selectedId !== null && (
         <TeamBoard

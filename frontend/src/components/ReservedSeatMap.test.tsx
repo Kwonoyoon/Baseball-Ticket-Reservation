@@ -21,7 +21,7 @@ function seat(overrides: Partial<ReservedSeat> = {}): ReservedSeat {
 
 describe('ReservedSeatMap', () => {
   it('예매한 블록만 강조하고 좌석을 적는다', () => {
-    render(<ReservedSeatMap seats={[seat(), seat({ seatNo: 8 })]} />)
+    render(<ReservedSeatMap stadiumCode="JAMSIL" seats={[seat(), seat({ seatNo: 8 })]} />)
 
     expect(screen.getByRole('img', { name: '내 좌석 위치: 네이비석 1번 3열 7번, 3열 8번' })).toBeInTheDocument()
 
@@ -34,6 +34,7 @@ describe('ReservedSeatMap', () => {
   it('블록이 여러 개면 모두 보여준다', () => {
     const { container } = render(
       <ReservedSeatMap
+        stadiumCode="JAMSIL"
         seats={[
           seat(),
           seat({ sectionId: 12, sectionCode: 'RED-02', sectionName: '레드석 2번', grade: 'RED', rowNo: 1, seatNo: 2 }),
@@ -47,7 +48,7 @@ describe('ReservedSeatMap', () => {
 
   it('좌석을 누르면 블록 안 어디에 앉는지 펼친다', async () => {
     const user = userEvent.setup()
-    render(<ReservedSeatMap seats={[seat(), seat({ seatNo: 8 })]} />)
+    render(<ReservedSeatMap stadiumCode="JAMSIL" seats={[seat(), seat({ seatNo: 8 })]} />)
 
     await user.click(screen.getByRole('button', { name: '3열 8번' }))
 
@@ -59,7 +60,7 @@ describe('ReservedSeatMap', () => {
 
   it('배치도에서 블록을 눌러도 좌석표가 열린다', async () => {
     const user = userEvent.setup()
-    render(<ReservedSeatMap seats={[seat()]} />)
+    render(<ReservedSeatMap stadiumCode="JAMSIL" seats={[seat()]} />)
 
     await user.click(screen.getByRole('button', { name: '네이비석 1번 좌석표 보기' }))
 
@@ -68,7 +69,7 @@ describe('ReservedSeatMap', () => {
 
   it('좌석표에서 좌석을 누르면 왼쪽 목록의 선택도 따라온다', async () => {
     const user = userEvent.setup()
-    render(<ReservedSeatMap seats={[seat(), seat({ seatNo: 8 })]} />)
+    render(<ReservedSeatMap stadiumCode="JAMSIL" seats={[seat(), seat({ seatNo: 8 })]} />)
 
     // 목록에서 3열 7번을 고르면 좌석표가 열린다.
     await user.click(screen.getByRole('button', { name: '3열 7번' }))
@@ -83,7 +84,7 @@ describe('ReservedSeatMap', () => {
 
   it('같은 좌석을 다시 누르면 접힌다', async () => {
     const user = userEvent.setup()
-    const { container } = render(<ReservedSeatMap seats={[seat()]} />)
+    const { container } = render(<ReservedSeatMap stadiumCode="JAMSIL" seats={[seat()]} />)
 
     await user.click(screen.getByRole('button', { name: '3열 7번' }))
     expect(container.querySelector('.block-grid')).not.toBeNull()
@@ -93,8 +94,27 @@ describe('ReservedSeatMap', () => {
   })
 
   it('배치도에 없는 구역이면 아무것도 그리지 않는다', () => {
-    const { container } = render(<ReservedSeatMap seats={[seat({ sectionCode: null })]} />)
+    const { container } = render(<ReservedSeatMap stadiumCode="JAMSIL" seats={[seat({ sectionCode: null })]} />)
 
+    expect(container).toBeEmptyDOMElement()
+  })
+
+  it('구장마다 다른 배치도에서 내 블록을 찾는다', () => {
+    render(
+      <ReservedSeatMap
+        stadiumCode="GOCHEOK"
+        seats={[seat({ sectionCode: 'DIAMOND-02', sectionName: '다이아몬드석 2번', grade: 'PREMIUM' })]}
+      />,
+    )
+
+    expect(screen.getByRole('img', { name: '내 좌석 위치: 다이아몬드석 2번 3열 7번' })).toBeInTheDocument()
+  })
+
+  it('지금 배치도에 없는 블록(배치도가 바뀌기 전 예매)이나 배치도 없는 구장이면 그리지 않는다', () => {
+    const { container, rerender } = render(<ReservedSeatMap stadiumCode="GOCHEOK" seats={[seat()]} />)
+    expect(container).toBeEmptyDOMElement()
+
+    rerender(<ReservedSeatMap stadiumCode={null} seats={[seat()]} />)
     expect(container).toBeEmptyDOMElement()
   })
 })

@@ -18,9 +18,20 @@ public interface SoldSeatRepository extends JpaRepository<SoldSeat, Long> {
     @Query("select s.sectionId as sectionId, count(s) as soldCount from SoldSeat s where s.gameId = :gameId group by s.sectionId")
     List<SectionSoldCount> countSoldBySection(@Param("gameId") Long gameId);
 
+    /** 여러 경기의 판매 좌석 수를 한 번에. 메인 화면의 "매진 임박"처럼 경기 목록 전체를 훑을 때 쓴다. */
+    @Query("select s.gameId as gameId, count(s) as soldCount from SoldSeat s where s.gameId in :gameIds group by s.gameId")
+    List<GameSoldCount> countSoldByGames(@Param("gameIds") java.util.Collection<Long> gameIds);
+
     @Modifying(flushAutomatically = true, clearAutomatically = false)
     @Query("delete from SoldSeat s where s.reservationId = :reservationId")
     int deleteByReservationId(@Param("reservationId") Long reservationId);
+
+    interface GameSoldCount {
+
+        Long getGameId();
+
+        long getSoldCount();
+    }
 
     interface SectionSoldCount {
 

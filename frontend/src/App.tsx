@@ -1,10 +1,13 @@
-import { createBrowserRouter, Navigate, RouterProvider } from 'react-router'
+import { createBrowserRouter, RouterProvider } from 'react-router'
 import { AuthProvider } from './auth/AuthProvider'
 import { RequireAdmin, RequireAuth } from './auth/RequireAuth'
+import { AdminLayout } from './components/AdminLayout'
 import { Layout } from './components/Layout'
 import { TeamThemeApplier } from './components/TeamThemeApplier'
 import { AccountPage } from './pages/AccountPage'
 import { AdminCommunityReportsPage } from './pages/AdminCommunityReportsPage'
+import { AdminDashboardPage } from './pages/AdminDashboardPage'
+import { AdminEntryPage } from './pages/AdminEntryPage'
 import { AdminMembersPage } from './pages/AdminMembersPage'
 import { CalendarPage } from './pages/CalendarPage'
 import { CommunityBoardPage } from './pages/CommunityBoardPage'
@@ -13,10 +16,15 @@ import { CommunityPostPage } from './pages/CommunityPostPage'
 import { NotificationProvider } from './notifications/NotificationProvider'
 import { GamePage } from './pages/GamePage'
 import { LoginPage } from './pages/LoginPage'
+import { MockCheckoutPage } from './pages/MockCheckoutPage'
 import { MyReservationsPage } from './pages/MyReservationsPage'
+import { LostPropertyPage } from './pages/LostPropertyPage'
+import { MyTicketPage } from './pages/MyTicketPage'
 import { NotFoundPage } from './pages/NotFoundPage'
+import { NoticesPage } from './pages/NoticesPage'
 import { NotificationSettingsPage } from './pages/NotificationSettingsPage'
 import { PasswordChangePage } from './pages/PasswordChangePage'
+import { PaymentFailPage, PaymentSuccessPage } from './pages/PaymentResultPage'
 import { ProfileEditPage } from './pages/ProfileEditPage'
 import { ReservationDetailPage } from './pages/ReservationDetailPage'
 import { SchedulePage } from './pages/SchedulePage'
@@ -36,10 +44,21 @@ const router = createBrowserRouter([
       </RequireAuth>
     ),
   },
+  // 가짜 PG 결제창. 실제 PG의 결제창처럼 사이트 헤더 없이 띄우므로 Layout 밖에 둔다.
+  {
+    path: '/mock-pg/checkout',
+    element: (
+      <RequireAuth>
+        <MockCheckoutPage />
+      </RequireAuth>
+    ),
+  },
   {
     element: <Layout />,
     children: [
       { path: 'games/:gameId', element: <GamePage /> },
+      // 전체 공지는 비회원도 읽는다. 쓰기·수정·삭제는 관리자만(화면과 서버 둘 다 막는다).
+      { path: 'notices', element: <NoticesPage /> },
       { path: 'login', element: <LoginPage /> },
       { path: 'signup', element: <SignupPage /> },
       // 커뮤니티 입구와 구단 게시판은 한 화면이다. (구단 줄 + 게시판) 입구는 관심 구단부터 보여 준다.
@@ -71,10 +90,43 @@ const router = createBrowserRouter([
         ),
       },
       {
+        // 분실물센터: 로그인한 회원이 등록·조회하고, 보관 상태는 관리자가 바꾼다.
+        path: 'lost-properties',
+        element: (
+          <RequireAuth>
+            <LostPropertyPage />
+          </RequireAuth>
+        ),
+      },
+      {
         path: 'transfers',
         element: (
           <RequireAuth>
             <TransferMarketPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'my/ticket',
+        element: (
+          <RequireAuth>
+            <MyTicketPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'payments/success',
+        element: (
+          <RequireAuth>
+            <PaymentSuccessPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'payments/fail',
+        element: (
+          <RequireAuth>
+            <PaymentFailPage />
           </RequireAuth>
         ),
       },
@@ -118,23 +170,23 @@ const router = createBrowserRouter([
           </RequireAuth>
         ),
       },
-      // 관리자 페이지 입구. 지금은 회원 관리 하나뿐이라 바로 보낸다. (메뉴가 늘면 여기에 관리자 홈을 둔다)
-      { path: 'admin', element: <Navigate to="/admin/members" replace /> },
+      // 관리자 페이지. 위쪽 공통 메뉴(AdminLayout) 아래에 관리자 화면들이 들어오고, 첫 화면은 대시보드다.
+      // 새 관리자 화면은 여기에 자식 라우트를 더하고 components/AdminLayout.tsx 메뉴에 항목을 추가한다.
       {
-        path: 'admin/members',
+        path: 'admin',
         element: (
           <RequireAdmin>
-            <AdminMembersPage />
+            <AdminLayout />
           </RequireAdmin>
         ),
-      },
-      {
-        path: 'admin/community/reports',
-        element: (
-          <RequireAdmin>
-            <AdminCommunityReportsPage />
-          </RequireAdmin>
-        ),
+        children: [
+          { index: true, element: <AdminDashboardPage /> },
+          { path: 'members', element: <AdminMembersPage /> },
+          { path: 'community/reports', element: <AdminCommunityReportsPage /> },
+          { path: 'notices', element: <NoticesPage /> },
+          // 입장 게이트에서 관람객의 내 티켓 QR을 읽는다.
+          { path: 'entry', element: <AdminEntryPage /> },
+        ],
       },
       {
         path: 'notifications/settings',

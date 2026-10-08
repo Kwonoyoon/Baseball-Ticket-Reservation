@@ -19,7 +19,7 @@ export function CommunityPostPage() {
   const { teamId, postId } = useParams<{ teamId: string; postId: string }>()
   const id = Number(postId)
   const navigate = useNavigate()
-  const { member, loading: authLoading } = useAuth()
+  const { member, loading: authLoading, isAdmin } = useAuth()
 
   const [post, setPost] = useState<PostDetail | null>(null)
   const [comments, setComments] = useState<Comment[] | null>(null)
@@ -29,6 +29,8 @@ export function CommunityPostPage() {
   const [submittingComment, setSubmittingComment] = useState(false)
   const [likeBusy, setLikeBusy] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
+  // 비회원이 좋아요를 눌렀을 때 띄우는 로그인 안내. 로그인하면 이 글로 돌아오게 주소를 함께 넘긴다.
+  const [loginPrompt, setLoginPrompt] = useState(false)
   const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null)
   const [reportReason, setReportReason] = useState('')
   const [reportError, setReportError] = useState<string | null>(null)
@@ -72,10 +74,15 @@ export function CommunityPostPage() {
     }
   }
 
-  const deletePost = async () => {
-    if (!window.confirm('이 글을 삭제할까요?\n되돌릴 수 없습니다.')) return
+  /** asAdmin: 본인 글이 아니어도 관리자 권한으로 지운다. (서버도 관리자만 허용한다) */
+  const deletePost = async (asAdmin = false) => {
+    const question = asAdmin
+      ? '관리자 권한으로 이 글을 삭제할까요?\n되돌릴 수 없습니다.'
+      : '이 글을 삭제할까요?\n되돌릴 수 없습니다.'
+    if (!window.confirm(question)) return
     try {
-      await api.deletePost(id)
+      if (asAdmin) await api.deletePostAsAdmin(id)
+      else await api.deletePost(id)
       navigate(`/community/${teamId}`)
     } catch (e) {
       setNotice(errorMessage(e, '삭제하지 못했습니다.'))
@@ -115,10 +122,11 @@ export function CommunityPostPage() {
     }
   }
 
-  const deleteComment = async (commentId: number) => {
-    if (!window.confirm('이 댓글을 삭제할까요?')) return
+  const deleteComment = async (commentId: number, asAdmin = false) => {
+    if (!window.confirm(asAdmin ? '관리자 권한으로 이 댓글을 삭제할까요?' : '이 댓글을 삭제할까요?')) return
     try {
-      await api.deleteComment(commentId)
+      if (asAdmin) await api.deleteCommentAsAdmin(commentId)
+      else await api.deleteComment(commentId)
       setComments((current) => current?.filter((c) => c.id !== commentId) ?? null)
       setPost((current) => (current ? { ...current, commentCount: Math.max(0, current.commentCount - 1) } : current))
     } catch (e) {
@@ -175,13 +183,18 @@ export function CommunityPostPage() {
           <button
             type="button"
             className={`button button--sm ${post.liked ? 'button--primary' : 'button--ghost'}`}
-            disabled={!member || likeBusy}
-            onClick={() => void toggleLike()}
+            // 비회원은 비활성화하지 않고 눌러 보게 한 뒤 로그인 안내를 띄운다. (서버는 어차피 비회원 좋아요를 막는다)
+            disabled={likeBusy}
+            onClick={() => (member ? void toggleLike() : setLoginPrompt(true))}
           >
             좋아요 {post.likeCount}
           </button>
           {member && !post.mine && (
-            <button type="button" className="button button--ghost button--sm" onClick={() => openReport({ type: 'post' })}>
+            <button
+              type="button"
+              className="button button--ghost button--sm"
+              onClick={() => openReport({ type: 'post' })}
+            >
               신고
             </button>
           )}
@@ -195,10 +208,22 @@ export function CommunityPostPage() {
               </button>
             </>
           )}
+          {/* 관리자는 남의 글도 신고 없이 바로 지울 수 있다. (서버도 관리자만 허용한다) */}
+          {isAdmin && !post.mine && (
+            <button type="button" className="button button--danger button--sm" onClick={() => void deletePost(true)}>
+              관리자 삭제
+            </button>
+          )}
         </div>
         {notice && (
           <p className="notice" role="status">
             {notice}
+          </p>
+        )}
+        {loginPrompt && !member && (
+          <p className="notice" role="status">
+            좋아요는 로그인한 뒤에 누를 수 있어요.{' '}
+            <Link to={`/login?redirect=${encodeURIComponent(`/community/${teamId}/posts/${id}`)}`}>로그인하기</Link>
           </p>
         )}
         {reportTarget?.type === 'post' && (
@@ -239,7 +264,13 @@ export function CommunityPostPage() {
           <p className="community-comments__empty">아직 댓글이 없습니다.</p>
         ) : (
           <ul className="community-comments__list">
-            {comments.map((comment) => (
+            {comments.map((comment) =>
+              comment.deletedByReport ? (
+                // 관리자가 신고를 처리해 지운 댓글: 자리만 남기고 작성자·내용·버튼은 보이지 않는다.
+                <li key={comment.id} className="community-comments__item-wrap">
+                  <p className="community-comments__deleted">신고 처리로 삭제된 댓글입니다.</p>
+                </li>
+              ) : (
               <li key={comment.id} className="community-comments__item-wrap">
                 <div className="community-comments__item">
                   <div className="community-comments__body">
@@ -268,6 +299,15 @@ export function CommunityPostPage() {
                           신고
                         </button>
                       )
+                    )}
+                    {isAdmin && !comment.mine && (
+                      <button
+                        type="button"
+                        className="button button--danger button--sm"
+                        onClick={() => void deleteComment(comment.id, true)}
+                      >
+                        관리자 삭제
+                      </button>
                     )}
                   </div>
                 </div>
@@ -299,7 +339,8 @@ export function CommunityPostPage() {
                   </form>
                 )}
               </li>
-            ))}
+              ),
+            )}
           </ul>
         )}
 

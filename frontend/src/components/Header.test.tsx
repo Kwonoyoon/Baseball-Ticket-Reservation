@@ -38,6 +38,7 @@ describe('Header', () => {
     expect(screen.getByRole('link', { name: '로그인' })).toHaveAttribute('href', '/login')
     expect(screen.getByRole('link', { name: '회원가입' })).toHaveAttribute('href', '/signup')
     expect(screen.queryByText('예매내역')).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: '내 티켓' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '로그아웃' })).not.toBeInTheDocument()
   })
 
@@ -46,6 +47,8 @@ describe('Header', () => {
 
     expect(screen.getByRole('link', { name: '야구팬님' })).toHaveAttribute('href', '/my/account')
     expect(screen.getByRole('link', { name: '예매내역' })).toHaveAttribute('href', '/my/reservations')
+    // 입장할 때 바로 꺼내도록 헤더에 [내 티켓]이 있다.
+    expect(screen.getByRole('link', { name: '내 티켓' })).toHaveAttribute('href', '/my/ticket')
     expect(screen.queryByRole('button', { name: '로그아웃' })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: '로그인' })).not.toBeInTheDocument()
   })
@@ -145,6 +148,29 @@ describe('Header 사이드바', () => {
     expect(within(sidebar).getByRole('link', { name: '예매내역' })).toHaveAttribute('href', '/my/reservations')
     expect(within(sidebar).getByRole('link', { name: '마이페이지' })).toHaveAttribute('href', '/my/account')
     expect(within(sidebar).queryByRole('link', { name: /관리자 페이지/ })).not.toBeInTheDocument()
+  })
+
+  it('공지는 상단바가 아니라 사이드바에 있다', async () => {
+    await renderLoggedIn()
+    const user = userEvent.setup()
+
+    // 상단바(헤더)에는 공지 링크가 없다.
+    expect(screen.queryByRole('link', { name: '공지' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '메뉴 열기' }))
+    const sidebar = screen.getByRole('complementary', { name: '사이드바' })
+
+    expect(within(sidebar).getByRole('link', { name: '공지' })).toHaveAttribute('href', '/notices')
+  })
+
+  it('분실물센터는 사이드바에 있다', async () => {
+    await renderLoggedIn()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: '메뉴 열기' }))
+    const sidebar = screen.getByRole('complementary', { name: '사이드바' })
+
+    expect(within(sidebar).getByRole('link', { name: '분실물센터' })).toHaveAttribute('href', '/lost-properties')
   })
 
   it('관리자는 사이드바에서 관리자 페이지로 갈 수 있다', async () => {

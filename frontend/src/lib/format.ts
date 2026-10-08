@@ -24,6 +24,16 @@ export function formatPrice(price: number): string {
   return `${price.toLocaleString('ko-KR')}원`
 }
 
+/**
+ * 예매율(0~100)을 보기 좋게 만든다. 좌석이 많은 구장은 1% 아래가 흔해서 정수로 반올림하면 전부 0%로 보이므로,
+ * 값이 작을수록 소수점을 더 보여 준다. (10% 이상은 정수, 1~10%는 한 자리, 1% 미만은 두 자리)
+ */
+export function formatRate(rate: number): string {
+  if (rate >= 10) return `${Math.round(rate)}%`
+  if (rate >= 1) return `${Number(rate.toFixed(1))}%`
+  return `${Number(rate.toFixed(2))}%`
+}
+
 function parseDate(date: string) {
   const [year, month, day] = date.split('-').map(Number)
   return { year, month, day }
